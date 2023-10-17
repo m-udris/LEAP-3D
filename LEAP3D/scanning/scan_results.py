@@ -19,6 +19,34 @@ class ScanResults():
         top_layer_results_at_timestep = self.rough_temperature_field[timestep, :, :, -1]
         X_rough = self.rough_coordinates['x_rough'][:, :, -1]
         Y_rough = self.rough_coordinates['y_rough'][:, :, -1]
+
+        melt_pool_data = self.melt_pool[timestep, :4]
+
+        melt_pool_z_max = max(melt_pool_data, key=lambda x: x[2])
+        melt_pool_data = filter(lambda x: x[2] == melt_pool_z_max)
+        melt_pool_data = sorted(melt_pool_data, key=lambda x: x[:2])
+
+        X_melt = []
+        Y_melt = []
+        temperature_melt = []
+        previous_x = None
+        x_row = []
+        y_row = []
+        for (x, y, _, temperature) in melt_pool_data:
+            if previous_x is not None and previous_x != x:
+                X_melt.append(x_row)
+                Y_melt.append(y_row)
+                x_row = []
+                y_row = []
+            x_row.append(x)
+            y_row.append(y)
+            temperature_melt.append(temperature)
+            previous_x = x
+
+        X = X_rough + X_melt
+        Y = Y_rough + Y_melt
+        T = top_layer_results_at_timestep + temperature_melt
+
         return X_rough, Y_rough, top_layer_results_at_timestep
 
     def get_rough_coordinates_for_cross_section(self):
