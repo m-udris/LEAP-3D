@@ -1,0 +1,16 @@
+name: LEAP3D
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch-cuda=11.8
+  - torchaudio
+  - torchvision
+  - pytorch
+  - lightning
+  - python-dotenv
+  - wandb
+  - ipykernel
+  - matplotlib
+  - openh264
+  - scipy
