@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+from scipy import interpolate
 
 
 class ScanResults():
@@ -21,40 +22,6 @@ class ScanResults():
         Y_rough = self.rough_coordinates['y_rough'][:, :, -1]
 
         return X_rough, Y_rough, top_layer_results_at_timestep
-
-        # TODO: Fix
-        melt_pool_data = self.melt_pool[timestep]
-
-
-        if len(melt_pool_data[0]) == 0:
-            return X_rough, Y_rough, top_layer_results_at_timestep
-
-        melt_pool_z_max = max(melt_pool_data, key=lambda x: x[2])[2]
-        melt_pool_data = filter(lambda x: x[2] == melt_pool_z_max, melt_pool_data)
-        melt_pool_data = sorted(melt_pool_data, key=lambda x: x[:2])
-
-        X_melt = []
-        Y_melt = []
-        temperature_melt = []
-        previous_x = None
-        x_row = []
-        y_row = []
-        for (x, y, _, temperature, *_) in melt_pool_data:
-            if previous_x is not None and previous_x != x:
-                X_melt.append(x_row)
-                Y_melt.append(y_row)
-                x_row = []
-                y_row = []
-            x_row.append(x)
-            y_row.append(y)
-            temperature_melt.append(temperature)
-            previous_x = x
-
-        X = X_rough + X_melt
-        Y = Y_rough + Y_melt
-        T = top_layer_results_at_timestep + temperature_melt
-
-        return X, Y, T
 
     def get_rough_coordinates_for_cross_section(self):
         X_rough = self.rough_coordinates['x_rough']
@@ -78,3 +45,41 @@ class ScanResults():
         temperatures = [point[3] for point in self.melt_pool[timestep] if len(point) != 0]
 
         return coordinates, temperatures
+
+    def get_coordinate_points_and_temperature_at_timestep(self, timestep):
+        temperature = self.get_rough_temperatures_at_timestep(timestep).flatten()
+        melt_pool_coordinates, melt_pool_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
+
+        coordinates = self.get_rough_coordinates_for_cross_section() + melt_pool_coordinates
+        temperatures = list(temperature) + melt_pool_temperature
+
+        return coordinates, temperatures
+
+    def get_interpolated_data_along_laser_at_timestep(
+            self, scan_parameters, timestep,
+            steps=128, method='nearest', return_grid=False
+            ):
+
+        coordinates, temperature = self.get_coordinate_points_and_temperature_at_timestep(timestep)
+        laser_x, laser_y, _ = self.get_laser_coordinates_at_timestep(timestep)
+        laser_angle_tan = np.tan(scan_parameters.scanning_angle)
+        get_y = lambda x: laser_angle_tan * (x - laser_x) + laser_y
+
+        xi = np.linspace(scan_parameters.x_min, scan_parameters.x_max, steps)
+        zi = np.linspace(scan_parameters.z_min, scan_parameters.z_max, 64)
+        yi = get_y(xi)
+        yi_within_bounds_indices = np.where((yi >= scan_parameters.y_min) & (yi <= scan_parameters.y_max))  # Keep elements within bounds
+        yi = yi[yi_within_bounds_indices]
+        xi = xi[yi_within_bounds_indices]
+
+        cross_section_points = np.array([(x, y, z) for (x, y) in zip(xi, yi) for z in zi])
+
+        T_interpolated = interpolate.griddata(
+            coordinates,
+            temperature,
+            cross_section_points,
+            method=method)
+
+        if return_grid:
+            return T_interpolated, xi, yi, zi
+        return T_interpolated

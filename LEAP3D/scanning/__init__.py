@@ -1,3 +1,3 @@
-from LEAP3D.scanning.scanning_strategy import ScanningStrategy
-from LEAP3D.scanning.scan_results import ScanResults
-from LEAP3D.scanning.scan_parameters import ScanParameters
+from leap3d.scanning.scanning_strategy import ScanningStrategy
+from leap3d.scanning.scan_results import ScanResults
+from leap3d.scanning.scan_parameters import ScanParameters

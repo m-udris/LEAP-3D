@@ -8,8 +8,8 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import random_split, DataLoader, Dataset
 
-from LEAP3D.config import DATASETDIR
-from LEAP3D.scanning import ScanParameters, ScanResults
+from leap3d.config import DATASETDIR
+from leap3d.scanning import ScanParameters, ScanResults
 
 
 
