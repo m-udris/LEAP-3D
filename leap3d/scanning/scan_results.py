@@ -9,14 +9,14 @@ class ScanResults():
         self.results = np.load(results_filename, allow_pickle=True)
         self.rough_temperature_field = self.results['Rough_T_field']
         self.melt_pool = self.results['Melt_pool']
-        self.laser_information = self.results['Laser_information']
+        self.laser_data = self.results['Laser_information']
         self.rough_coordinates = np.load(rough_coordinates_filename)
         self.total_timesteps = self.rough_temperature_field.shape[0]
 
-    def get_rough_temperatures_at_timestep(self, timestep):
+    def get_rough_temperatures_at_timestep(self, timestep: int):
         return self.rough_temperature_field[timestep]
 
-    def get_top_layer_temperatures(self, timestep):
+    def get_top_layer_temperatures(self, timestep: int):
         top_layer_results_at_timestep = self.rough_temperature_field[timestep, :, :, -1]
         X_rough = self.rough_coordinates['x_rough'][:, :, -1]
         Y_rough = self.rough_coordinates['y_rough'][:, :, -1]
@@ -35,18 +35,21 @@ class ScanResults():
                     points.append((x, y, z))
         return points
 
-    def get_laser_coordinates_at_timestep(self, timestep: int) -> [float, float]:
+    def get_laser_coordinates_at_timestep(self, timestep: int):
         """Get laser x and y coordinates at timestep"""
-        laser_information = self.laser_information[timestep]
-        return laser_information[0], laser_information[1], laser_information[2]
+        laser_data = self.laser_data[timestep]
+        return laser_data[0], laser_data[1]
 
-    def get_melt_pool_coordinates_and_temperature(self, timestep):
+    def get_laser_data_at_timestep(self, timestep: int):
+        return self.laser_data[timestep]
+
+    def get_melt_pool_coordinates_and_temperature(self, timestep: int):
         coordinates = [point[:3] for point in self.melt_pool[timestep] if len(point) != 0]
         temperatures = [point[3] for point in self.melt_pool[timestep] if len(point) != 0]
 
         return coordinates, temperatures
 
-    def get_coordinate_points_and_temperature_at_timestep(self, timestep):
+    def get_coordinate_points_and_temperature_at_timestep(self, timestep: int):
         temperature = self.get_rough_temperatures_at_timestep(timestep).flatten()
         melt_pool_coordinates, melt_pool_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
 
@@ -61,7 +64,7 @@ class ScanResults():
             ):
 
         coordinates, temperature = self.get_coordinate_points_and_temperature_at_timestep(timestep)
-        laser_x, laser_y, _ = self.get_laser_coordinates_at_timestep(timestep)
+        laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
         laser_angle_tan = np.tan(scan_parameters.scanning_angle)
         get_y = lambda x: laser_angle_tan * (x - laser_x) + laser_y
 

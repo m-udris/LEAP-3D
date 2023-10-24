@@ -53,7 +53,7 @@ def plot_temperature_cross_section_at_timestep(ax, case_results, case_params, ti
         # TODO: add laser position
         ims = []
 
-        laser_position = case_results.get_laser_coordinates_at_timestep(timestep)
+        laser_x, laser_y = case_results.get_laser_coordinates_at_timestep(timestep)
 
         cross_section_plot = plot_cross_section_along_laser_at_timestep(
             ax, case_results, case_params, timestep, interpolation_steps, show_only_melt=show_only_melt)
@@ -63,7 +63,7 @@ def plot_temperature_cross_section_at_timestep(ax, case_results, case_params, ti
 
         if show_scan_boundaries:
             scanning_bound_left, scanning_bound_right = draw_cross_section_scanning_bounds(
-                ax, case_params, laser_position[0], laser_position[1])
+                ax, case_params, laser_x, laser_y)
             ims.append(scanning_bound_left)
             ims.append(scanning_bound_right)
 
@@ -112,7 +112,7 @@ def plot_top_layer_temperature_at_timestep(ax, case_results, case_params, timest
 
 
 def plot_top_view_scan_boundaries(ax, case_params):
-    laser_x_min, laser_x_max, laser_y_min, laser_y_max, *_ = case_params.get_laser_bounds()
+    laser_x_min, laser_x_max, laser_y_min, laser_y_max = case_params.get_laser_bounds()
     ax.plot([laser_x_min, laser_x_min], [laser_y_min, laser_y_max], 'black', lw=1)
     ax.plot([laser_x_max, laser_x_max], [laser_y_min, laser_y_max], 'black', lw=1)
     ax.plot([laser_x_min, laser_x_max], [laser_y_min, laser_y_min], 'black', lw=1)
@@ -120,7 +120,7 @@ def plot_top_view_scan_boundaries(ax, case_params):
 
 
 def plot_top_view_laser_position_at_timestep(ax, case_results, timestep):
-    laser_x, laser_y, _ = case_results.get_laser_coordinates_at_timestep(timestep)
+    laser_x, laser_y = case_results.get_laser_coordinates_at_timestep(timestep)
     im = ax.scatter(laser_x, laser_y, animated=True, c='red')
     return im
 

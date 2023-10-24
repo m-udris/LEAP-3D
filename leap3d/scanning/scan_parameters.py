@@ -11,7 +11,8 @@ class ScanParameters():
                  y_min: float=None, y_max: float=None,
                  z_min: float=None, z_max: float=None,
                  safety_offset: float=None,
-                 melting_point: float=None):
+                 melting_point: float=None,
+                 timestep_duration: float=None):
         self.case_index = case_index
         self.params = np.load(parameters_filename)[case_index, :]
         self.substrate_temperature = self.params[2]
@@ -19,6 +20,7 @@ class ScanParameters():
         self.hatching_distance = self.params[4]
         self.scanning_strategy = ScanningStrategy.SERPENTINE if self.params[4] == 0 else ScanningStrategy.PARALLEL
         self.melting_point = melting_point
+        self.timestep_duration = timestep_duration
 
         self.x_min = x_min
         self.x_max = x_max
@@ -31,17 +33,13 @@ class ScanParameters():
         self.laser_x_max = x_max - safety_offset
         self.laser_y_min = y_min + safety_offset
         self.laser_y_max = y_max - safety_offset
-        self.laser_z_min = z_min + safety_offset
-        self.laser_z_max = z_max - safety_offset
-
 
     def get_bounds(self):
         return self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max
 
     def get_laser_bounds(self):
         return self.laser_x_min, self.laser_x_max, \
-               self.laser_y_min, self.laser_y_max, \
-               self.laser_z_min, self.laser_z_max
+               self.laser_y_min, self.laser_y_max
 
     def get_cross_section_scanning_bounds(self, laser_x, laser_y):
         """Calculate scanning bounds of the cross section"""

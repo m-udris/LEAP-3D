@@ -1,1 +1,22 @@
+# ===Data configuration===
 DATA_DIR=""
+
+# ===Scanning constants===
+# Units of measurement:
+#   Distance: meters
+#   Time: seconds
+#   Temperature: kelvins
+
+# Interval between steps
+TIMESTEP_DURATION=2.e-5
+# Object boundaries
+X_MIN=-0.0012
+X_MAX=0.0012
+Y_MIN=-0.0012
+Y_MAX=0.0012
+Z_MIN=-0.0006
+Z_MAX=0
+# Safety offset from the edges for scanning
+SAFETY_OFFSET=0.0005
+# Material information
+MELTING_POINT=1723
