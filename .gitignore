@@ -162,3 +162,14 @@ cython_debug/
 
 # Ignore plots
 *.gif
+*.gif
+
+# Ignore checkpoints
+*.ckpt
+*.ckpt.*
+
+# Ignore wandb files
+*.wandb
+/wandb
+Notebooks/wandb
+wandb-metadata.json

@@ -14,10 +14,10 @@ class BaseModel(pl.LightningModule):
         Neural network
 
     """
-    def __init__(self, net) -> None:
+    def __init__(self, net=None) -> None:
         super().__init__()
         self.net = net
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['net'])
 
     def forward(self, *args, **kwargs):
         return self.net(*args, **kwargs)
@@ -29,6 +29,9 @@ class BaseModel(pl.LightningModule):
         return self.f_step(batch, batch_idx, train=True)[0]
 
     def validation_step(self, batch, batch_idx):
+        return self.f_step(batch, batch_idx, train=False)[1]
+
+    def test_step(self, batch, batch_idx):
         return self.f_step(batch, batch_idx, train=False)[1]
 
     def log_loss(self, loss_name, loss, train, prog_bar=True):

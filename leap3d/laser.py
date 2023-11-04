@@ -13,9 +13,9 @@ def get_next_laser_position(laser_data, case_params):
     laser_x_min, laser_x_max, laser_y_min, laser_y_max = case_params.get_laser_bounds()
     timestep_duration = case_params.timestep_duration
 
-    x_delta = timestep_duration * float(laser_velocity_x)
-    y_delta = timestep_duration * float(laser_velocity_y)
-    logging.debug(f"timestep_duration: {timestep_duration} {type(timestep_duration)}, laser_x_delta: {x_delta}, laser_y_delta: {y_delta}")
+    x_delta = np.float32(timestep_duration) * laser_velocity_x
+    y_delta = np.float32(timestep_duration) * laser_velocity_y
+    logging.debug(f"timestep_duration: {timestep_duration}, laser_x_delta: {x_delta}, laser_y_delta: {y_delta}")
 
     new_laser_x = laser_x + x_delta
     new_laser_y = laser_y + y_delta
@@ -24,6 +24,7 @@ def get_next_laser_position(laser_data, case_params):
     new_laser_x = np.clip(new_laser_x, laser_x_min, laser_x_max)
     new_laser_y = np.clip(new_laser_y, laser_y_min, laser_y_max)
 
+    # TODO: Fix
     new_laser_x = new_laser_x.astype(type(laser_x))
     new_laser_y = new_laser_y.astype(type(laser_y))
 

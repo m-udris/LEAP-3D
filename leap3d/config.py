@@ -9,6 +9,9 @@ load_dotenv()
 DATA_DIR = Path(os.getenv("DATA_DIR"))
 DATASET_DIR = Path(os.getenv("DATASET_DIR"))
 
+SCALE_DISTANCE_BY = float(os.getenv("SCALE_DISTANCE_BY", 1))
+SCALE_TIME_BY = float(os.getenv("SCALE_TIME_BY", 1))
+
 # Scanning constants
 TIMESTEP_DURATION = float(os.getenv("TIMESTEP_DURATION"))
 
@@ -21,3 +24,4 @@ Z_MAX = float(os.getenv("Z_MAX"))
 SAFETY_OFFSET = float(os.getenv("SAFETY_OFFSET"))
 
 MELTING_POINT = float(os.getenv("MELTING_POINT"))
+BASE_TEMPERATURE = float(os.getenv("BASE_TEMPERATURE"))

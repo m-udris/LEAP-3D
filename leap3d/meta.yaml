@@ -1,0 +1,38 @@
+package:
+  name: leap3d
+  version: 0.1.0
+
+source:
+  path: ../leap3d
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python=3.11
+    - pip
+    - setuptools
+  run:
+    - python=3.11
+    - pytorch-cuda
+    - torchaudio
+    - torchvision
+    - pytorch
+    - lightning
+    - python-dotenv
+    - wandb
+    - ipykernel
+    - matplotlib
+    - openh264
+    - scipy
+    - conda-build
+    - conda-verify
+    - pytest
+    - h5py
+    - torchmetrics
+
+about:
+  home: ""

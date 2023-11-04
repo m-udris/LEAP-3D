@@ -1,4 +1,5 @@
 import functools
+import logging
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy import interpolate
@@ -50,27 +51,28 @@ def plot_cross_section_along_laser_at_timestep(ax, case_results, case_params, ti
 
 
 def plot_temperature_cross_section_at_timestep(ax, case_results, case_params, timestep, interpolation_steps=96, show_scan_boundaries=True, show_laser_position=False, show_only_melt=False):
-        # TODO: add laser position
-        ims = []
+    ims = []
 
-        laser_x, laser_y = case_results.get_laser_coordinates_at_timestep(timestep)
+    laser_x, laser_y = case_results.get_laser_coordinates_at_timestep(timestep)
 
-        cross_section_plot = plot_cross_section_along_laser_at_timestep(
-            ax, case_results, case_params, timestep, interpolation_steps, show_only_melt=show_only_melt)
+    cross_section_plot = plot_cross_section_along_laser_at_timestep(
+        ax, case_results, case_params, timestep, interpolation_steps, show_only_melt=show_only_melt)
 
-        ims.append(cross_section_plot)
+    ims.append(cross_section_plot)
 
 
-        if show_scan_boundaries:
-            scanning_bound_left, scanning_bound_right = draw_cross_section_scanning_bounds(
-                ax, case_params, laser_x, laser_y)
-            ims.append(scanning_bound_left)
-            ims.append(scanning_bound_right)
+    if show_scan_boundaries:
+        scanning_bound_left, scanning_bound_right = draw_cross_section_scanning_bounds(
+            ax, case_params, laser_x, laser_y)
+        ims.append(scanning_bound_left)
+        ims.append(scanning_bound_right)
 
-        if show_laser_position:
-            raise NotImplementedError()
+    if show_laser_position:
+        projected_laser_x = project_point_to_cross_section(laser_x, laser_y, case_params.x_min, case_params.y_min)
+        laser_position, = ax.plot([projected_laser_x, projected_laser_x], [case_params.z_min, case_params.z_max], 'red', lw=1)
+        ims.append(laser_position)
 
-        return ims
+    return ims
 
 
 def get_frames_for_temperature_cross_section_animation(case_results, case_params,
@@ -98,17 +100,21 @@ def get_frames_for_temperature_cross_section_animation(case_results, case_params
 
 
 def plot_top_layer_temperature_at_timestep(ax, case_results, case_params, timestep, show_only_melt=False):
-        X, Y, temperature = case_results.get_top_layer_temperatures(timestep)
+    temperature = case_results.get_top_layer_temperatures(timestep)
+    return plot_top_layer_temperature(ax, temperature, case_params, show_only_melt)
 
-        melting_point = case_params.melting_point
 
-        if show_only_melt:
-            temperature[temperature < melting_point] = 0
-            temperature[temperature >= melting_point] = 1
+def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=False):
+    X, Y = case_params.get_top_layer_coordinates()
 
-        vmax = 1 if show_only_melt else melting_point
-        im = ax.pcolormesh(X, Y, temperature, animated=True, vmax=vmax)
-        return im
+    melting_point = case_params.melting_point
+    if show_only_melt:
+        temperature[temperature < melting_point] = 0
+        temperature[temperature >= melting_point] = 1
+
+    vmax = 1 if show_only_melt else melting_point
+    im = ax.pcolormesh(X, Y, temperature, animated=True, vmax=vmax)
+    return im
 
 
 def plot_top_view_scan_boundaries(ax, case_params):
@@ -155,3 +161,50 @@ def get_frames_for_top_layer_temperatures(case_results, case_params, frames=None
         fig.colorbar(ims[0][0], ax=ax)
 
     return fig, ims
+
+
+def animate_cross_secion_and_top_player(case_results, case_params, frames=None):
+    fig, (ax_0, ax_1) = plt.subplots(ncols=2)
+
+    x_min, x_max, y_min, y_max, z_min, z_max = case_params.get_bounds()
+
+    ax_0.set_xlim(
+        -np.sqrt(x_min**2 + y_min**2),
+        np.sqrt(x_max**2 + y_max**2))
+    ax_0.set_ylim(z_min, z_max)
+
+    frames = frames if frames is not None else case_results.total_timesteps
+    animate_partial = functools.partial(plot_temperature_cross_section_at_timestep,
+                                        ax=ax_0,
+                                        case_results=case_results,
+                                        case_params=case_params,
+                                        show_scan_boundaries=True,
+                                        show_laser_position=True,
+                                        show_only_melt=False)
+    ims_0 = [animate_partial(timestep=i) for i in range(0, frames, 5)]
+
+
+
+
+    ax_1.set_xlim(x_min, x_max)
+    ax_1.set_ylim(y_min, y_max)
+    ax_1.set_aspect('equal', adjustable='box')
+
+    frames = frames if frames is not None else case_results.total_timesteps
+    ims_1 = []
+    for i in range(0, frames, 5):
+        ims_at_timestep = []
+
+        im = plot_top_layer_temperature_at_timestep(ax_1, case_results, case_params, i, False)
+        ims_at_timestep.append(im)
+
+        im = plot_top_view_laser_position_at_timestep(ax_1, case_results, i)
+        ims_at_timestep.append(im)
+
+        ims_1.append(ims_at_timestep)
+
+    plot_top_view_scan_boundaries(ax_1, case_params)
+
+    fig.colorbar(ims_1[0][0], ax=ax_1)
+
+    return fig, [ims_0_element + ims_1_element for ims_0_element, ims_1_element in zip(ims_0, ims_1)]
