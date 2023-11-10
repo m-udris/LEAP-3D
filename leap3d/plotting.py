@@ -208,3 +208,17 @@ def animate_cross_secion_and_top_player(case_results, case_params, frames=None):
     fig.colorbar(ims_1[0][0], ax=ax_1)
 
     return fig, [ims_0_element + ims_1_element for ims_0_element, ims_1_element in zip(ims_0, ims_1)]
+
+
+def plot_dataset_histograms(dataset):
+    fig, (ax0, ax1) = plt.subplots(nrows=2)
+    ax0.set_xlim(xmin=-4, xmax=4)
+    ax1.set_xlim(xmin=-4, xmax=4)
+
+    z_scores_train, z_scores_target = dataset.get_temperature_z_scores()
+
+    ax0.hist(z_scores_train, bins=50)
+    ax0.set(title='Train Temperature Frequency Histogram', ylabel='Frequency')
+    ax1.hist(z_scores_target, bins=50)
+    ax1.set(title='Target Temperature Diff Frequency Histogram', ylabel='Frequency')
+    return fig, (ax0, ax1)

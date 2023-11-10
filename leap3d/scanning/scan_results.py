@@ -58,6 +58,12 @@ class ScanResults():
     def get_laser_data_at_timestep(self, timestep: int):
         return self.laser_data[timestep]
 
+    def get_laser_power_at_timestep(self, timestep: int):
+        return self.laser_data[timestep][2]
+
+    def get_laser_radius_at_timestep(self, timestep: int):
+        return self.laser_data[timestep][3]
+
     def get_melt_pool_coordinates_and_temperature(self, timestep: int):
         coordinates = [point[:3] for point in self.melt_pool[timestep] if len(point) != 0]
         temperatures = [point[3] for point in self.melt_pool[timestep] if len(point) != 0]

@@ -6,6 +6,8 @@ from torch import nn
 from torch.nn import functional as F
 
 
+#! TODO: Replace to LeakyRELU
+
 class Double2DConv(torch.nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None, **kwargs):
         super(Double2DConv, self).__init__()
@@ -73,24 +75,16 @@ class OutConv2D(torch.nn.Module):
         return self.conv(x)
 
 
-def put_channels_first(tensor):
-    if len(tensor.shape) == 3:
-        return tensor.permute(2, 0, 1)
-    return tensor.permute(0, 3, 1, 2)
-
-def put_channels_last(tensor):
-    if len(tensor.shape) == 3:
-        return tensor.permute(1, 2, 0)
-    return tensor.permute(0, 2, 3, 1)
-
-
 class UNet2D(torch.nn.Module):
-    def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, bilinear=False):
+    def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, fcn_core_layers=0, extra_params_number: int=0, bilinear=False, **kwargs):
         super(UNet2D, self).__init__()
         self.input_dimension = input_dimension
         self.output_dimension = output_dimension
         self.n_conv = n_conv
         self.bilinear = bilinear
+        self.depth = depth
+        self.fcn_core_layers = kwargs.get('fcn_core_layers', fcn_core_layers)
+        self.extra_params_number = kwargs.get('extra_params_number', extra_params_number)
 
         self.inc = Double2DConv(input_dimension, n_conv)
 
@@ -99,30 +93,52 @@ class UNet2D(torch.nn.Module):
         self.down3 = Down2D(n_conv*4, n_conv*8)
         factor = 2 if bilinear else 1
         self.down4 = Down2D(n_conv*8, n_conv*16 // factor)
+
+        # Inject extra parameters into the UNet using a FCN
+        self.fcn_core = None
+        if self.fcn_core_layers > 0:
+            modules = []
+            for _ in range(self.fcn_core_layers):
+                output_features = n_conv*(2**self.depth) * 4 * 4
+                modules.append(nn.Linear(output_features + extra_params_number, output_features))
+                #! LEAKY REUL
+                modules.append(nn.ReLU())
+            self.fcn_core = nn.Sequential(*modules)
+
         self.up1 = Up2D(n_conv*16, n_conv*8 // factor, bilinear)
         self.up2 = Up2D(n_conv*8, n_conv*4 // factor, bilinear)
         self.up3 = Up2D(n_conv*4, n_conv*2 // factor, bilinear)
         self.up4 = Up2D(n_conv*2, n_conv, bilinear)
         self.outc = OutConv2D(n_conv, output_dimension)
 
-    def forward(self, x):
+        print(self.fcn_core_layers, self.extra_params_number)
+
+    def forward(self, x, extra_params=None):
         in_shape = x.shape
         if len(in_shape) == 3:
             x = torch.unsqueeze(x, 0)
 
-        # TODO: Form data to have channel first
-        x = put_channels_first(x)
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
         x4 = self.down3(x3)
         x5 = self.down4(x4)
+
+        if self.fcn_core is not None:
+            # print(x5.shape, extra_params.shape)
+            shape = x5.shape
+            x5 = x5.reshape(shape[0], -1)
+            if self.extra_params_number != 0:
+                x5 = torch.cat((x5, extra_params), dim=-1)
+            x5 = self.fcn_core(x5)
+            x5 = x5.reshape(shape)
+
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         out = self.outc(x)
-        out = put_channels_last(out)
+
         if len(in_shape) == 3:
             assert out.shape[0] == 1
             out = out[0]

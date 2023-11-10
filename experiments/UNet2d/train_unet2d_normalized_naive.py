@@ -14,10 +14,10 @@ from leap3d.train import train_model
 from leap3d.transforms import normalize_temperature_2d
 
 
-def train_unet2d_normalized_naive():
+def train_unet2d_normalized_naive(experiment_name='unet2d_normalized_naive', lr=1e-3):
     hparams = {
         'batch_size': 256,
-        'learning_rate': 1e-3,
+        'learning_rate': lr,
         'num_workers': 1,
         'max_epochs': 20,
         'architecture': Architecture.LEAP3D_UNET2D,
@@ -31,7 +31,7 @@ def train_unet2d_normalized_naive():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': 'unet2d_normalized_naive_fixed',
+        'name': experiment_name,
         # track hyperparameters and run metadata
         'config': hparams
     }

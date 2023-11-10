@@ -7,13 +7,13 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 import wandb
 
-from leap3d.dataset import LEAP3DDataModule
+from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture
 from leap3d.config import DATA_DIR, DATASET_DIR, MELTING_POINT
 from leap3d.train import train_model
 
 
-def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
+def train_unet2d_param_window(experiment_name='unet2d_param_window_5', lr=1e-3, fcn_core_layers=1, extra_params_number=3):
     hparams = {
         'batch_size': 256,
         'learning_rate': lr,
@@ -23,6 +23,10 @@ def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
         'transforms': None,
         'in_channels': 3,
         'out_channels': 1,
+        'window_size': 5,
+        'window_step_size': 5,
+        'fcn_core_layers': fcn_core_layers,
+        'extra_params_number': extra_params_number
     }
 
     # start a new wandb run to track this script
@@ -43,9 +47,10 @@ def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
         DATA_DIR / "Params.npy", DATA_DIR / "Rough_coord.npz", DATA_DIR, DATASET_DIR,
         batch_size=hparams['batch_size'],
         train_cases=8, test_cases=[8,9],
-        window_size=1, window_step_size=1,
+        window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         force_prepare=False,
         num_workers=hparams['num_workers'],
+        extra_params=[ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS],
         transform=None,
         extra_params_transform=None,
         target_transform=None,
@@ -61,4 +66,4 @@ def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
 
 
 if __name__ == '__main__':
-    train_unet2d()
+    train_unet2d_param_window()

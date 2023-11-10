@@ -13,7 +13,7 @@ from leap3d.config import DATA_DIR, DATASET_DIR, MELTING_POINT
 from leap3d.train import train_model
 
 
-def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
+def train_unet2d_window(experiment_name='unet2d_window_5', lr=1e-3):
     hparams = {
         'batch_size': 256,
         'learning_rate': lr,
@@ -23,6 +23,8 @@ def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
         'transforms': None,
         'in_channels': 3,
         'out_channels': 1,
+        'window_size': 5,
+        'window_step_size': 5
     }
 
     # start a new wandb run to track this script
@@ -43,7 +45,7 @@ def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
         DATA_DIR / "Params.npy", DATA_DIR / "Rough_coord.npz", DATA_DIR, DATASET_DIR,
         batch_size=hparams['batch_size'],
         train_cases=8, test_cases=[8,9],
-        window_size=1, window_step_size=1,
+        window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         force_prepare=False,
         num_workers=hparams['num_workers'],
         transform=None,
@@ -61,4 +63,4 @@ def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
 
 
 if __name__ == '__main__':
-    train_unet2d()
+    train_unet2d_window()
