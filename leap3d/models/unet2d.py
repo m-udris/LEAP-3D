@@ -9,7 +9,7 @@ from torch.nn import functional as F
 #! TODO: Replace to LeakyRELU
 
 class Double2DConv(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, mid_channels=None, **kwargs):
+    def __init__(self, in_channels, out_channels, mid_channels=None, activation=nn.LeakyReLU ,**kwargs):
         super(Double2DConv, self).__init__()
         if not mid_channels:
             mid_channels = out_channels
@@ -17,10 +17,10 @@ class Double2DConv(torch.nn.Module):
         self.double_conv = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(mid_channels),
-            nn.ReLU(inplace=True),
+            activation(inplace=True),
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            activation(inplace=True)
         )
 
     def forward(self, x):
@@ -28,11 +28,11 @@ class Double2DConv(torch.nn.Module):
 
 
 class Down2D(torch.nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, activation=nn.LeakyReLU, **kwargs):
         super(Down2D, self).__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            Double2DConv(in_channels, out_channels)
+            Double2DConv(in_channels, out_channels, activation=nn.LeakyReLU)
         )
 
     def forward(self, x):
@@ -40,16 +40,16 @@ class Down2D(torch.nn.Module):
 
 
 class Up2D(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, bilinear=True):
+    def __init__(self, in_channels, out_channels, bilinear=True, activation=nn.LeakyReLU, **kwargs):
         super(Up2D, self).__init__()
 
         # if bilinear, use the normal convolutions to reduce the number of channels
         if bilinear:
             self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-            self.conv = Double2DConv(in_channels, out_channels, in_channels // 2)
+            self.conv = Double2DConv(in_channels, out_channels, in_channels // 2, activation=activation)
         else:
             self.upsample = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self.conv = Double2DConv(in_channels, out_channels)
+            self.conv = Double2DConv(in_channels, out_channels, activation=activation)
 
     def forward(self, x1, x2):
         # x1 - previous layer output
@@ -76,7 +76,7 @@ class OutConv2D(torch.nn.Module):
 
 
 class UNet2D(torch.nn.Module):
-    def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, fcn_core_layers=0, extra_params_number: int=0, bilinear=False, **kwargs):
+    def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, fcn_core_layers=0, extra_params_number: int=0, bilinear=False, activation=nn.LeakyReLU, **kwargs):
         super(UNet2D, self).__init__()
         self.input_dimension = input_dimension
         self.output_dimension = output_dimension
@@ -88,11 +88,11 @@ class UNet2D(torch.nn.Module):
 
         self.inc = Double2DConv(input_dimension, n_conv)
 
-        self.down1 = Down2D(n_conv, n_conv*2)
-        self.down2 = Down2D(n_conv*2, n_conv*4)
-        self.down3 = Down2D(n_conv*4, n_conv*8)
+        self.down1 = Down2D(n_conv, n_conv*2, activation=activation)
+        self.down2 = Down2D(n_conv*2, n_conv*4, activation=activation)
+        self.down3 = Down2D(n_conv*4, n_conv*8, activation=activation)
         factor = 2 if bilinear else 1
-        self.down4 = Down2D(n_conv*8, n_conv*16 // factor)
+        self.down4 = Down2D(n_conv*8, n_conv*16 // factor, activation=activation)
 
         # Inject extra parameters into the UNet using a FCN
         self.fcn_core = None
@@ -101,14 +101,13 @@ class UNet2D(torch.nn.Module):
             for _ in range(self.fcn_core_layers):
                 output_features = n_conv*(2**self.depth) * 4 * 4
                 modules.append(nn.Linear(output_features + extra_params_number, output_features))
-                #! LEAKY REUL
-                modules.append(nn.ReLU())
+                modules.append(activation())
             self.fcn_core = nn.Sequential(*modules)
 
-        self.up1 = Up2D(n_conv*16, n_conv*8 // factor, bilinear)
-        self.up2 = Up2D(n_conv*8, n_conv*4 // factor, bilinear)
-        self.up3 = Up2D(n_conv*4, n_conv*2 // factor, bilinear)
-        self.up4 = Up2D(n_conv*2, n_conv, bilinear)
+        self.up1 = Up2D(n_conv*16, n_conv*8 // factor, bilinear, activation=activation)
+        self.up2 = Up2D(n_conv*8, n_conv*4 // factor, bilinear, activation=activation)
+        self.up3 = Up2D(n_conv*4, n_conv*2 // factor, bilinear, activation=activation)
+        self.up4 = Up2D(n_conv*2, n_conv, bilinear, activation=activation)
         self.outc = OutConv2D(n_conv, output_dimension)
 
         print(self.fcn_core_layers, self.extra_params_number)
