@@ -1,5 +1,7 @@
 import pytorch_lightning as pl
 from torch import optim
+from torchmetrics.regression import R2Score, MeanAbsoluteError
+
 
 class BaseModel(pl.LightningModule):
     """ Base LEAP3D model.
@@ -18,29 +20,32 @@ class BaseModel(pl.LightningModule):
         super().__init__()
         self.net = net
         self.save_hyperparameters(ignore=['net'])
+        self.r2_metric = R2Score()
+        self.mae_metric = MeanAbsoluteError()
 
     def forward(self, *args, **kwargs):
         return self.net(*args, **kwargs)
 
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        return self(batch)
+    # def predict_step(self, batch, batch_idx, dataloader_idx=0):
+    #     return self(batch)
 
-    def training_step(self, batch, batch_idx):
-        return self.f_step(batch, batch_idx, train=True)[0]
+    def training_step(self, batch, batch_idx, *args, **kwargs):
+        return self.f_step(batch, batch_idx, train=True, *args, **kwargs)[0]
 
-    def validation_step(self, batch, batch_idx):
-        return self.f_step(batch, batch_idx, train=False)[1]
+    def validation_step(self, batch, batch_idx, *args, **kwargs):
+        return self.f_step(batch, batch_idx, train=False, *args, **kwargs)[1]
 
-    def test_step(self, batch, batch_idx):
-        return self.f_step(batch, batch_idx, train=False)[1]
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        return self.f_step(batch, batch_idx, train=False, *args, **kwargs)[1]
 
     def log_loss(self, loss_name, loss, train, prog_bar=True):
-        if train:
-            self.log("train_" + loss_name, loss, prog_bar=prog_bar)
-            self.log("train_epoch_" + loss_name, loss, prog_bar=prog_bar, on_epoch=True, on_step=False)
-        else:
-            self.log("val_" + loss_name, loss, prog_bar=prog_bar)
-            self.log("val_epoch_" + loss_name, loss, prog_bar=prog_bar, on_epoch=True, on_step=False)
+        prefix = "train_" if train else "val_"
+        self.log(prefix + loss_name, loss, prog_bar=prog_bar)
+
+    def log_metrics_dict(self, loss_dict, train, prog_bar=True):
+        prefix = "train_" if train else "val_"
+        loss_dict = {prefix + str(key): val for key, val in loss_dict.items()}
+        self.log_dict(loss_dict, prog_bar=prog_bar)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)

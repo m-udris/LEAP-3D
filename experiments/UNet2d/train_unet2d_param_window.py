@@ -26,7 +26,8 @@ def train_unet2d_param_window(experiment_name='unet2d_param_window_5', lr=1e-3, 
         'window_size': 5,
         'window_step_size': 5,
         'fcn_core_layers': fcn_core_layers,
-        'extra_params_number': extra_params_number
+        'extra_params_number': extra_params_number,
+        'activation': torch.nn.LeakyReLU
     }
 
     # start a new wandb run to track this script

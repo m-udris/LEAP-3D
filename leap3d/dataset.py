@@ -36,47 +36,48 @@ def check_if_prepared_data_exists(filepath: str| Path):
 
 def prepare_raw_data(scan_parameters_filepath: str | Path, rough_coordinates_filepath: str | Path,
                      raw_data_dir: str | Path, prepared_data_path: str| Path, cases: int | List=None,
-                     channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[]):
+                     window_size: int=1, window_step_size: int=1, channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[]):
     def resize_datasets(train_dataset, extra_train_dataset, target_dataset, number_of_points: int):
         if train_dataset.len() < number_of_points:
             train_dataset.resize(number_of_points, axis=0)
-            extra_train_dataset.resize(number_of_points, axis=0)
+            if extra_train_dataset is not None:
+                extra_train_dataset.resize(number_of_points, axis=0)
             target_dataset.resize(number_of_points, axis=0)
 
     # TODO: Refactor
     params_file = np.load(scan_parameters_filepath)
     rough_coordinates = np.load(rough_coordinates_filepath)
 
-    window_size = 1
-    stride = 1
-
     offset = 0
     with h5py.File(prepared_data_path, 'w') as f:
         train_dset = f.create_dataset("train", (1000, window_size, len(channels)+1, 64, 64), maxshape=(None, window_size, len(channels)+1, 64, 64), chunks=True)
-        extra_train_dset = f.create_dataset("train_extra_params", (1000, window_size, len(extra_params)), maxshape=(None, window_size, len(extra_params)), chunks=True)
+        if extra_params is not None:
+            extra_train_dset = f.create_dataset("train_extra_params", (1000, window_size, len(extra_params)), maxshape=(None, window_size, len(extra_params)), chunks=True)
         target_dset = f.create_dataset("target", (1000, window_size, 1, 64, 64), maxshape=(None, window_size, 1, 64, 64), chunks=True)
         scan_result_filepaths = get_scan_result_case_ids_and_filepaths(raw_data_dir, cases)
         for case_id, scan_result_filepath in scan_result_filepaths:
             scan_parameters = ScanParameters(params_file, rough_coordinates, case_id)
 
             training_points, extra_train_points, targets = prepare_scan_results(scan_result_filepath, scan_parameters,
-                                                                          window_size=window_size, stride=stride, channels=channels, extra_params=extra_params)
+                                                                          window_size=window_size, window_step_size=window_step_size, channels=channels, extra_params=extra_params, case_id=case_id)
 
             number_of_points = len(training_points)
             total_number_of_points = number_of_points + offset
-            resize_datasets(train_dset, extra_train_dset, target_dset, total_number_of_points)
+            resize_datasets(train_dset, extra_train_dset if extra_params is not None else None, target_dset, total_number_of_points)
 
             train_dset[offset:] = training_points
             train_dset.flush()
-            extra_train_dset[offset:] = extra_train_points
-            extra_train_dset.flush()
+            if extra_params is not None:
+                extra_train_dset[offset:] = extra_train_points
+                extra_train_dset.flush()
             target_dset[offset:] = targets
             target_dset.flush()
 
             offset += number_of_points
 
 
-def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, stride=1, channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[], dims=2):
+def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, window_step_size=1, channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[], dims=2, case_id=None):
+    # TODO: Refactor into enum?
     def get_temperature_channel(timestep, scan_results):
         return scan_results.rough_temperature_field[timestep, :, :, -1]
 
@@ -102,7 +103,7 @@ def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, s
     extra_params_points = []
     targets = []
 
-    for timestep in range(0, scan_results.total_timesteps - window_size, stride):
+    for timestep in range(0, scan_results.total_timesteps - window_size, window_step_size):
         training_points_window = []
         extra_params_window = []
         targets_window = []
@@ -118,15 +119,19 @@ def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, s
                 if channel == Channel.TEMPERATURE:
                     training_point_channels.append(get_temperature_channel(i, scan_results))
 
-            for extra_param in extra_params:
-                if extra_param == ExtraParam.SCANNING_ANGLE:
-                    extra_params_channels.append(scan_parameters.scanning_angle)
-                if extra_param == ExtraParam.LASER_POWER:
-                    extra_params_channels.append(scan_results.get_laser_power_at_timestep(i))
-                if extra_param == ExtraParam.LASER_RADIUS:
-                    extra_params_channels.append(scan_results.get_laser_radius_at_timestep(i))
+            if extra_params is not None:
+                for extra_param in extra_params:
+                    if extra_param == ExtraParam.SCANNING_ANGLE:
+                        extra_params_channels.append(scan_parameters.scanning_angle)
+                    if extra_param == ExtraParam.LASER_POWER:
+                        extra_params_channels.append(scan_results.get_laser_power_at_timestep(i))
+                    if extra_param == ExtraParam.LASER_RADIUS:
+                        extra_params_channels.append(scan_results.get_laser_radius_at_timestep(i))
 
-            targets_channels.append(get_temperature_diff_channel(i, scan_results))
+            temperature_diff_channel = get_temperature_diff_channel(i, scan_results)
+            # if np.max(temperature_diff_channel) > 1000:
+            #     logging.warning(f"Temperature difference above 1000 at timestep {timestep} for case {case_id}")
+            targets_channels.append(temperature_diff_channel)
 
             training_points_window.append(np.array(training_point_channels))
             extra_params_window.append(np.array(extra_params_channels))
@@ -160,14 +165,17 @@ def get_scan_result_case_ids_and_filepaths(data_dir: str="path/to/dir", cases: i
 
 class LEAP3DDataset(Dataset):
     def __init__(self, data_dir: str="path/to/dir",
-                 train: bool=True,
-                 transform=None, target_transform=None, extra_params_tranform=None):
+                 train: bool=True, extra_params: List[ExtraParam]=None,
+                 transform=None, target_transform=None, extra_params_tranform=None, is_eval=False):
         super().__init__()
         self.train = train
-        self.data_filepath = Path(data_dir) / ("dataset.hdf5" if train else "test_dataset.hdf5")
+        self.is_eval = is_eval
+        self.data_filepath = Path(data_dir) / ("eval_dataset.hdf5" if is_eval else "dataset.hdf5" if train else "test_dataset.hdf5")
         self.data_file = h5py.File(self.data_filepath, 'r')
         self.x_train = self.data_file['train']
-        self.train_extra_params = self.data_file['train_extra_params']
+        self.extra_params = extra_params
+        if self.extra_params is not None:
+            self.train_extra_params = self.data_file['train_extra_params']
         self.targets = self.data_file['target']
         self.transform = transform
         self.extra_params_tranform = extra_params_tranform
@@ -182,7 +190,7 @@ class LEAP3DDataset(Dataset):
 
     def __getitem__(self, idx):
         data = self.x_train[idx]
-        extra_params = self.train_extra_params[idx]
+        extra_params = self.train_extra_params[idx] if self.extra_params is not None else torch.empty((data.shape[0], 0))
         target = self.targets[idx]
 
         if self.transform is not None:
@@ -230,10 +238,15 @@ class LEAP3DDataset(Dataset):
 
     def get_temperature_z_scores(self):
         temperature_mean, temperature_variance, target_mean, target_variance = self.get_temperature_mean_and_variance()
-        print(temperature_mean, temperature_variance, target_mean, target_variance)
 
-        return ((self.transform(self.x_train[:, :, -1, :, :]).reshape(-1) - temperature_mean) / temperature_variance,
-                (self.transform(self.targets[:, :, -1, :, :]).reshape(-1) - target_mean) / target_variance)
+        x_train_reshaped = self.x_train[:, :, -1, :, :].reshape(-1)
+        if self.transform is not None:
+            x_train_reshaped = self.transform(x_train_reshaped)
+        targets_reshaped = self.targets[:, :, 0, :, :].reshape(-1)
+        if self.target_transform is not None:
+            targets_reshaped = self.target_transform(targets_reshaped)
+
+        return (x_train_reshaped - temperature_mean) / temperature_variance, (targets_reshaped - target_mean) / target_variance
 
     def __del__(self):
         self.data_file.close()
@@ -244,7 +257,7 @@ class LEAP3DDataModule(pl.LightningDataModule):
                  scan_parameters_filepath: str | Path, rough_coordinates_filepath: str | Path,
                  raw_data_dir: str="path/to/dir", prepared_data_path: str="path/to/dir",
                  batch_size: int=32,
-                 train_cases: int | List=None, test_cases: int | List=None,
+                 train_cases: int | List=None, test_cases: int | List=None, eval_cases: int | List=None,
                  window_size: int=1, window_step_size: int=1,
                  channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS],
                  transform: callable=None, target_transform: callable=None, extra_params_transform: callable=None,
@@ -258,6 +271,7 @@ class LEAP3DDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.train_cases = train_cases
         self.test_cases = test_cases
+        self.eval_cases = eval_cases
         self.window_size = window_size
         self.window_step_size = window_step_size
         self.force_prepare = force_prepare
@@ -271,15 +285,25 @@ class LEAP3DDataModule(pl.LightningDataModule):
     def prepare_data(self):
         prepared_train_filepath = self.prepared_data_path / "dataset.hdf5"
         prepared_test_filepath = self.prepared_data_path / "test_dataset.hdf5"
+        prepared_eval_filepath = self.prepared_data_path / "eval_dataset.hdf5"
+
         if self.force_prepare or not check_if_prepared_data_exists(prepared_train_filepath):
-            prepare_raw_data(self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_train_filepath, self.train_cases, self.channels, self.extra_params)
+            prepare_raw_data(
+                self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_train_filepath,
+                self.train_cases, self.window_size, self.window_step_size, self.channels, self.extra_params)
         if self.force_prepare or not check_if_prepared_data_exists(prepared_test_filepath):
-            prepare_raw_data(self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_test_filepath, self.test_cases, self.channels, self.extra_params)
+            prepare_raw_data(
+                self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_test_filepath,
+                self.test_cases, self.window_size, self.window_step_size, self.channels, self.extra_params)
+        if self.eval_cases is not None and (self.force_prepare or not check_if_prepared_data_exists(prepared_eval_filepath)):
+            prepare_raw_data(
+                self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_eval_filepath,
+                self.eval_cases, 1, 1, self.channels, self.extra_params)
 
     def setup(self, stage: str, split_ratio: float=0.8):
-        self.leap_test = LEAP3DDataset(self.prepared_data_path, train=False,
+        self.leap_test = LEAP3DDataset(self.prepared_data_path, train=False, extra_params=self.extra_params,
                                        transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
-        leap_full = LEAP3DDataset(self.prepared_data_path, train=True,
+        leap_full = LEAP3DDataset(self.prepared_data_path, train=True, extra_params=self.extra_params,
                                   transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
 
         train_points_count = int(np.ceil(len(leap_full) * split_ratio))
@@ -287,6 +311,8 @@ class LEAP3DDataModule(pl.LightningDataModule):
         self.leap_train, self.leap_val = random_split(
             leap_full, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
         )
+        self.leap_eval = LEAP3DDataset(self.prepared_data_path, train=False, is_eval=True, extra_params=self.extra_params,
+                                       transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
 
     def train_dataloader(self):
         return DataLoader(self.leap_train, batch_size=self.batch_size)
@@ -297,8 +323,8 @@ class LEAP3DDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.leap_test, batch_size=self.batch_size)
 
-    # def predict_dataloader(self):
-    #     return DataLoader(self.leap_predict, batch_size=self.batch_size, num_workers=self.num_workers)
+    def eval_dataloader(self):
+        return DataLoader(self.leap_eval, batch_size=1, shuffle=False)
 
     def teardown(self, stage: str):
         pass

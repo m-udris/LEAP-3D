@@ -7,57 +7,23 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 import wandb
 
+from leap3d.callbacks import get_checkpoint_only_last_epoch_callback, LogR2ScoreOverTimePlotCallback
 from leap3d.dataset import LEAP3DDataModule
 from leap3d.models import Architecture
 from leap3d.config import DATA_DIR, DATASET_DIR, MELTING_POINT
-from leap3d.train import train_model
+from leap3d.train import train_model, train
 
 
-def train_unet2d(experiment_name='unet2d_no_params', lr=1e-3):
-    hparams = {
-        'batch_size': 256,
-        'learning_rate': lr,
-        'num_workers': 1,
-        'max_epochs': 20,
-        'architecture': Architecture.LEAP3D_UNET2D,
-        'transforms': None,
-        'in_channels': 3,
-        'out_channels': 1,
-    }
-
-    # start a new wandb run to track this script
-    wandb_config = {
-        # set the wandb project where this run will be logged
-        'project': 'leap2d',
-        # name of the run on wandb
-        'name': experiment_name,
-        # track hyperparameters and run metadata
-        'config': hparams
-    }
-
-    logging.basicConfig(level=logging.DEBUG)
-
-
-    wandb_logger = WandbLogger(log_model="all", **wandb_config)
-    datamodule = LEAP3DDataModule(
-        DATA_DIR / "Params.npy", DATA_DIR / "Rough_coord.npz", DATA_DIR, DATASET_DIR,
-        batch_size=hparams['batch_size'],
-        train_cases=8, test_cases=[8,9],
-        window_size=1, window_step_size=1,
-        force_prepare=False,
-        num_workers=hparams['num_workers'],
-        transform=None,
+def train_unet2d(experiment_name='unet2d_no_params', *args, **kwargs):
+    train(
+        experiment_name=experiment_name,
+        train_transforms=None,
         extra_params_transform=None,
-        target_transform=None,
+        target_transforms=None,
+        transform_target_to_train=None,
+        extra_params=None,
+        **kwargs,
     )
-
-    model = hparams['architecture'].get_model(**hparams)
-    checkpoint_filename = wandb_config['name']
-    trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, checkpoint_filename=checkpoint_filename, **hparams)
-
-    trainer.test(model, datamodule=datamodule)
-
-    wandb.finish()
 
 
 if __name__ == '__main__':

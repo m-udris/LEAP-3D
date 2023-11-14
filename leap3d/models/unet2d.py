@@ -32,7 +32,7 @@ class Down2D(torch.nn.Module):
         super(Down2D, self).__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            Double2DConv(in_channels, out_channels, activation=nn.LeakyReLU)
+            Double2DConv(in_channels, out_channels, activation=activation)
         )
 
     def forward(self, x):
@@ -98,8 +98,9 @@ class UNet2D(torch.nn.Module):
         self.fcn_core = None
         if self.fcn_core_layers > 0:
             modules = []
+            x_elements_number = (64 // (2**self.depth))**2
             for _ in range(self.fcn_core_layers):
-                output_features = n_conv*(2**self.depth) * 4 * 4
+                output_features = n_conv*(2**self.depth) * x_elements_number
                 modules.append(nn.Linear(output_features + extra_params_number, output_features))
                 modules.append(activation())
             self.fcn_core = nn.Sequential(*modules)

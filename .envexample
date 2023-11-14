@@ -1,11 +1,14 @@
 # ===Data configuration===
 DATA_DIR=""
+DATASET_DIR=""
 
 # ===Scanning constants===
 # Units of measurement:
 #   Distance: meters
 #   Time: seconds
 #   Temperature: kelvins
+SCALE_DISTANCE_BY=1
+SCALE_TIME_BY=1
 
 # Interval between steps
 TIMESTEP_DURATION=2.e-5
@@ -20,3 +23,7 @@ Z_MAX=0
 SAFETY_OFFSET=0.0005
 # Material information
 MELTING_POINT=1723
+BASE_TEMPERATURE=300
+
+MAX_LASER_POWER=240
+MAX_LASER_RADIUS=0.00005

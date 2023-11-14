@@ -25,3 +25,5 @@ SAFETY_OFFSET = float(os.getenv("SAFETY_OFFSET"))
 
 MELTING_POINT = float(os.getenv("MELTING_POINT"))
 BASE_TEMPERATURE = float(os.getenv("BASE_TEMPERATURE"))
+MAX_LASER_POWER = float(os.getenv("MAX_LASER_POWER"))
+MAX_LASER_RADIUS = float(os.getenv("MAX_LASER_RADIUS"))

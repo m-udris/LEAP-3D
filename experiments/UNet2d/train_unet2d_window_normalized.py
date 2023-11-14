@@ -7,15 +7,15 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 import wandb
 
-from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, get_checkpoint_only_last_epoch_callback
-from leap3d.config import DATA_DIR, DATASET_DIR, MELTING_POINT, BASE_TEMPERATURE
+from leap3d.callbacks import get_checkpoint_only_last_epoch_callback, LogR2ScoreOverTimePlotCallback
 from leap3d.dataset import LEAP3DDataModule
 from leap3d.models import Architecture
+from leap3d.config import DATA_DIR, DATASET_DIR, MELTING_POINT, BASE_TEMPERATURE
 from leap3d.train import train_model
 from leap3d.transforms import get_target_to_train_transform, normalize_temperature_2d
 
 
-def train_unet2d_normalized(experiment_name='unet2d_normalized', lr=1e-3, target_max_temperature=10, max_epochs=5):
+def train_unet2d_window_normalized(experiment_name='unet2d_window_5_normalized', lr=1e-3, target_max_temperature=10, max_epochs=5):
     hparams = {
         'batch_size': 256,
         'learning_rate': lr,
@@ -25,6 +25,8 @@ def train_unet2d_normalized(experiment_name='unet2d_normalized', lr=1e-3, target
         'transforms': None,
         'in_channels': 3,
         'out_channels': 1,
+        'window_size': 5,
+        'window_step_size': 5,
         'activation': torch.nn.LeakyReLU,
         'target_max_temperature': target_max_temperature,
         'tags': ['test']
@@ -57,6 +59,7 @@ def train_unet2d_normalized(experiment_name='unet2d_normalized', lr=1e-3, target
 
     target_to_train_transform = get_target_to_train_transform(BASE_TEMPERATURE, MELTING_POINT, 0, target_max_temperature)
 
+
     logging.basicConfig(level=logging.DEBUG)
 
 
@@ -65,7 +68,7 @@ def train_unet2d_normalized(experiment_name='unet2d_normalized', lr=1e-3, target
         DATA_DIR / "Params.npy", DATA_DIR / "Rough_coord.npz", DATA_DIR, DATASET_DIR,
         batch_size=hparams['batch_size'],
         train_cases=8, test_cases=[8,9], eval_cases=[10],
-        window_size=1, window_step_size=1,
+        window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         force_prepare=False,
         num_workers=hparams['num_workers'],
         transform = train_transforms,
@@ -86,4 +89,4 @@ def train_unet2d_normalized(experiment_name='unet2d_normalized', lr=1e-3, target
 
 
 if __name__ == '__main__':
-    train_unet2d_normalized()
+    train_unet2d_window_normalized()

@@ -24,6 +24,7 @@ def train_unet2d_normalized_naive(experiment_name='unet2d_normalized_naive', lr=
         'transforms': None,
         'in_channels': 3,
         'out_channels': 1,
+        'activation': torch.nn.LeakyReLU,
     }
 
     # start a new wandb run to track this script
@@ -36,16 +37,17 @@ def train_unet2d_normalized_naive(experiment_name='unet2d_normalized_naive', lr=
         'config': hparams
     }
 
-    normalize_temperature = lambda x: normalize_temperature_2d(x, MELTING_POINT, base_temperature=0, inplace=True)
+    normalize_train_temperature = lambda x: normalize_temperature_2d(x, MELTING_POINT, base_temperature=0, inplace=True)
+    normalize_target_temperature = lambda x: normalize_temperature_2d(x, 100, base_temperature=0, inplace=True)
 
     train_transforms = transforms.Compose([
         torch.tensor,
-        transforms.Lambda(normalize_temperature)
+        transforms.Lambda(normalize_train_temperature)
     ])
 
     target_transforms = transforms.Compose([
         torch.tensor,
-        transforms.Lambda(normalize_temperature)
+        transforms.Lambda(normalize_target_temperature)
     ])
 
     logging.basicConfig(level=logging.DEBUG)
