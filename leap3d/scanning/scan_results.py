@@ -19,7 +19,7 @@ class ScanResults():
         self.melt_pool = self.results['Melt_pool']
         self.scale_melt_pool()
 
-        self.laser_data = self.results['Laser_information'].astype(np.float32)
+        self.laser_data = self.results['Laser_information']
         self.laser_data[:,0] *= self.scale_distance_by
         self.laser_data[:,1] *= self.scale_distance_by
         self.laser_data[:,3] *= self.scale_distance_by
