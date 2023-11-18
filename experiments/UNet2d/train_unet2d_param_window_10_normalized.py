@@ -1,12 +1,5 @@
 import logging
 
-import torch
-import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
-from torch.utils.data import DataLoader
-from torchvision.transforms import transforms
-import wandb
-
 from leap3d.callbacks import get_checkpoint_only_last_epoch_callback, LogR2ScoreOverTimePlotCallback
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture

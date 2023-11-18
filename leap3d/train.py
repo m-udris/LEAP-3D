@@ -109,7 +109,6 @@ def train(
         batch_size=hparams['batch_size'],
         train_cases=25, test_cases=[26, 27, 28, 29], eval_cases=[30],
         window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
-        force_prepare=False,
         num_workers=hparams['num_workers'],
         extra_params=extra_params,
         transform = train_transforms,
