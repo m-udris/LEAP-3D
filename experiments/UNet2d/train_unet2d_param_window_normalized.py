@@ -11,6 +11,7 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_5_
         window_size=window_size,
         window_step_size=window_step_size,
         max_epochs=max_epochs,
+        force_prepare=True,
         *args,
         **kwargs
     )
