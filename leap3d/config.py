@@ -8,6 +8,8 @@ load_dotenv()
 # Data configuration
 DATA_DIR = Path(os.getenv("DATA_DIR"))
 DATASET_DIR = Path(os.getenv("DATASET_DIR"))
+PARAMS_FILEPATH = Path(os.getenv("PARAMS_FILEPATH"))
+ROUGH_COORDS_FILEPATH = Path(os.getenv("ROUGH_COORDS_FILEPATH"))
 
 SCALE_DISTANCE_BY = float(os.getenv("SCALE_DISTANCE_BY", 1))
 SCALE_TIME_BY = float(os.getenv("SCALE_TIME_BY", 1))

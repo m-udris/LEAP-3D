@@ -12,7 +12,7 @@ from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, get_checkpoint_only
 
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
-from leap3d.config import DATA_DIR, DATASET_DIR, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE
+from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE
 from leap3d.models.unet2d import UNet2D
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform, get_target_to_train_transform
 
@@ -65,6 +65,7 @@ def train(
         wandb_tags: List[str] = ['test'],
         eval_steps: int = 10,
         eval_samples: int = 100,
+        force_prepare: bool = False,
         *args,
         **kwargs
 ):
@@ -86,7 +87,8 @@ def train(
         'target_max_temperature': target_max_temperature,
         'eval_steps': eval_steps,
         'eval_samples': eval_samples,
-        'tags': wandb_tags
+        'tags': wandb_tags,
+        'force_prepare': force_prepare
     }
 
     # start a new wandb run to track this script
@@ -103,9 +105,9 @@ def train(
     wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
     datamodule = LEAP3DDataModule(
-        DATA_DIR / "Params.npy", DATA_DIR / "Rough_coord.npz", DATA_DIR, DATASET_DIR,
+        PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, DATASET_DIR,
         batch_size=hparams['batch_size'],
-        train_cases=8, test_cases=[8,9], eval_cases=[10],
+        train_cases=25, test_cases=[26, 27, 28, 29], eval_cases=[30],
         window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         force_prepare=False,
         num_workers=hparams['num_workers'],
@@ -113,6 +115,7 @@ def train(
         transform = train_transforms,
         target_transform = target_transforms,
         extra_params_transform = extra_params_transform,
+        force_prepare=hparams['force_prepare']
     )
 
     model = hparams['architecture'].get_model(transform=transform_target_to_train, **hparams)

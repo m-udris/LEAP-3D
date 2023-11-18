@@ -1,6 +1,8 @@
 # ===Data configuration===
 DATA_DIR=""
 DATASET_DIR=""
+PARAMS_FILEPATH=""
+ROUGH_COORDS_FILEPATH=""
 
 # ===Scanning constants===
 # Units of measurement:
