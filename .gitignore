@@ -173,3 +173,5 @@ cython_debug/
 /wandb
 Notebooks/wandb
 wandb-metadata.json
+
+job_script.sh
