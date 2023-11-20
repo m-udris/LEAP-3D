@@ -12,7 +12,7 @@ from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, get_checkpoint_only
 
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
-from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE
+from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS
 from leap3d.models.unet2d import UNet2D
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform, get_target_to_train_transform
 
@@ -109,7 +109,7 @@ def train(
         batch_size=hparams['batch_size'],
         train_cases=25, test_cases=[26, 27, 28, 29], eval_cases=[30],
         window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
-        num_workers=hparams['num_workers'],
+        num_workers=NUM_WORKERS,
         extra_params=extra_params,
         transform = train_transforms,
         target_transform = target_transforms,
