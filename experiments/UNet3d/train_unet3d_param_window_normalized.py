@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import sys
 
 from leap3d.config import DATA_DIR, DATASET_DIR, MELTING_POINT, BASE_TEMPERATURE, MAX_LASER_POWER, MAX_LASER_RADIUS
@@ -24,4 +25,4 @@ def train_unet3d_param_window_normalized(experiment_name='unet3d_param_window_5_
 
 
 if __name__ == '__main__':
-    train_unet3d_param_window_normalized(dataset_dir=sys.argv[1])
+    train_unet3d_param_window_normalized(dataset_dir=Path(sys.argv[1]))
