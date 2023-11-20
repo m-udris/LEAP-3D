@@ -64,12 +64,12 @@ def prepare_raw_data(scan_parameters_filepath: str | Path, rough_coordinates_fil
 
     offset = 0
     with h5py.File(prepared_data_path, 'w') as f:
-        train_dset_shape = (1000, window_size, len(channels)+1, 64, 64, 16) if is_3d else (1000, window_size, len(channels)+1, 64, 64)
+        train_dset_shape = (1, window_size, len(channels)+1, 64, 64, 16) if is_3d else (1, window_size, len(channels)+1, 64, 64)
         train_dset_maxshape = (None, window_size, len(channels)+1, 64, 64, 16) if is_3d else (None, window_size, len(channels)+1, 64, 64)
         train_dset = f.create_dataset("train", train_dset_shape, maxshape=train_dset_maxshape, chunks=True)
         if extra_params is not None:
-            extra_train_dset = f.create_dataset("train_extra_params", (1000, window_size, len(extra_params)), maxshape=(None, window_size, len(extra_params)), chunks=True)
-        target_dset_shape = (1000, window_size, 1, 64, 64, 16) if is_3d else (1000, window_size, 1, 64, 64)
+            extra_train_dset = f.create_dataset("train_extra_params", (1, window_size, len(extra_params)), maxshape=(None, window_size, len(extra_params)), chunks=True)
+        target_dset_shape = (1, window_size, 1, 64, 64, 16) if is_3d else (1, window_size, 1, 64, 64)
         target_dset_maxshape = (None, window_size, 1, 64, 64, 16) if is_3d else (None, window_size, 1, 64, 64)
         target_dset = f.create_dataset("target", target_dset_shape, maxshape=target_dset_maxshape, chunks=True)
         scan_result_filepaths = get_scan_result_case_ids_and_filepaths(raw_data_dir, cases)
