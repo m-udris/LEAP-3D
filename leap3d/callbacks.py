@@ -35,9 +35,9 @@ class LogR2ScoreOverTimePlotCallback(Callback):
             next_x_temperature = None
             for i in range(self.steps):
                 x, extra_params, y = dataset[sample_idx + i]
-                x = torch.tensor(x[0]).clone().detach().to(model.device)
-                extra_params = torch.tensor(extra_params).clone().detach().to(model.device)
-                y = torch.tensor(y[0]).clone().detach().to(model.device)
+                x = x[0].clone().detach()
+                extra_params = extra_params.clone().detach()
+                y = y[0].clone().detach()
 
                 if next_x_temperature is not None:
                     x[-1, :, :] = next_x_temperature
