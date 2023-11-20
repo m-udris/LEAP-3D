@@ -6,8 +6,6 @@ from torch import nn
 from torch.nn import functional as F
 
 
-#! TODO: Replace to LeakyRELU
-
 class Double2DConv(torch.nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None, activation=nn.LeakyReLU ,**kwargs):
         super(Double2DConv, self).__init__()

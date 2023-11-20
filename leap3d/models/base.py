@@ -16,7 +16,7 @@ class BaseModel(pl.LightningModule):
         Neural network
 
     """
-    def __init__(self, net=None) -> None:
+    def __init__(self, net=None, *args, **kwargs) -> None:
         super().__init__()
         self.net = net
         self.save_hyperparameters(ignore=['net'])

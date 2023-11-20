@@ -32,4 +32,4 @@ MAX_LASER_RADIUS = float(os.getenv("MAX_LASER_RADIUS"))
 
 # Device settings
 NUM_WORKERS = int(os.getenv("NUM_WORKERS", 1))
-FORCE_PREPARE = bool(os.getenv("FORCE_PREPARE", False))
+FORCE_PREPARE = os.getenv("FORCE_PREPARE", False) == "True"
