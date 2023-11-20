@@ -5,7 +5,7 @@ from torch import nn
 import pytorch_lightning as pl
 from torchmetrics.regression import R2Score, MeanAbsoluteError
 
-from leap3d.models import BaseModel, CNN, UNet2D
+from leap3d.models import BaseModel, CNN, UNet2D, UNet3D
 
 
 class LEAP3D_CNN(BaseModel):
@@ -27,10 +27,9 @@ class LEAP3D_CNN(BaseModel):
         return loss
 
 
-class LEAP3D_UNet2D(BaseModel):
-    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
-        net = UNet2D(in_channels, out_channels, **kwargs)
-        super(LEAP3D_UNet2D, self).__init__(net)
+class LEAP3D_UNet(BaseModel):
+    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
+        super(LEAP3D_UNet, self).__init__(net, in_channels, out_channels, *args, **kwargs)
         self.transform = kwargs.get("transform", transform)
         self.loss_function = nn.functional.mse_loss
         self.is_teacher_forcing = False
@@ -41,7 +40,7 @@ class LEAP3D_UNet2D(BaseModel):
         if len(x_window.shape) == 4:
             return self.f_step_single(x_window, extra_params_window, y_window, train=train)
         if x_window.shape[1] == 1:
-            return self.f_step_single(x_window[:, 0, :, :, :], extra_params_window[:, 0, :], y_window[:, 0, :, :, :], train=train)
+            return self.f_step_single(x_window[:, 0], extra_params_window[:, 0], y_window[:, 0], train=train)
         return self.f_step_window(x_window, extra_params_window, y_window, train=train)
 
     def f_step_single(self, x, extra_params, y, train=False, log_loss=True):
@@ -65,16 +64,16 @@ class LEAP3D_UNet2D(BaseModel):
         outputs = []
 
         for i in range(x_window.shape[1]):
-            x = x_window[:, i, :, :, :]
-            extra_params = extra_params_window[:, i, :]
-            y = y_window[:, i, :, :, :]
+            x = x_window[:, i]
+            extra_params = extra_params_window[:, i]
+            y = y_window[:, i]
             if not self.is_teacher_forcing and predicted_x_temperature is not None:
                 x = x.clone()
-                x[:, -1, :, :] = predicted_x_temperature
+                x[:, -1] = predicted_x_temperature
             loss_single, y_hat = self.f_step_single(x, extra_params, y, log_loss=False)
             outputs.append(y_hat)
             loss += loss_single
-            predicted_x_temperature = self.get_predicted_temperature(x[:, -1, :, :], y_hat[:, 0, :, :])
+            predicted_x_temperature = self.get_predicted_temperature(x[:, -1], y_hat[:, 0])
 
         y_hat_window = torch.stack(outputs, dim=1)
         metrics_dict = {
@@ -94,3 +93,18 @@ class LEAP3D_UNet2D(BaseModel):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         return optimizer
+
+class LEAP3D_UNet2D(LEAP3D_UNet):
+    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
+        net = UNet2D(in_channels, out_channels, **kwargs)
+        super(LEAP3D_UNet2D, self).__init__(net, in_channels, out_channels, lr=lr, transform=transform, *args, **kwargs)
+        # self.transform = kwargs.get("transform", transform)
+        # self.loss_function = nn.functional.mse_loss
+        self.is_teacher_forcing = False
+        # self.lr = lr
+
+class LEAP3D_UNet3D(LEAP3D_UNet):
+    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
+        net = UNet3D(in_channels, out_channels, **kwargs)
+        super(LEAP3D_UNet3D, self).__init__(net, in_channels, out_channels, lr=lr, transform=transform, *args, **kwargs)
+        self.is_teacher_forcing = False

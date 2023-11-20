@@ -14,16 +14,21 @@ from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.models.unet2d import UNet2D
-from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform, get_target_to_train_transform
+from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
 DEFAULT_EXTRA_PARAMS = [ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS]
 
 IS_NAIVE_NORMALIZATION = False
 TEMPERATURE_MIN = BASE_TEMPERATURE if not IS_NAIVE_NORMALIZATION else 0
 
-DEFAULT_TRAIN_TRANSFORM = transforms.Compose([
+DEFAULT_TRAIN_TRANSFORM_2D = transforms.Compose([
         torch.tensor,
         transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=TEMPERATURE_MIN, inplace=True))
+    ])
+
+DEFAULT_TRAIN_TRANSFORM_3D = transforms.Compose([
+        torch.tensor,
+        transforms.Lambda(lambda x: normalize_temperature_3d(x, melting_point=MELTING_POINT, base_temperature=TEMPERATURE_MIN, inplace=True))
     ])
 
 DEFAULT_EXTRA_PARAMS_TRANSFORM = transforms.Compose([
@@ -33,9 +38,14 @@ DEFAULT_EXTRA_PARAMS_TRANSFORM = transforms.Compose([
         transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, MAX_LASER_RADIUS, inplace=True))
     ])
 
-DEFAULT_TARGET_TRANSFORM = transforms.Compose([
+DEFAULT_TARGET_TRANSFORM_2D = transforms.Compose([
         torch.tensor,
         transforms.Lambda(lambda x: normalize_temperature_2d(x, 10, inplace=True))
+    ])
+
+DEFAULT_TARGET_TRANSFORM_3D = transforms.Compose([
+        torch.tensor,
+        transforms.Lambda(lambda x: normalize_temperature_3d(x, 10, inplace=True))
     ])
 
 DEFAULT_TARGET_TO_TRAIN_TRANSFORM = transforms.Compose([
@@ -45,14 +55,15 @@ DEFAULT_TARGET_TO_TRAIN_TRANSFORM = transforms.Compose([
 
 def train(
         experiment_name: str,
+        project_name: str = 'leap2d',
         batch_size: int = 256,
         lr: float = 1e-3,
         num_workers: int = 1,
         max_epochs: int = 5,
-        architecture: Architecture = Architecture.LEAP3D_UNET2D,
-        train_transforms: transforms.Compose = DEFAULT_TRAIN_TRANSFORM,
+        architecture: Architecture = 'default',
+        train_transforms: transforms.Compose = 'default',
         extra_params_transform: transforms.Compose = DEFAULT_EXTRA_PARAMS_TRANSFORM,
-        target_transforms: transforms.Compose = DEFAULT_TARGET_TRANSFORM,
+        target_transforms: transforms.Compose = 'default',
         transform_target_to_train: transforms.Compose = DEFAULT_TARGET_TO_TRAIN_TRANSFORM,
         in_channels: int = 3,
         out_channels: int = 1,
@@ -66,9 +77,19 @@ def train(
         eval_steps: int = 10,
         eval_samples: int = 100,
         force_prepare: bool = FORCE_PREPARE,
+        is_3d: bool = False,
+        train_cases: int | List[int] = 18,
+        test_cases: int | List[int] = [18, 19],
+        eval_cases: int | List[int] = [20],
         *args,
         **kwargs
 ):
+    if train_transforms == 'default':
+        train_transforms = DEFAULT_TARGET_TRANSFORM_3D if is_3d else DEFAULT_TARGET_TRANSFORM_2D
+    if target_transforms == 'default':
+        target_transforms = DEFAULT_TRAIN_TRANSFORM_3D if is_3d else DEFAULT_TRAIN_TRANSFORM_2D
+    if architecture == 'default':
+        architecture = Architecture.LEAP3D_UNET3D if is_3d else Architecture.LEAP3D_UNET2D
     hparams = {
         'batch_size': batch_size,
         'lr': lr,
@@ -88,13 +109,14 @@ def train(
         'eval_steps': eval_steps,
         'eval_samples': eval_samples,
         'tags': wandb_tags,
-        'force_prepare': force_prepare
+        'force_prepare': force_prepare,
+        'is_3d': is_3d
     }
 
     # start a new wandb run to track this script
     wandb_config = {
         # set the wandb project where this run will be logged
-        'project': 'leap2d',
+        'project': project_name,
         # name of the run on wandb
         'name': experiment_name,
         # track hyperparameters and run metadata
@@ -105,9 +127,10 @@ def train(
     wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
     datamodule = LEAP3DDataModule(
-        PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, DATASET_DIR,
+        PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, kwargs.get('dataset_dir', DATASET_DIR),
+        is_3d=is_3d,
         batch_size=hparams['batch_size'],
-        train_cases=17, test_cases=[18,19], eval_cases=[20],
+        train_cases=train_cases, test_cases=test_cases, eval_cases=eval_cases,
         window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         num_workers=NUM_WORKERS,
         extra_params=extra_params,

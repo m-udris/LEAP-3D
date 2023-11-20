@@ -28,10 +28,10 @@ def get_next_laser_position(laser_data, case_params):
     return new_laser_x, new_laser_y
 
 
-def convert_laser_position_to_grid(laser_x, laser_y, rough_coordinates, dims=2):
-    if dims == 2:
-        return convert_laser_position_to_grid_2d(laser_x, laser_y, rough_coordinates)
-    raise NotImplementedError()
+def convert_laser_position_to_grid(laser_x, laser_y, rough_coordinates, is_3d=False):
+    if is_3d:
+        return convert_laser_position_to_grid_3d(laser_x, laser_y, rough_coordinates)
+    return convert_laser_position_to_grid_2d(laser_x, laser_y, rough_coordinates)
 
 
 def convert_laser_position_to_grid_2d(laser_x, laser_y, rough_coordinates):
@@ -65,3 +65,9 @@ def convert_laser_position_to_grid_2d(laser_x, laser_y, rough_coordinates):
     laser_grid[x_index+1][y_index+1] = get_overlap(laser_x, laser_y, x1, y1, x_step, y_step)
 
     return laser_grid
+
+def convert_laser_position_to_grid_3d(laser_x, laser_y, rough_coordinates):
+    top_layer_grid = convert_laser_position_to_grid_2d(laser_x, laser_y, rough_coordinates)
+    grid = np.zeros_like(rough_coordinates['x_rough'])
+    grid[:, :, -1] = top_layer_grid
+    return grid

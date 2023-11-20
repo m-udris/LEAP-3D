@@ -24,6 +24,25 @@ def normalize_temperature_2d(x, melting_point, base_temperature=0, temperature_c
 
     raise TransformIncorrectShapeError()
 
+def normalize_temperature_3d(x, melting_point, base_temperature=0, temperature_channel_index=-1, inplace=False, inverse=False):
+    if not inplace:
+        x = x.clone()
+
+    # If no channel
+    if len(x.shape) == 3:
+        x = _normalize_min_max(x, base_temperature, melting_point, inverse=inverse)
+        return x
+    # If no window
+    if len(x.shape) == 4:
+        x[temperature_channel_index] = _normalize_min_max(x[temperature_channel_index], base_temperature, melting_point, inverse=inverse)
+        return x
+    # If window
+    if len(x.shape) == 5:
+        x[:, temperature_channel_index] = _normalize_min_max(x[:, temperature_channel_index], base_temperature, melting_point, inverse=inverse)
+        return x
+
+    raise TransformIncorrectShapeError()
+
 
 def get_target_to_train_transform(train_min_value, train_max_value, target_min_value, target_max_value, simplified=True):
     t1 = (target_min_value - train_min_value) / (target_max_value - target_min_value)
