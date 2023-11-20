@@ -12,7 +12,7 @@ from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, get_checkpoint_only
 
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
-from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS
+from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.models.unet2d import UNet2D
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform, get_target_to_train_transform
 
@@ -65,7 +65,7 @@ def train(
         wandb_tags: List[str] = ['test'],
         eval_steps: int = 10,
         eval_samples: int = 100,
-        force_prepare: bool = False,
+        force_prepare: bool = FORCE_PREPARE,
         *args,
         **kwargs
 ):
