@@ -175,3 +175,4 @@ Notebooks/wandb
 wandb-metadata.json
 
 job_script.sh
+Plots/*
