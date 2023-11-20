@@ -15,7 +15,7 @@ def train_unet3d_param_window_normalized(experiment_name='unet3d_param_window_5_
         window_step_size=window_step_size,
         max_epochs=max_epochs,
         is_3d=True,
-        batch_size=128,
+        batch_size=64,
         *args,
         **kwargs
     )
