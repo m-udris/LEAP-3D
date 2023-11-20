@@ -107,7 +107,7 @@ def train(
     datamodule = LEAP3DDataModule(
         PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, DATASET_DIR,
         batch_size=hparams['batch_size'],
-        train_cases=25, test_cases=[26, 27, 28, 29], eval_cases=[30],
+        train_cases=17, test_cases=[18,19], eval_cases=[20],
         window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         num_workers=NUM_WORKERS,
         extra_params=extra_params,
