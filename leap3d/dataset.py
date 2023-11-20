@@ -315,16 +315,16 @@ class LEAP3DDataModule(pl.LightningDataModule):
                                        transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
 
     def train_dataloader(self):
-        return DataLoader(self.leap_train, batch_size=self.batch_size)
+        return DataLoader(self.leap_train, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.leap_val, batch_size=self.batch_size)
+        return DataLoader(self.leap_val, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.leap_test, batch_size=self.batch_size)
+        return DataLoader(self.leap_test, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def eval_dataloader(self):
-        return DataLoader(self.leap_eval, batch_size=1, shuffle=False)
+        return DataLoader(self.leap_eval, batch_size=1, shuffle=False, num_workers=self.num_workers)
 
     def teardown(self, stage: str):
         pass
