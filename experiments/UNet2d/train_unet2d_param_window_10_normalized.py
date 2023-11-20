@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from leap3d.callbacks import get_checkpoint_only_last_epoch_callback, LogR2ScoreOverTimePlotCallback
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
@@ -19,4 +20,4 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_10
 
 
 if __name__ == '__main__':
-    train_unet2d_param_window_normalized()
+    train_unet2d_param_window_normalized(dataset_dir=sys.argv[1])
