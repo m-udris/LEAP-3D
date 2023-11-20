@@ -85,9 +85,9 @@ def train(
         **kwargs
 ):
     if train_transforms == 'default':
-        train_transforms = DEFAULT_TARGET_TRANSFORM_3D if is_3d else DEFAULT_TARGET_TRANSFORM_2D
+        train_transforms = DEFAULT_TRAIN_TRANSFORM_3D if is_3d else DEFAULT_TRAIN_TRANSFORM_2D
     if target_transforms == 'default':
-        target_transforms = DEFAULT_TRAIN_TRANSFORM_3D if is_3d else DEFAULT_TRAIN_TRANSFORM_2D
+        target_transforms = DEFAULT_TARGET_TRANSFORM_3D if is_3d else DEFAULT_TARGET_TRANSFORM_2D
     if architecture == 'default':
         architecture = Architecture.LEAP3D_UNET3D if is_3d else Architecture.LEAP3D_UNET2D
     hparams = {
