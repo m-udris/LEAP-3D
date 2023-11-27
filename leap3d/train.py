@@ -150,7 +150,7 @@ def train(
     callbacks = [
         get_checkpoint_only_last_epoch_callback(checkpoint_filename),
         LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
-        PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=100)
+        PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=10)
     ]
 
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
