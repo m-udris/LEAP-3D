@@ -10,12 +10,13 @@ from leap3d.train import train_model, train
 from leap3d.transforms import get_target_to_train_transform, normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform
 
 
-def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_10_normalized_100_epochs', window_size=10, window_step_size=10, max_epochs=100, *args, **kwargs):
+def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_10_normalized_lr=1e-4', window_size=10, window_step_size=10, max_epochs=100, *args, **kwargs):
     train(
         experiment_name=experiment_name,
         window_size=window_size,
         window_step_size=window_step_size,
         max_epochs=max_epochs,
+        lr=1e-4,
         *args,
         **kwargs
     )
