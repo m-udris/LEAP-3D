@@ -262,7 +262,7 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
     ims = []
 
     for sample_idx in range(0, len(dataset) - steps, (len(dataset) - steps) // samples):
-        model_input = None
+        model_input_temperature = None
         for i in range(sample_idx, sample_idx + steps):
             x_data, extra_params, _ = dataset[i]
             temperature_t0 = dataset.x_train[i][0, -1, :, :]
@@ -274,12 +274,14 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
             im_1_1 = plot_top_layer_temperature(axes[1, 1], temperature_t1, case_params)
 
             # plot model output temp diff and temp
-            model_input = x_data.to(model.device) if model_input is None else model_input
+            model_input = x_data.to(model.device)
+
+            if model_input_temperature is not None:
+                model_input[0, -1] = model_input_temperature
             model_output_diff_normalized = model(model_input, extra_params=extra_params.to(model.device))[0, 0, :, :]
             model_output_diff = model_output_diff_normalized.to('cpu') * 10
             model_output_temp = np.add(temperature_t0, model_output_diff)
-            model_input = x_data.to(model.device)
-            model_input[0, -1] = model.get_predicted_temperature(x_data[0, -1], model_output_diff[0, :, :])
+            model_input_temperature = model.get_predicted_temperature(model_input[0, -1], model_output_diff_normalized)
 
             im_0_2 = plot_top_layer_temperature(axes[0, 2], model_output_diff, case_params)
             im_1_2 = plot_top_layer_temperature(axes[1, 2], model_output_temp, case_params)
