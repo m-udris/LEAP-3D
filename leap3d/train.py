@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import List
 
 import torch
@@ -8,12 +9,13 @@ from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 import wandb
-from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, get_checkpoint_only_last_epoch_callback
+from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotTopLayerTemperatureCallback, get_checkpoint_only_last_epoch_callback
 
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.models.unet2d import UNet2D
+from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
 DEFAULT_EXTRA_PARAMS = [ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS]
@@ -140,11 +142,16 @@ def train(
         force_prepare=hparams['force_prepare']
     )
 
+    plot_dir = Path("./plots/")
+    scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 20)
+
     model = hparams['architecture'].get_model(transform=transform_target_to_train, **hparams)
     checkpoint_filename = wandb_config['name']
     callbacks = [
         get_checkpoint_only_last_epoch_callback(checkpoint_filename),
-        LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples)]
+        LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
+        PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=100)
+    ]
 
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 

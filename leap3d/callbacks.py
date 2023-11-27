@@ -1,9 +1,13 @@
+from pathlib import Path
 import lightning.pytorch as pl
+from matplotlib import animation
 import torch
 from torchmetrics.functional import r2_score
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 import wandb
+
+from leap3d.plotting import plot_model_top_layer_temperature_comparison
 
 
 class LogR2ScoreOverTimePlotCallback(Callback):
@@ -61,3 +65,25 @@ def get_checkpoint_only_last_epoch_callback(checkpoint_filename):
         save_top_k=1
     )
     return checkpoint_callback
+
+
+class PlotTopLayerTemperatureCallback(Callback):
+    def __init__(self, scan_parameters, plot_dir, steps=10, samples=100):
+        super().__init__()
+        self.scan_parameters = scan_parameters
+        self.plot_dir = Path(plot_dir)
+        self.steps = steps
+        self.samples = samples
+
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        self.log_plot_top_layer_temperature(trainer, pl_module)
+
+    def log_plot_top_layer_temperature(self, trainer, model):
+        evaluation_dataset = trainer.datamodule.leap_eval
+        current_epoch = trainer.current_epoch
+        fig, axes, ims = plot_model_top_layer_temperature_comparison(self.scan_parameters, model, evaluation_dataset, self.steps, self.samples)
+
+        ani = animation.ArtistAnimation(fig, ims, repeat=True, interval=500, blit=True, repeat_delay=1000)
+        animation_filepath = self.plot_dir / f"top_layer_temperature_after_epoch_{current_epoch}.gif"
+        ani.save(animation_filepath, fps=2, progress_callback=print)
+        wandb.log({"video": wandb.Video(str(animation_filepath), fps=4, format="gif")})

@@ -76,8 +76,6 @@ def prepare_raw_data(scan_parameters_filepath: str | Path, rough_coordinates_fil
         for case_id, scan_result_filepath in scan_result_filepaths:
             scan_parameters = ScanParameters(params_file, rough_coordinates, case_id)
 
-            # training_points, extra_train_points, targets = prepare_scan_results(scan_result_filepath, scan_parameters,
-            #                                                               window_size=window_size, window_step_size=window_step_size, channels=channels, extra_params=extra_params, case_id=case_id, is_3d=is_3d)
             data_generator = prepare_scan_results(scan_result_filepath, scan_parameters,
                                                                           window_size=window_size, window_step_size=window_step_size, channels=channels, extra_params=extra_params, case_id=case_id, is_3d=is_3d)
             train_buffer, extra_train_buffer, target_buffer = [], [], []
@@ -94,20 +92,6 @@ def prepare_raw_data(scan_parameters_filepath: str | Path, rough_coordinates_fil
                 write_to_datasets(train_dset, extra_train_dset if extra_params is not None else None, target_dset, train_buffer, extra_train_buffer, target_buffer, offset)
                 offset += len(train_buffer)
                 train_buffer, extra_train_buffer, target_buffer = [], [], []
-
-            # number_of_points = len(training_points)
-            # total_number_of_points = number_of_points + offset
-            # resize_datasets(train_dset, extra_train_dset if extra_params is not None else None, target_dset, total_number_of_points)
-
-            # train_dset[offset:] = training_points
-            # train_dset.flush()
-            # if extra_params is not None:
-            #     extra_train_dset[offset:] = extra_train_points
-            #     extra_train_dset.flush()
-            # target_dset[offset:] = targets
-            # target_dset.flush()
-
-            # offset += number_of_points
 
 
 def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, window_step_size=1, channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[],case_id=None, is_3d=False):
@@ -179,15 +163,6 @@ def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, w
             targets_window.append(targets_channels)
 
         yield np.array(training_points_window), np.array(extra_params_window), np.array(targets_window)
-        # training_points.append(np.array(training_points_window))
-        # extra_params_points.append(np.array(extra_params_window))
-        # targets.append(targets_window)
-
-    # training_points = np.array(training_points)
-    # extra_params_points = np.array(extra_params_points)
-    # targets = np.array(targets)
-
-    # return training_points, extra_params_points, targets
 
 
 def get_scan_result_case_ids_and_filepaths(data_dir: str="path/to/dir", cases: int | List=None):

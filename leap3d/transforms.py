@@ -2,6 +2,11 @@ import torch
 
 
 class TransformIncorrectShapeError(Exception):
+    def __init__(self, shape):
+        self.shape = shape
+
+    def __repr__(self):
+        return f'TransformIncorrectShapeError: {self.shape}'
     pass
 
 
@@ -22,7 +27,7 @@ def normalize_temperature_2d(x, melting_point, base_temperature=0, temperature_c
         x[:, temperature_channel_index, :, :] = _normalize_min_max(x[:, temperature_channel_index, :, :], base_temperature, melting_point, inverse=inverse)
         return x
 
-    raise TransformIncorrectShapeError()
+    raise TransformIncorrectShapeError(x.shape)
 
 def normalize_temperature_3d(x, melting_point, base_temperature=0, temperature_channel_index=-1, inplace=False, inverse=False):
     if not inplace:
@@ -41,7 +46,7 @@ def normalize_temperature_3d(x, melting_point, base_temperature=0, temperature_c
         x[:, temperature_channel_index] = _normalize_min_max(x[:, temperature_channel_index], base_temperature, melting_point, inverse=inverse)
         return x
 
-    raise TransformIncorrectShapeError()
+    raise TransformIncorrectShapeError(x.shape)
 
 
 def get_target_to_train_transform(train_min_value, train_max_value, target_min_value, target_max_value, simplified=True):
@@ -92,7 +97,7 @@ def normalize_extra_param(x, index, min_value=0, max_value=1, inplace=False, inv
         x[:, index] = _normalize_min_max(x[:, index], min_value, max_value, inverse=inverse)
         return x
 
-    raise TransformIncorrectShapeError()
+    raise TransformIncorrectShapeError(x.shape)
 
 
 def cos_transform(x, inverse=False):
@@ -114,4 +119,4 @@ def scanning_angle_cos_transform(x, index, inplace=False, inverse=False):
         x[:, index] = cos_transform(x[:, index], inverse=inverse)
         return x
 
-    raise TransformIncorrectShapeError()
+    raise TransformIncorrectShapeError(x.shape)

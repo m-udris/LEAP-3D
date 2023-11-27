@@ -104,7 +104,7 @@ def plot_top_layer_temperature_at_timestep(ax, case_results, case_params, timest
     return plot_top_layer_temperature(ax, temperature, case_params, show_only_melt)
 
 
-def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=False):
+def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=False, vmax=None):
     X, Y = case_params.get_top_layer_coordinates()
 
     melting_point = case_params.melting_point
@@ -112,7 +112,7 @@ def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=Fals
         temperature[temperature < melting_point] = 0
         temperature[temperature >= melting_point] = 1
 
-    vmax = 1 if show_only_melt else melting_point
+    vmax = vmax if vmax is not None else 1 if show_only_melt else melting_point
     im = ax.pcolormesh(X, Y, temperature, animated=True, vmax=vmax)
     return im
 
@@ -183,9 +183,6 @@ def animate_cross_secion_and_top_player(case_results, case_params, frames=None):
                                         show_only_melt=False)
     ims_0 = [animate_partial(timestep=i) for i in range(0, frames, 5)]
 
-
-
-
     ax_1.set_xlim(x_min, x_max)
     ax_1.set_ylim(y_min, y_max)
     ax_1.set_aspect('equal', adjustable='box')
@@ -222,3 +219,71 @@ def plot_dataset_histograms(dataset):
     ax1.hist(z_scores_target, bins=50)
     ax1.set(title='Target Temperature Diff Frequency Histogram', ylabel='Frequency')
     return fig, (ax0, ax1)
+
+def plot_model_top_layer_temperature_comparison_at_timestep(axes, case_params, model, input, target, extra_params=None):
+    # input temp
+    input_temp = input[0, -1, :, :]
+    # input_temp = get untransformed
+    im_0_0 = plot_top_layer_temperature(axes[0, 0], input_temp, case_params)
+    # target temp diff and temp
+    target_temp_diff = target[0, 0, :, :]
+    # target_temp_diff = get untransformed
+    im_0_1 = plot_top_layer_temperature(axes[0, 1], target_temp_diff, case_params)
+
+    target_temp = input_temp + target_temp_diff
+    im_1_1 = plot_top_layer_temperature(axes[1, 1], target_temp, case_params)
+
+    # plot model output temp diff and temp
+    model_output_diff = model(input, extra_params=extra_params)[0, 0, :, :]
+    im_0_2 = plot_top_layer_temperature(axes[0, 2], model_output_diff, case_params)
+
+    model_output_temp = input_temp + model_output_diff
+    im_1_2 = plot_top_layer_temperature(axes[1, 2], model_output_temp, case_params)
+
+    predicted_diff = model_output_diff - target_temp_diff
+    im_1_0 = plot_top_layer_temperature(axes[1, 0], predicted_diff, case_params)
+
+    return [im_0_0, im_0_1, im_0_2, im_1_0, im_1_1, im_1_2]
+
+
+def plot_model_top_layer_temperature_comparison(case_params, model, dataset, steps=10, samples=100):
+    fig, axes = plt.subplots(ncols=3, nrows=2)
+    fig.set_size_inches(15, 10)
+    axes[0, 0].set_title('Input Temperature')
+    axes[0, 1].set_title('Target Temperature Diff')
+    axes[0, 2].set_title('Model Output Temperature Diff')
+    axes[1, 0].set_title('Predicted Temperature Diff')
+    axes[1, 1].set_title('Target Temperature')
+    axes[1, 2].set_title('Model Output Temperature')
+
+    for ax in axes.flatten():
+        ax.set_aspect('equal', adjustable='box')
+
+    ims = []
+
+    for sample_idx in range(0, len(dataset) - steps, (len(dataset) - steps) // samples):
+        for i in range(sample_idx, sample_idx + steps):
+            x_data, extra_params, _ = dataset[i]
+            temperature_t0 = dataset.x_train[i][0, -1, :, :]
+            temperature_diff_t1 = dataset.targets[i][0, 0, :, :]
+
+            im_0_0 = plot_top_layer_temperature(axes[0, 0], temperature_t0, case_params)
+            im_0_1 = plot_top_layer_temperature(axes[0, 1], temperature_diff_t1, case_params)
+            temperature_t1 = temperature_t0 + temperature_diff_t1
+            im_1_1 = plot_top_layer_temperature(axes[1, 1], temperature_t1, case_params)
+
+            # plot model output temp diff and temp
+            x_data = x_data.to(model.device)
+            model_output_diff = model(x_data, extra_params=extra_params.to(model.device))[0, 0, :, :].to('cpu') * 10
+            model_output_temp = np.add(temperature_t0, model_output_diff)
+
+            im_0_2 = plot_top_layer_temperature(axes[0, 2], model_output_diff, case_params)
+            im_1_2 = plot_top_layer_temperature(axes[1, 2], model_output_temp, case_params)
+
+            predicted_diff = np.abs(model_output_diff - temperature_t1)
+            im_1_0 = plot_top_layer_temperature(axes[1, 0], predicted_diff, case_params)
+
+            ims.append([im_0_0, im_0_1, im_0_2, im_1_0, im_1_1, im_1_2])
+    fig.colorbar(ims[0][0], ax=axes[0, 0])
+
+    return fig, axes, ims
