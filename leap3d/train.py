@@ -125,7 +125,7 @@ def train(
         'config': hparams
     }
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
     datamodule = LEAP3DDataModule(
