@@ -280,7 +280,7 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
             im_0_2 = plot_top_layer_temperature(axes[0, 2], model_output_diff, case_params)
             im_1_2 = plot_top_layer_temperature(axes[1, 2], model_output_temp, case_params)
 
-            predicted_diff = np.abs(model_output_diff - temperature_t1)
+            predicted_diff = np.abs(model_output_diff - temperature_diff_t1)
             im_1_0 = plot_top_layer_temperature(axes[1, 0], predicted_diff, case_params)
 
             ims.append([im_0_0, im_0_1, im_0_2, im_1_0, im_1_1, im_1_2])
