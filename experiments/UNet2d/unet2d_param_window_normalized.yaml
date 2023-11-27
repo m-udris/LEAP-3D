@@ -1,0 +1,24 @@
+architecture: 'unet2d'
+experiment_name': 'unet2d_param_window_normalized'
+window_size: 5
+window_step_size: 5
+fcn_core_layers: 1
+extra_parameters:
+  - 'scanning_angle'
+  - 'laser_power'
+  - 'laser_radius'
+train_transform:
+  - name: 'tensor'
+  - name: 'normalize_temperature'
+    params:
+      min: 'base'
+      max: 'melting_point'
+target_transform:
+  - name: 'tensor'
+  - name: 'normalize_temperature'
+    params:
+      min: 0
+      max: 10
+target_to_train_transform:
+  - name: 'target_to_train'
+batch_size: 256

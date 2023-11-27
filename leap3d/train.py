@@ -58,7 +58,6 @@ def train(
         project_name: str = 'leap2d',
         batch_size: int = 256,
         lr: float = 1e-3,
-        num_workers: int = 1,
         max_epochs: int = 5,
         architecture: Architecture = 'default',
         train_transforms: transforms.Compose = 'default',
@@ -93,7 +92,7 @@ def train(
     hparams = {
         'batch_size': batch_size,
         'lr': lr,
-        'num_workers': num_workers,
+        'num_workers': NUM_WORKERS,
         'max_epochs': max_epochs,
         'architecture': architecture,
         'transforms': 'default',

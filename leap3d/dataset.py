@@ -18,14 +18,14 @@ from leap3d.laser import convert_laser_position_to_grid
 
 
 class Channel(Enum):
-    LASER_POSITION = 1
-    TEMPERATURE = 2
+    LASER_POSITION = 'laser_position'
+    TEMPERATURE = 'temperature'
 
 
 class ExtraParam(Enum):
-    SCANNING_ANGLE = 1
-    LASER_POWER = 2
-    LASER_RADIUS = 3
+    SCANNING_ANGLE = 'scanning_angle'
+    LASER_POWER = 'laser_power'
+    LASER_RADIUS = 'laser_radius'
 
 
 def check_if_prepared_data_exists(filepath: str| Path):
