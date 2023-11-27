@@ -70,7 +70,7 @@ class ScanResults():
 
         return coordinates, temperatures
 
-    def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters ,timestep: int):
+    def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters, timestep: int):
         temperature = self.get_rough_temperatures_at_timestep(timestep).flatten()
         melt_pool_coordinates, melt_pool_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
 
