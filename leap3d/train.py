@@ -83,6 +83,7 @@ def train(
         train_cases: int | List[int] = 18,
         test_cases: int | List[int] = [18, 19],
         eval_cases: int | List[int] = [20],
+        no_callbacks: bool = False,
         *args,
         **kwargs
 ):
@@ -148,10 +149,13 @@ def train(
     model = hparams['architecture'].get_model(transform=transform_target_to_train, **hparams)
     checkpoint_filename = wandb_config['name']
     callbacks = [
-        get_checkpoint_only_last_epoch_callback(checkpoint_filename),
-        LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
-        PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=20)
+        get_checkpoint_only_last_epoch_callback(checkpoint_filename)
     ]
+    if not no_callbacks:
+        callbacks += [
+            LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
+            PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=20)
+        ]
 
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 
