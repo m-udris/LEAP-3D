@@ -14,7 +14,8 @@ case_params = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, case_index=
 
 plot_dir = Path("./plots/")
 dataset_dir = Path(sys.argv[1])
-checkpoint_filepath = "./model_checkpoints/unet2d_param_window_10_normalized_no_callbacks.ckpt"
+
+checkpoint_filepath = Path(sys.argv[2])
 model = LEAP3D_UNet2D.load_from_checkpoint(checkpoint_filepath)
 model.eval()
 
