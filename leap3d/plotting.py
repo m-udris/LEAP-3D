@@ -104,7 +104,7 @@ def plot_top_layer_temperature_at_timestep(ax, case_results, case_params, timest
     return plot_top_layer_temperature(ax, temperature, case_params, show_only_melt)
 
 
-def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=False, vmax=None):
+def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=False, vmin=None, vmax=None, cmap=None):
     X, Y = case_params.get_top_layer_coordinates()
 
     melting_point = case_params.melting_point
@@ -113,7 +113,7 @@ def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=Fals
         temperature[temperature >= melting_point] = 1
 
     vmax = vmax if vmax is not None else 1 if show_only_melt else melting_point
-    im = ax.pcolormesh(X, Y, temperature, animated=True, vmax=vmax)
+    im = ax.pcolormesh(X, Y, temperature, animated=True, vmin=vmin, vmax=vmax, cmap=cmap)
     return im
 
 
@@ -249,12 +249,12 @@ def plot_model_top_layer_temperature_comparison_at_timestep(axes, case_params, m
 def plot_model_top_layer_temperature_comparison(case_params, model, dataset, steps=10, samples=100):
     fig, axes = plt.subplots(ncols=3, nrows=2)
     fig.set_size_inches(15, 10)
-    axes[0, 0].set_title('Input Temperature')
-    axes[0, 1].set_title('Target Temperature Diff')
-    axes[0, 2].set_title('Model Output Temperature Diff')
-    axes[1, 0].set_title('Predicted Temperature Diff')
-    axes[1, 1].set_title('Target Temperature')
-    axes[1, 2].set_title('Model Output Temperature')
+    axes[0, 0].set_title('GT Temperature Diff')
+    axes[0, 1].set_title('P Temperature Diff')
+    axes[0, 2].set_title('Temperature Diff Error')
+    axes[1, 0].set_title('GT Temperature')
+    axes[1, 1].set_title('P Temperature')
+    axes[1, 2].set_title('Temperature Error')
 
     for ax in axes.flatten():
         ax.set_aspect('equal', adjustable='box')
@@ -262,34 +262,42 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
     ims = []
 
     for sample_idx in range(0, len(dataset) - steps, (len(dataset) - steps) // samples):
-        model_input_temperature = None
+        temperature_p = None
         for i in range(sample_idx, sample_idx + steps):
+            print(i, end='\r')
             x_data, extra_params, _ = dataset[i]
-            temperature_t0 = dataset.x_train[i][0, -1, :, :]
-            temperature_diff_t1 = dataset.targets[i][0, 0, :, :]
+            starting_temperature = dataset.x_train[i][0, -1, :, :]
+            temperature_diff_gt = dataset.targets[i][0, 0, :, :]
 
-            im_0_0 = plot_top_layer_temperature(axes[0, 0], temperature_t0, case_params)
-            im_0_1 = plot_top_layer_temperature(axes[0, 1], temperature_diff_t1, case_params)
-            temperature_t1 = temperature_t0 + temperature_diff_t1
-            im_1_1 = plot_top_layer_temperature(axes[1, 1], temperature_t1, case_params)
-
+            temperature_gt = starting_temperature + temperature_diff_gt
             # plot model output temp diff and temp
             model_input = x_data.to(model.device)
 
-            if model_input_temperature is not None:
-                model_input[0, -1] = model_input_temperature
-            model_output_diff_normalized = model(model_input, extra_params=extra_params.to(model.device))[0, 0, :, :]
-            model_output_diff = model_output_diff_normalized.to('cpu') * 10
-            model_output_temp = np.add(temperature_t0, model_output_diff)
-            model_input_temperature = model.get_predicted_temperature(model_input[0, -1], model_output_diff_normalized)
+            if temperature_p is None:
+                temperature_p = starting_temperature
+            model_input[0, -1] = dataset.transform(temperature_p)
+            temperature_diff_p_normalized = model(model_input, extra_params=extra_params.to(model.device))[0, 0, :, :]
+            temperature_diff_p = dataset.unnormalize_target(temperature_diff_p_normalized.to('cpu')).numpy()
 
-            im_0_2 = plot_top_layer_temperature(axes[0, 2], model_output_diff, case_params)
-            im_1_2 = plot_top_layer_temperature(axes[1, 2], model_output_temp, case_params)
+            temperature_diff_error = temperature_diff_gt - temperature_diff_p
+            temperature_error = temperature_gt - temperature_p
 
-            predicted_diff = np.abs(model_output_diff - temperature_diff_t1)
-            im_1_0 = plot_top_layer_temperature(axes[1, 0], predicted_diff, case_params)
+            im_0_0 = plot_top_layer_temperature(axes[0, 0], temperature_diff_gt, case_params)
+            im_0_1 = plot_top_layer_temperature(axes[0, 1], temperature_diff_p, case_params)
+            im_0_2 = plot_top_layer_temperature(axes[0, 2], temperature_diff_error, case_params, vmin=-100, vmax=100, cmap='seismic')
+
+            im_1_0 = plot_top_layer_temperature(axes[1, 0], temperature_gt, case_params)
+            im_1_1 = plot_top_layer_temperature(axes[1, 1], temperature_p, case_params)
+            im_1_2 = plot_top_layer_temperature(axes[1, 2], temperature_error, case_params, vmin=-100, vmax=100, cmap='seismic')
+
+            temperature_p = np.add(temperature_p, temperature_diff_p)
 
             ims.append([im_0_0, im_0_1, im_0_2, im_1_0, im_1_1, im_1_2])
     fig.colorbar(ims[0][0], ax=axes[0, 0])
+    fig.colorbar(ims[0][1], ax=axes[0, 1])
+    fig.colorbar(ims[0][2], ax=axes[0, 2])
+    fig.colorbar(ims[1][0], ax=axes[1, 0])
+    fig.colorbar(ims[1][1], ax=axes[1, 1])
+    fig.colorbar(ims[1][2], ax=axes[1, 2])
 
     return fig, axes, ims

@@ -183,7 +183,7 @@ def get_scan_result_case_ids_and_filepaths(data_dir: str="path/to/dir", cases: i
 class LEAP3DDataset(Dataset):
     def __init__(self, data_dir: str="path/to/dir",
                  train: bool=True, extra_params: List[ExtraParam]=None,
-                 transform=None, target_transform=None, extra_params_tranform=None, is_eval=False):
+                 transform=None, target_transform=None, extra_params_tranform=None, transform_inverse=None, target_transform_inverse=None, is_eval=False):
         super().__init__()
         self.train = train
         self.is_eval = is_eval
@@ -201,6 +201,8 @@ class LEAP3DDataset(Dataset):
         self.temperature_variance = None
         self.target_mean = None
         self.target_variance = None
+        self.transform_inverse = transform_inverse
+        self.target_transform_inverse = target_transform_inverse
 
     def __len__(self):
         return self.x_train.len()
@@ -265,6 +267,12 @@ class LEAP3DDataset(Dataset):
 
         return (x_train_reshaped - temperature_mean) / temperature_variance, (targets_reshaped - target_mean) / target_variance
 
+    def unnormalize_temperature(self, temperature):
+        return self.transform_inverse(temperature)
+
+    def unnormalize_target(self, target):
+        return self.target_transform_inverse(target)
+
     def __del__(self):
         self.data_file.close()
 
@@ -279,6 +287,7 @@ class LEAP3DDataModule(pl.LightningDataModule):
                  window_size: int=1, window_step_size: int=1,
                  channels=[Channel.LASER_POSITION, Channel.TEMPERATURE], extra_params=[ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS],
                  transform: callable=None, target_transform: callable=None, extra_params_transform: callable=None,
+                 transform_inverse: callable=None, target_transform_inverse: callable=None,
                  force_prepare=False,
                  num_workers=1):
         super().__init__()
@@ -300,6 +309,8 @@ class LEAP3DDataModule(pl.LightningDataModule):
         self.extra_params_transform = extra_params_transform
         self.target_transform = target_transform
         self.is_3d = is_3d
+        self.transform_inverse = transform_inverse
+        self.target_transform_inverse = target_transform_inverse
 
     def prepare_data(self):
         prepared_train_filepath = self.prepared_data_path / "dataset.hdf5"
@@ -321,9 +332,11 @@ class LEAP3DDataModule(pl.LightningDataModule):
 
     def setup(self, stage: str, split_ratio: float=0.8):
         self.leap_test = LEAP3DDataset(self.prepared_data_path, train=False, extra_params=self.extra_params,
-                                       transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
+                                       transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform,
+                                       transform_inverse=self.transform_inverse, target_transform_inverse=self.target_transform_inverse)
         leap_full = LEAP3DDataset(self.prepared_data_path, train=True, extra_params=self.extra_params,
-                                  transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
+                                  transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform,
+                                  transform_inverse=self.transform_inverse, target_transform_inverse=self.target_transform_inverse)
 
         train_points_count = int(np.ceil(len(leap_full) * split_ratio))
         val_points_count = len(leap_full) - train_points_count
@@ -331,7 +344,8 @@ class LEAP3DDataModule(pl.LightningDataModule):
             leap_full, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
         )
         self.leap_eval = LEAP3DDataset(self.prepared_data_path, train=False, is_eval=True, extra_params=self.extra_params,
-                                       transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform)
+                                       transform=self.tranform, target_transform=self.target_transform, extra_params_tranform=self.extra_params_transform,
+                                       transform_inverse=self.transform_inverse, target_transform_inverse=self.target_transform_inverse)
 
     def train_dataloader(self):
         return DataLoader(self.leap_train, batch_size=self.batch_size, num_workers=self.num_workers)

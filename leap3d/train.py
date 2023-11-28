@@ -28,9 +28,19 @@ DEFAULT_TRAIN_TRANSFORM_2D = transforms.Compose([
         transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=TEMPERATURE_MIN, inplace=True))
     ])
 
+DEFAULT_TRAIN_TRANSFORM_INVERSE_2D = transforms.Compose([
+        torch.tensor,
+        transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=TEMPERATURE_MIN, inverse=True, inplace=True))
+    ])
+
 DEFAULT_TRAIN_TRANSFORM_3D = transforms.Compose([
         torch.tensor,
         transforms.Lambda(lambda x: normalize_temperature_3d(x, melting_point=MELTING_POINT, base_temperature=TEMPERATURE_MIN, inplace=True))
+    ])
+
+DEFAULT_TRAIN_TRANSFORM_INVERSE_3D = transforms.Compose([
+        torch.tensor,
+        transforms.Lambda(lambda x: normalize_temperature_3d(x, melting_point=MELTING_POINT, base_temperature=TEMPERATURE_MIN, inverse=True, inplace=True))
     ])
 
 DEFAULT_EXTRA_PARAMS_TRANSFORM = transforms.Compose([
@@ -45,9 +55,19 @@ DEFAULT_TARGET_TRANSFORM_2D = transforms.Compose([
         transforms.Lambda(lambda x: normalize_temperature_2d(x, 10, inplace=True))
     ])
 
+DEFAULT_TARGET_TRANSFORM_INVERSE_2D = transforms.Compose([
+        torch.tensor,
+        transforms.Lambda(lambda x: normalize_temperature_2d(x, 10, inverse=True, inplace=True))
+    ])
+
 DEFAULT_TARGET_TRANSFORM_3D = transforms.Compose([
         torch.tensor,
         transforms.Lambda(lambda x: normalize_temperature_3d(x, 10, inplace=True))
+    ])
+
+DEFAULT_TARGET_TRANSFORM_INVERSE_3D = transforms.Compose([
+        torch.tensor,
+        transforms.Lambda(lambda x: normalize_temperature_3d(x, 10, inverse=True, inplace=True))
     ])
 
 DEFAULT_TARGET_TO_TRAIN_TRANSFORM = transforms.Compose([
@@ -66,6 +86,8 @@ def train(
         train_transforms: transforms.Compose = 'default',
         extra_params_transform: transforms.Compose = DEFAULT_EXTRA_PARAMS_TRANSFORM,
         target_transforms: transforms.Compose = 'default',
+        train_transforms_inverse: transforms.Compose = 'default',
+        target_transforms_inverse: transforms.Compose = 'default',
         transform_target_to_train: transforms.Compose = DEFAULT_TARGET_TO_TRAIN_TRANSFORM,
         in_channels: int = 3,
         out_channels: int = 1,
@@ -93,6 +115,11 @@ def train(
         target_transforms = DEFAULT_TARGET_TRANSFORM_3D if is_3d else DEFAULT_TARGET_TRANSFORM_2D
     if architecture == 'default':
         architecture = Architecture.LEAP3D_UNET3D if is_3d else Architecture.LEAP3D_UNET2D
+    if train_transforms_inverse == 'default':
+        train_transforms_inverse = DEFAULT_TRAIN_TRANSFORM_INVERSE_3D if is_3d else DEFAULT_TRAIN_TRANSFORM_INVERSE_2D
+    if target_transforms_inverse == 'default':
+        target_transforms_inverse = DEFAULT_TARGET_TRANSFORM_INVERSE_3D if is_3d else DEFAULT_TARGET_TRANSFORM_INVERSE_2D
+
     hparams = {
         'batch_size': batch_size,
         'lr': lr,
@@ -140,6 +167,8 @@ def train(
         transform = train_transforms,
         target_transform = target_transforms,
         extra_params_transform = extra_params_transform,
+        transform_inverse = train_transforms_inverse,
+        target_transform_inverse = target_transforms_inverse,
         force_prepare=hparams['force_prepare']
     )
 
