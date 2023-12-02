@@ -46,7 +46,7 @@ class Up2D(torch.nn.Module):
             self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
             self.conv = Double2DConv(in_channels, out_channels, in_channels // 2, activation=activation, padding_mode='replicate')
         else:
-            self.upsample = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2, padding_mode='replicate')
+            self.upsample = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
             self.conv = Double2DConv(in_channels, out_channels, activation=activation, padding_mode='replicate')
 
     def forward(self, x1, x2):
