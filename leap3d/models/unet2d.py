@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+USE_BIAS = True
 
 class Double2DConv(torch.nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None, activation=nn.LeakyReLU ,**kwargs):
@@ -13,10 +14,10 @@ class Double2DConv(torch.nn.Module):
             mid_channels = out_channels
 
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=False),
+            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=USE_BIAS),
             nn.BatchNorm2d(mid_channels),
             activation(inplace=True),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=False),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=USE_BIAS),
             nn.BatchNorm2d(out_channels),
             activation(inplace=True)
         )
@@ -123,7 +124,6 @@ class UNet2D(torch.nn.Module):
         x5 = self.down4(x4)
 
         if self.fcn_core is not None:
-            # print(x5.shape, extra_params.shape)
             shape = x5.shape
             x5 = x5.reshape(shape[0], -1)
             if self.extra_params_number != 0:
