@@ -78,7 +78,7 @@ DEFAULT_TARGET_TO_TRAIN_TRANSFORM = transforms.Compose([
 def train(
         experiment_name: str,
         project_name: str = 'leap2d',
-        batch_size: int = 256,
+        batch_size: int = 64,
         lr: float = 1e-3,
         num_workers: int = 1,
         max_epochs: int = 5,
