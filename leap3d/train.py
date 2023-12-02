@@ -140,7 +140,8 @@ def train(
         'eval_samples': eval_samples,
         'tags': wandb_tags,
         'force_prepare': force_prepare,
-        'is_3d': is_3d
+        'is_3d': is_3d,
+        'padding_mode': 'replicate'
     }
 
     # start a new wandb run to track this script

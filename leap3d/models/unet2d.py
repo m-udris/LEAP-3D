@@ -13,10 +13,10 @@ class Double2DConv(torch.nn.Module):
             mid_channels = out_channels
 
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=False),
             nn.BatchNorm2d(mid_channels),
             activation(inplace=True),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=False),
             nn.BatchNorm2d(out_channels),
             activation(inplace=True)
         )
@@ -44,10 +44,10 @@ class Up2D(torch.nn.Module):
         # if bilinear, use the normal convolutions to reduce the number of channels
         if bilinear:
             self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-            self.conv = Double2DConv(in_channels, out_channels, in_channels // 2, activation=activation)
+            self.conv = Double2DConv(in_channels, out_channels, in_channels // 2, activation=activation, padding_mode='replicate')
         else:
-            self.upsample = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self.conv = Double2DConv(in_channels, out_channels, activation=activation)
+            self.upsample = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2, padding_mode='replicate')
+            self.conv = Double2DConv(in_channels, out_channels, activation=activation, padding_mode='replicate')
 
     def forward(self, x1, x2):
         # x1 - previous layer output
@@ -67,7 +67,7 @@ class Up2D(torch.nn.Module):
 class OutConv2D(torch.nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv2D, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding_mode='replicate')
 
     def forward(self, x):
         return self.conv(x)

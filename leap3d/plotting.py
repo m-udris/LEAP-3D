@@ -3,6 +3,7 @@ import logging
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy import interpolate
+import torch
 
 def project_point_to_cross_section(x, y, x_min, y_min):
         return np.sqrt((x - x_min)**2 + (y - y_min)**2) - np.sqrt(x_min**2 + y_min**2)
@@ -275,20 +276,20 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
 
             if temperature_p is None:
                 temperature_p = starting_temperature
-            model_input[0, -1] = dataset.transform(temperature_p)
+            model_input[0, -1] = dataset.transform(torch.tensor(temperature_p).clone().to(model.device))
             temperature_diff_p_normalized = model(model_input, extra_params=extra_params.to(model.device))[0, 0, :, :]
             temperature_diff_p = dataset.unnormalize_target(temperature_diff_p_normalized.to('cpu')).numpy()
 
-            temperature_diff_error = temperature_diff_gt - temperature_diff_p
-            temperature_error = temperature_gt - temperature_p
+            temperature_diff_error = -(temperature_diff_gt - temperature_diff_p)
+            temperature_error = -(temperature_gt - temperature_p)
 
-            im_0_0 = plot_top_layer_temperature(axes[0, 0], temperature_diff_gt, case_params)
-            im_0_1 = plot_top_layer_temperature(axes[0, 1], temperature_diff_p, case_params)
+            im_0_0 = plot_top_layer_temperature(axes[0, 0], temperature_diff_gt, case_params, vmin=-500, vmax=500, cmap='seismic')
+            im_0_1 = plot_top_layer_temperature(axes[0, 1], temperature_diff_p, case_params, vmin=-500, vmax=500, cmap='seismic')
             im_0_2 = plot_top_layer_temperature(axes[0, 2], temperature_diff_error, case_params, vmin=-100, vmax=100, cmap='seismic')
 
-            im_1_0 = plot_top_layer_temperature(axes[1, 0], temperature_gt, case_params)
-            im_1_1 = plot_top_layer_temperature(axes[1, 1], temperature_p, case_params)
-            im_1_2 = plot_top_layer_temperature(axes[1, 2], temperature_error, case_params, vmin=-100, vmax=100, cmap='seismic')
+            im_1_0 = plot_top_layer_temperature(axes[1, 0], temperature_gt, case_params, vmin=300, cmap=None)
+            im_1_1 = plot_top_layer_temperature(axes[1, 1], temperature_p, case_params, vmin=300, cmap=None)
+            im_1_2 = plot_top_layer_temperature(axes[1, 2], temperature_error, case_params, vmin=-300, vmax=300, cmap='seismic')
 
             temperature_p = np.add(temperature_p, temperature_diff_p)
 
