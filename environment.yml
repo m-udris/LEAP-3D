@@ -22,4 +22,7 @@ dependencies:
   - pytest
   - h5py
   - torchmetrics
+  - scikit-image
+  - typer
+  - trimesh
 

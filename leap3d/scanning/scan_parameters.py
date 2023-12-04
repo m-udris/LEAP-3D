@@ -89,7 +89,7 @@ class ScanParameters():
 
         return x_coordinates, y_coordinates
 
-    def get_rough_coordinates_for_cross_section(self):
+    def get_rough_coordinates_points_list(self):
         X_rough = self.rough_coordinates['x_rough']
         Y_rough = self.rough_coordinates['y_rough']
         Z_rough = self.rough_coordinates['z_rough']
