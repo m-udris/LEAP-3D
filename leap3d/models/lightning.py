@@ -27,11 +27,21 @@ class LEAP3D_CNN(BaseModel):
         return loss
 
 
+# TODO: LOSS
+#  (p_diff - gt_diff)**2 * (|gt_diff| + eps)
+# eps = max |gt_diff| / 20
+def heat_loss(y_hat, y, eps=0.05):
+    max_diff = torch.max(torch.abs(y))
+    new_eps = max_diff * eps
+    return torch.mean((y_hat - y) ** 2 * (torch.abs(y) + new_eps))
 class LEAP3D_UNet(BaseModel):
-    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
+    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, loss_function='mse', *args, **kwargs):
         super(LEAP3D_UNet, self).__init__(net, in_channels, out_channels, *args, **kwargs)
         self.transform = kwargs.get("transform", transform)
-        self.loss_function = nn.functional.mse_loss
+        if loss_function == 'mse':
+            self.loss_function = nn.functional.mse_loss
+        if loss_function == 'heat_loss':
+            self.loss_function = heat_loss
         self.is_teacher_forcing = False
         self.lr = lr
 

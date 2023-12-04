@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-USE_BIAS = True
+USE_BIAS = False
 
 class Double2DConv(torch.nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None, activation=nn.LeakyReLU ,**kwargs):

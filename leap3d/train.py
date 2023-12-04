@@ -106,6 +106,7 @@ def train(
         test_cases: int | List[int] = [18, 19],
         eval_cases: int | List[int] = [20],
         no_callbacks: bool = False,
+        loss_function: str = 'mse',
         *args,
         **kwargs
 ):
@@ -141,7 +142,8 @@ def train(
         'tags': wandb_tags,
         'force_prepare': force_prepare,
         'is_3d': is_3d,
-        'padding_mode': 'replicate'
+        'padding_mode': 'replicate',
+        'loss_function': loss_function
     }
 
     # start a new wandb run to track this script

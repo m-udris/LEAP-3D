@@ -13,10 +13,14 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_5_
         window_size=window_size,
         window_step_size=window_step_size,
         max_epochs=max_epochs,
+        loss_function='heat_loss',
         *args,
         **kwargs
     )
 
 
 if __name__ == '__main__':
-    train_unet2d_param_window_normalized(dataset_dir=Path(sys.argv[1]))
+    if len(sys.argv) < 2:
+        train_unet2d_param_window_normalized()
+    else:
+        train_unet2d_param_window_normalized(dataset_dir=Path(sys.argv[1]))
