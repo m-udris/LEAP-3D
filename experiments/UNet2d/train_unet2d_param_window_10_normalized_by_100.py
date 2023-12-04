@@ -13,7 +13,7 @@ from leap3d.train import train_model, train
 from leap3d.transforms import get_target_to_train_transform, normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform
 
 
-def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_10_normalized_100_epochs', window_size=10, window_step_size=10, max_epochs=100, *args, **kwargs):
+def train_unet2d_param_window_normalized(experiment_name='unet2d_p_w10_nt100_heat_loss', window_size=10, window_step_size=10, max_epochs=50, *args, **kwargs):
     target_transform = transforms.Compose([
         torch.tensor,
         transforms.Lambda(lambda x: normalize_temperature_2d(x, 100, inplace=True))
@@ -30,6 +30,7 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_param_window_10
         max_epochs=max_epochs,
         target_transforms=target_transform,
         target_to_train_transforms=target_to_train_transform,
+        loss_function='heat_loss',
         *args,
         **kwargs
     )

@@ -85,5 +85,5 @@ class PlotTopLayerTemperatureCallback(Callback):
 
         ani = animation.ArtistAnimation(fig, ims, repeat=True, interval=500, blit=True, repeat_delay=1000)
         animation_filepath = self.plot_dir / f"top_layer_temperature_after_epoch_{current_epoch}.gif"
-        ani.save(animation_filepath, fps=2, progress_callback=print)
+        ani.save(animation_filepath, fps=2, progress_callback=lambda x, _: print(x, end="\r"))
         wandb.log({"video": wandb.Video(str(animation_filepath), fps=4, format="gif")})
