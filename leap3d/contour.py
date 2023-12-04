@@ -8,18 +8,30 @@ from leap3d.config import MELTING_POINT, DATA_DIR, DATASET_DIR, PARAMS_FILEPATH,
 from leap3d.scanning import ScanParameters, ScanResults
 
 
-def get_melting_pool_contour_3d(temperature_grid, threshold=MELTING_POINT):
+def get_melting_pool_contour_3d(temperature_grid, threshold=MELTING_POINT, top_k=None):
+    mask = None
+    if top_k is not None:
+        mask = np.zeros_like(temperature_grid, dtype=bool)
+        mask[:, :, -top_k:] = True
     # Use marching cubes algorithm to extract the contour
-    vertices, faces, _, _ = measure.marching_cubes(temperature_grid, level=threshold)
+    try:
+        vertices, faces, _, _ = measure.marching_cubes(temperature_grid, level=threshold, mask=mask)
+    except (ValueError, RuntimeError):
+        return [], []
 
     return vertices, faces
 
 
-def get_melting_pool_contour_2d(temperature_grid, threshold=MELTING_POINT):
+def get_melting_pool_contour_2d(temperature_grid, threshold=MELTING_POINT, top_k=None):
+    """Get contours of top_k layers of the temperature grid. The output is a list of contours for each layer, starting from the top layer.
+    """
     # Threshold the temperature grid to identify the melting pool region
+    contours = []
 
-    # Use marching cubes algorithm to extract the contour
-    contours = measure.find_contours(temperature_grid, level=threshold)
+    top_k = top_k or temperature_grid.shape[2]
+    for i in range(1, min(top_k, temperature_grid.shape[2])):
+        current_layer = temperature_grid[:, :, -i]
+        contours.append(measure.find_contours(current_layer, level=threshold))
 
     return contours
 

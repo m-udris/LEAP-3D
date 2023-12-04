@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 from scipy import interpolate
+import scipy
 
 from leap3d.config import SCALE_DISTANCE_BY, SCALE_TIME_BY
 class ScanResults():
@@ -74,7 +75,7 @@ class ScanResults():
         temperature = self.get_rough_temperatures_at_timestep(timestep).flatten()
         melt_pool_coordinates, melt_pool_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
 
-        coordinates = scan_parameters.get_rough_coordinates_for_cross_section() + melt_pool_coordinates
+        coordinates = scan_parameters.get_rough_coordinates_points_list() + melt_pool_coordinates
         temperatures = list(temperature) + melt_pool_temperature
 
         return coordinates, temperatures
@@ -107,3 +108,16 @@ class ScanResults():
         if return_grid:
             return T_interpolated, xi, yi, zi
         return T_interpolated
+
+    def get_interpolated_data(self, scan_parameters, timestep, shape=(256, 256, 64), method='nearest'):
+        coordinates, temperature = self.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
+
+        xi = np.linspace(scan_parameters.x_min, scan_parameters.x_max, shape[0])
+        yi = np.linspace(scan_parameters.y_min, scan_parameters.y_max, shape[1])
+        zi = np.linspace(scan_parameters.z_min, scan_parameters.z_max, shape[2])
+
+        new_coordinate_points = np.array([(x, y, z) for x in xi for y in yi for z in zi])
+        temperature = scipy.interpolate.griddata(coordinates, temperature, new_coordinate_points, method=method)
+        temperature = temperature.reshape(shape)
+
+        return new_coordinate_points, temperature

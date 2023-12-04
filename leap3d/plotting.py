@@ -1,8 +1,14 @@
 import functools
 import logging
-from matplotlib import pyplot as plt
+from matplotlib import animation, pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
-from scipy import interpolate
+import skimage
+import trimesh
+
+
+from leap3d.contour import get_melting_pool_contour_2d, get_melting_pool_contour_3d
 
 def project_point_to_cross_section(x, y, x_min, y_min):
         return np.sqrt((x - x_min)**2 + (y - y_min)**2) - np.sqrt(x_min**2 + y_min**2)
@@ -287,3 +293,121 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
     fig.colorbar(ims[0][0], ax=axes[0, 0])
 
     return fig, axes, ims
+
+
+def plot_2d_contours(contours, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots()
+    ims = []
+    for contour in contours:
+        ims += ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
+    return ims
+
+
+def plot_fake_3d_contours(contours, max_n_layers=64, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots()
+    ims = []
+    for (depth, contour_layer) in enumerate(contours):
+        for contour in contour_layer:
+            ims += ax.plot(contour[:, 0], contour[:, 1], max_n_layers - depth - 1, linewidth=2)
+    return ims
+
+
+def plot_3d_contours_vertices(vertices, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+    im, = ax.plot(vertices[:, 0], vertices[:, 1], vertices[:, 2], c='r', linewidth=2)
+    return [im]
+
+
+def plot_3d_contours_faces(vertices, faces, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+    if len(ax.collections) == 0:
+        mesh = Poly3DCollection(vertices[faces], linewidths=1, edgecolors='k')
+        ax.add_collection3d(mesh)
+    else:
+        ax.collections[0].set_verts(vertices[faces])
+        return [ax.collections[0]]
+    return [mesh]
+
+
+def get_contour_animation(scan_results, scan_parameters, t_start=0, t_end=None, t_stride=5, denoise=None, animation_filepath="./plots/contours.gif", **kwargs):
+    def get_ims(timestep):
+        for ax in axes[:-1]:
+            ax.clear()
+        ims_at_timestep = []
+        coordinates, temperature = scan_results.get_interpolated_data(scan_parameters, timestep)
+        laser_coordinates = scan_results.get_laser_coordinates_at_timestep(timestep)
+        x_min = min(coordinates, key=lambda x: x[0])[0]
+        y_min = min(coordinates, key=lambda x: x[1])[1]
+        x_max = max(coordinates, key=lambda x: x[0])[0]
+        y_max = max(coordinates, key=lambda x: x[1])[1]
+        x_step_size = (x_max - x_min) / 256
+        y_step_size = (y_max - y_min) / 256
+        laser_x = (laser_coordinates[0] - x_min) / x_step_size
+        laser_y = (laser_coordinates[1] - y_min) / y_step_size
+
+        if denoise == 'wavelet':
+            temperature = 255 * temperature / 1500
+            temperature = skimage.restoration.denoise_wavelet(temperature, **kwargs)
+            temperature = temperature * 1500 / 255
+
+        contours_2d = get_melting_pool_contour_2d(temperature, top_k=24)
+
+        im = axes[0].imshow(temperature[:, :, -1], vmin=300, vmax=1500, cmap='hot', animated=True)
+        ims_at_timestep.append(im)
+
+        ims_at_timestep += plot_2d_contours(contours_2d[0], axes[0])
+
+        ims_at_timestep += plot_fake_3d_contours(contours_2d, max_n_layers=temperature.shape[2], ax=axes[1])
+
+        vertices_3d, faces_3d = get_melting_pool_contour_3d(temperature, top_k=24)
+
+        if len(vertices_3d) == 0:
+            axes[2].clear()
+            axes[3].clear()
+            return ims_at_timestep
+
+        if denoise == 'laplace':
+            mesh = trimesh.Trimesh(vertices_3d, faces_3d)
+            trimesh.smoothing.filter_laplacian(mesh)
+            vertices_3d = mesh.vertices
+            faces_3d = mesh.faces
+        if denoise == 'humphrey':
+            mesh = trimesh.Trimesh(vertices_3d, faces_3d)
+            trimesh.smoothing.filter_humphrey(mesh, kwargs.get('beta', 0.5))
+            vertices_3d = mesh.vertices
+            faces_3d = mesh.faces
+
+        ims_at_timestep += plot_3d_contours_vertices(vertices_3d, ax=axes[2])
+
+        plot_3d_contours_faces(vertices_3d, faces_3d, ax=axes[3])
+
+        for ax in axes[1:]:
+            ax.set_xlim(laser_x - 15, laser_x + 15)
+            ax.set_ylim(laser_y - 15, laser_y + 15)
+            ax.set_zlim(40, 64)
+
+        return ims_at_timestep
+
+    fig = plt.figure(figsize=(24, 10))
+    axes = []
+    axes.append(fig.add_subplot(1, 4, 1))
+    axes.append(fig.add_subplot(1, 4, 2, projection='3d'))
+    axes.append(fig.add_subplot(1, 4, 3, projection='3d'))
+    axes.append(fig.add_subplot(1, 4, 4, projection='3d'))
+
+    for ax in axes[1:]:
+        ax.set_zlim(40, 64)
+
+    frames = ((t_end or scan_results.timesteps) - t_start) // t_stride
+    ani = animation.FuncAnimation(fig, lambda t: get_ims(t_start + t*t_stride), frames=frames, repeat=True, interval=500, blit=True, repeat_delay=1000)
+
+    divider = make_axes_locatable(axes[0])
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(axes[0].get_images()[0], cax=cax, orientation='vertical')
+    ani.save(animation_filepath, fps=1, progress_callback=print)

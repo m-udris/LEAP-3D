@@ -24,4 +24,5 @@ dependencies:
   - torchmetrics
   - scikit-image
   - typer
+  - trimesh
 
