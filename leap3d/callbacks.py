@@ -94,9 +94,9 @@ class PlotErrorOverTimeCallback(Callback):
         super().__init__()
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        self.log_plot_r2_score_over_time(trainer, pl_module)
+        self.log_plot_error_over_time(trainer, pl_module)
 
-    def log_plot_r2_score_over_time(self, trainer, model):
+    def log_plot_error_over_time(self, trainer, model):
         evaluation_dataset = trainer.datamodule.leap_eval
         current_epoch = trainer.current_epoch
         error_data = self.get_error_over_time(model, evaluation_dataset)
@@ -107,7 +107,7 @@ class PlotErrorOverTimeCallback(Callback):
                 title=f"Relative score over time after epoch {current_epoch}")})
         wandb.log(
             {f"Absolute error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "abs_error",
-                title=f"R2 score over time after epoch {current_epoch}")})
+                title=f"Absolute error over time after epoch {current_epoch}")})
 
     def get_error_over_time(self, model, dataset):
         error_data = []
@@ -120,12 +120,14 @@ class PlotErrorOverTimeCallback(Callback):
             extra_params = extra_params.clone().detach().to(model.device)
             y = y[0].clone().detach().to(model.device)
 
+            actual_x_temperature = x[-1]
+
             if next_x_temperature is not None:
                 x[-1] = next_x_temperature
             y_hat = model(x, extra_params=extra_params)
 
-            next_x_temperature = model.get_predicted_temperature(x[-1], y_hat[0, :, :])
-            actual_next_x_temperature = x[-1, :, :] + y[0, :, :]
+            next_x_temperature = model.get_predicted_temperature(x[-1], y_hat[0])
+            actual_next_x_temperature = actual_x_temperature + y[0]
 
             # e(t) = sum((gt[t,:,:]-pred[t,:,])**2) / mean_t(sum((gt[t,:,:])**2))
             relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.mean(actual_next_x_temperature**2)
