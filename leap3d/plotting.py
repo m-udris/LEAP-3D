@@ -303,9 +303,9 @@ def plot_model_top_layer_temperature_comparison(case_params, model, dataset, ste
     fig.colorbar(ims[0][0], ax=axes[0, 0])
     fig.colorbar(ims[0][1], ax=axes[0, 1])
     fig.colorbar(ims[0][2], ax=axes[0, 2])
-    fig.colorbar(ims[1][0], ax=axes[1, 0])
-    fig.colorbar(ims[1][1], ax=axes[1, 1])
-    fig.colorbar(ims[1][2], ax=axes[1, 2])
+    fig.colorbar(ims[0][3], ax=axes[1, 0])
+    fig.colorbar(ims[0][4], ax=axes[1, 1])
+    fig.colorbar(ims[0][5], ax=axes[1, 2])
 
     return fig, axes, ims
 

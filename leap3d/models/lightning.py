@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 from torchmetrics.regression import R2Score, MeanAbsoluteError
 
 from leap3d.models import BaseModel, CNN, UNet2D, UNet3D
+from leap3d.losses import heat_loss
 
 
 class LEAP3D_CNN(BaseModel):
@@ -27,23 +28,20 @@ class LEAP3D_CNN(BaseModel):
         return loss
 
 
-# TODO: LOSS
-#  (p_diff - gt_diff)**2 * (|gt_diff| + eps)
-# eps = max |gt_diff| / 20
-def heat_loss(y_hat, y, eps=0.05):
-    max_diff = torch.max(torch.max(torch.abs(y), dim=-1).values, dim=-1, keepdims=True).values
-    new_eps = max_diff * eps
-    return torch.mean((y_hat - y) ** 2 * (torch.abs(y) + new_eps))
 class LEAP3D_UNet(BaseModel):
-    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, loss_function='mse', *args, **kwargs):
+    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, loss_function: str | callable ='mse', *args, **kwargs):
         super(LEAP3D_UNet, self).__init__(net, in_channels, out_channels, *args, **kwargs)
         self.transform = kwargs.get("transform", transform)
         if loss_function == 'mse':
             self.loss_function = nn.functional.mse_loss
-        if loss_function == 'heat_loss':
+        elif loss_function == 'heat_loss':
             self.loss_function = heat_loss
-        if loss_function == 'l1':
+        elif loss_function == 'l1':
             self.loss_function = nn.functional.l1_loss
+        elif callable(loss_function):
+            self.loss_function = loss_function
+        else:
+            raise ValueError(f"Unknown loss function {loss_function}")
         self.is_teacher_forcing = False
         self.lr = lr
 

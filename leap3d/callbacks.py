@@ -87,3 +87,50 @@ class PlotTopLayerTemperatureCallback(Callback):
         animation_filepath = self.plot_dir / f"top_layer_temperature_after_epoch_{current_epoch}.gif"
         ani.save(animation_filepath, fps=2, progress_callback=lambda x, _: print(x, end="\r"))
         wandb.log({"video": wandb.Video(str(animation_filepath), fps=4, format="gif")})
+
+
+class PlotErrorOverTimeCallback(Callback):
+    def __init__(self):
+        super().__init__()
+
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        self.log_plot_r2_score_over_time(trainer, pl_module)
+
+    def log_plot_r2_score_over_time(self, trainer, model):
+        evaluation_dataset = trainer.datamodule.leap_eval
+        current_epoch = trainer.current_epoch
+        error_data = self.get_error_over_time(model, evaluation_dataset)
+
+        table = wandb.Table(data=error_data, columns = ["step", "abs_error", "rel_error"])
+        wandb.log(
+            {f"Relative error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "rel_error",
+                title=f"Relative score over time after epoch {current_epoch}")})
+        wandb.log(
+            {f"Absolute error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "abs_error",
+                title=f"R2 score over time after epoch {current_epoch}")})
+
+    def get_error_over_time(self, model, dataset):
+        error_data = []
+
+        model.eval()
+        next_x_temperature = None
+        for sample_idx in range(len(dataset)):
+            x, extra_params, y = dataset[sample_idx]
+            x = x[0].clone().detach().to(model.device)
+            extra_params = extra_params.clone().detach().to(model.device)
+            y = y[0].clone().detach().to(model.device)
+
+            if next_x_temperature is not None:
+                x[-1] = next_x_temperature
+            y_hat = model(x, extra_params=extra_params)
+
+            next_x_temperature = model.get_predicted_temperature(x[-1], y_hat[0, :, :])
+            actual_next_x_temperature = x[-1, :, :] + y[0, :, :]
+
+            # e(t) = sum((gt[t,:,:]-pred[t,:,])**2) / mean_t(sum((gt[t,:,:])**2))
+            relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.mean(actual_next_x_temperature**2)
+            absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.mean(actual_next_x_temperature)
+
+            error_data.append([sample_idx, absolute_error, relative_error])
+
+        return error_data
