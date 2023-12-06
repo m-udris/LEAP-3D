@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 import torch
 from torch import nn
@@ -29,7 +30,7 @@ class LEAP3D_CNN(BaseModel):
 
 
 class LEAP3D_UNet(BaseModel):
-    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, loss_function: str | callable ='mse', *args, **kwargs):
+    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, loss_function: str | Callable ='mse', *args, **kwargs):
         super(LEAP3D_UNet, self).__init__(net, in_channels, out_channels, *args, **kwargs)
         self.transform = kwargs.get("transform", transform)
         if loss_function == 'mse':
