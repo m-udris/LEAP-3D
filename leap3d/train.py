@@ -187,7 +187,7 @@ def train(
         callbacks += [
             LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
             PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=20),
-            PlotErrorOverTimeCallback(scan_parameters, plot_dir)
+            PlotErrorOverTimeCallback()
         ]
 
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
