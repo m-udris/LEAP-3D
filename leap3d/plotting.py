@@ -31,6 +31,27 @@ def draw_cross_section_scanning_bounds(ax, case_params, laser_x, laser_y):
     return scanning_bound_left, scanning_bound_right
 
 
+def get_projected_cross_section(case_results, case_params, timestep, interpolation_steps=128, interpolation_method='nearest', show_only_melt=False):
+    T_interpolated, xi, yi, zi = case_results.get_interpolated_data_along_laser_at_timestep(
+        case_params, timestep,
+        return_grid=True, steps=interpolation_steps, method=interpolation_method)
+
+    melting_point = case_params.melting_point
+
+    if show_only_melt:
+        T_interpolated[T_interpolated < melting_point] = 0
+        T_interpolated[T_interpolated >= melting_point] = 1
+
+    # Project x and y axes into 1D
+    new_x = project_point_to_cross_section(xi, yi, case_params.x_min, case_params.y_min)
+
+    # Reshape coordinates for plotting
+    new_x_grid = [[x] * zi.shape[0] for x in new_x]
+    new_z_grid = [zi for _ in new_x]
+    T_values = T_interpolated.reshape((new_x.shape[0], zi.shape[0]))
+    return new_x_grid, new_z_grid, T_values
+
+
 def plot_cross_section_along_laser_at_timestep(ax, case_results, case_params, timestep,
                                                interpolation_steps=128, interpolation_method='nearest', show_only_melt=False):
     T_interpolated, xi, yi, zi = case_results.get_interpolated_data_along_laser_at_timestep(
