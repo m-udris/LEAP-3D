@@ -71,12 +71,12 @@ def precompute_values(case_id: int, scan_results: ScanResults, scan_parameters: 
 
 
 if __name__ == '__main__':
-    for i in range(5):
+    for i in range(1, 3):
         scan_results = ScanResults(DATA_DIR / f'case_{i:04d}.npz')
         scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, case_index=i)
 
         t_start = 2000
-        steps = 1000
+        steps = 300
 
         precompute_values(i, scan_results, scan_parameters, Path("/scratch/snx3000/mudris/leap3d/contours/"), t_start, steps, save_every_n_steps=100)
 
