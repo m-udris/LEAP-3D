@@ -22,8 +22,6 @@ def precompute_values(case_id: int, scan_results: ScanResults, scan_parameters: 
         np.save(path / f"case_{case_id:04d}_cross_sections_{timestep:04d}.npy", interpolated_cross_sections)
 
     interpolated_3d_data = []
-    contours_2d_list = []
-    contours_3d_list = []
     laser_coordinates_list = []
     interpolated_cross_sections = []
     for timestep in range(t_start, t_start + steps):
@@ -64,9 +62,12 @@ def precompute_values(case_id: int, scan_results: ScanResults, scan_parameters: 
 
         if len(interpolated_3d_data) == save_every_n_steps:
             save_data(case_id, (timestep - t_start) // save_every_n_steps)
+            interpolated_3d_data = []
+            interpolated_cross_sections = []
+            laser_coordinates_list = []
 
     if len(interpolated_3d_data) > 0:
-        save_data(case_id, (timestep - t_start) // save_every_n_steps)
+        save_data(case_id, (t_start + steps) // save_every_n_steps)
 
 
 if __name__ == '__main__':
