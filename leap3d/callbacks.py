@@ -111,6 +111,9 @@ class PlotErrorOverTimeCallback(Callback):
 
     def get_error_over_time(self, model, dataset):
         error_data = []
+        absolute_error_sum = 0
+        relative_error_sum = 0
+        count = 0
 
         model.eval()
         next_x_temperature = None
@@ -130,9 +133,24 @@ class PlotErrorOverTimeCallback(Callback):
             actual_next_x_temperature = actual_x_temperature + y[0]
 
             # e(t) = sum((gt[t,:,:]-pred[t,:,])**2) / mean_t(sum((gt[t,:,:])**2))
-            relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.mean(actual_next_x_temperature**2)
-            absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.mean(actual_next_x_temperature)
+            relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.min(torch.mean(actual_next_x_temperature**2), 1e-6 * torch.ones_like(actual_next_x_temperature))
+            absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.min(torch.mean(actual_next_x_temperature), 1e-6 * torch.ones_like(actual_next_x_temperature))
 
-            error_data.append([sample_idx, absolute_error, relative_error])
+            relative_error_sum += relative_error
+            absolute_error_sum += absolute_error
+            count += 1
+
+            if count % 100 == 0:
+                average_relative_error = relative_error_sum / count
+                average_absolute_error = absolute_error_sum / count
+                error_data.append([sample_idx, average_absolute_error, average_relative_error])
+                average_relative_error = 0
+                absolute_error_sum = 0
+                count = 0
+
+        if count > 0:
+                average_relative_error = relative_error_sum / count
+                average_absolute_error = absolute_error_sum / count
+                error_data.append([sample_idx, average_absolute_error, average_relative_error])
 
         return error_data
