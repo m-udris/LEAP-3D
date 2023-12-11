@@ -53,10 +53,10 @@ def get_projected_cross_section(case_results, case_params, timestep, interpolati
 
 
 def plot_cross_section_along_laser_at_timestep(ax, case_results, case_params, timestep,
-                                               interpolation_steps=128, interpolation_method='nearest', show_only_melt=False):
+                                               interpolation_steps=128, interpolation_method='nearest', show_only_melt=False, use_laser_position: tuple[float, float] = None):
     T_interpolated, xi, yi, zi = case_results.get_interpolated_data_along_laser_at_timestep(
         case_params, timestep,
-        return_grid=True, steps=interpolation_steps, method=interpolation_method)
+        return_grid=True, steps=interpolation_steps, method=interpolation_method, use_laser_position=use_laser_position)
 
     melting_point = case_params.melting_point
 
@@ -73,7 +73,7 @@ def plot_cross_section_along_laser_at_timestep(ax, case_results, case_params, ti
     T_values = T_interpolated.reshape((new_x.shape[0], zi.shape[0]))
 
     vmax = 1 if show_only_melt else melting_point
-    im = ax.pcolormesh(new_x_grid, new_z_grid, T_values, animated=True, vmax=vmax)
+    im = ax.pcolormesh(new_x_grid, new_z_grid, T_values, animated=True, vmax=vmax, cmap='hot')
 
     return im
 
@@ -342,7 +342,8 @@ def plot_2d_contours(contours, ax=None):
 
 def plot_fake_3d_contours(contours, max_n_layers=64, ax=None):
     if ax is None:
-        fig, ax = plt.subplots()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
     ims = []
     for (depth, contour_layer) in enumerate(contours):
         for contour in contour_layer:

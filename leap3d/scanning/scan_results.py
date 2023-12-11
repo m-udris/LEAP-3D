@@ -71,10 +71,12 @@ class ScanResults():
 
         return coordinates, temperatures
 
-    def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters, timestep: int):
+    def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters, timestep: int, only_high_quality: bool=False):
         temperature = self.get_rough_temperatures_at_timestep(timestep).flatten()
         melt_pool_coordinates, melt_pool_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
 
+        if only_high_quality:
+            return melt_pool_coordinates, melt_pool_temperature
         coordinates = scan_parameters.get_rough_coordinates_points_list() + melt_pool_coordinates
         temperatures = list(temperature) + melt_pool_temperature
 
@@ -82,11 +84,15 @@ class ScanResults():
 
     def get_interpolated_data_along_laser_at_timestep(
             self, scan_parameters, timestep,
-            steps=128, method='nearest', return_grid=False
+            steps=128, method='nearest', return_grid=False,
+            use_laser_position=None
             ):
 
         coordinates, temperature = self.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
-        laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
+        if use_laser_position is None:
+            laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
+        else:
+            laser_x, laser_y = use_laser_position
         laser_angle_tan = np.tan(scan_parameters.scanning_angle)
         get_y = lambda x: laser_angle_tan * (x - laser_x) + laser_y
 

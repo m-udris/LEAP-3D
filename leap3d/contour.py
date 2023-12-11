@@ -40,7 +40,7 @@ if __name__ == '__main__':
     scan_results = ScanResults(DATA_DIR / 'case_0000.npz')
     timestep = 2000
     scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, case_index=1)
-    coordinates, temperature = scan_results.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
+    coordinates, temperature = scan_results.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep, only_high_quality=True)
 
     xi = np.linspace(scan_parameters.x_min, scan_parameters.x_max, 256)
     yi = np.linspace(scan_parameters.y_min, scan_parameters.y_max, 256)
