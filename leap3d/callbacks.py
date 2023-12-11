@@ -142,7 +142,7 @@ class PlotErrorOverTimeCallback(Callback):
             absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.max(torch.mean(actual_next_x_temperature), torch.tensor(1e-6))
             absolute_error = absolute_error.detach().cpu().numpy()
 
-            r2_score_value = r2_score(y_hat, y)
+            r2_score_value = r2_score(y_hat.reshape(-1), y.reshape(-1))
 
             relative_error_sum += relative_error
             absolute_error_sum += absolute_error
