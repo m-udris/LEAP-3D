@@ -155,9 +155,9 @@ class PlotErrorOverTimeCallback(Callback):
                 average_absolute_error = absolute_error_sum / count
                 average_r2_score = r2_score_sum / count
                 error_data.append([sample_idx, average_absolute_error, average_relative_error, average_r2_score])
-                average_relative_error = 0
                 absolute_error_sum = 0
                 relative_error_sum = 0
+                r2_score_sum = 0
                 count = 0
 
         if count > 0:
