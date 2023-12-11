@@ -133,9 +133,9 @@ class PlotErrorOverTimeCallback(Callback):
             actual_next_x_temperature = actual_x_temperature + y[0]
 
             # e(t) = sum((gt[t,:,:]-pred[t,:,])**2) / mean_t(sum((gt[t,:,:])**2))
-            relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.min(torch.mean(actual_next_x_temperature**2), 1e-6 * torch.ones_like(actual_next_x_temperature))
+            relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.max(torch.mean(actual_next_x_temperature**2), 1e-6 * torch.ones_like(actual_next_x_temperature))
             relative_error = relative_error.detach().cpu().numpy()
-            absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.min(torch.mean(actual_next_x_temperature), 1e-6 * torch.ones_like(actual_next_x_temperature))
+            absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.max(torch.mean(actual_next_x_temperature), 1e-6 * torch.ones_like(actual_next_x_temperature))
             absolute_error = absolute_error.detach().cpu().numpy()
 
             relative_error_sum += relative_error
