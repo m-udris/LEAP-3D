@@ -134,7 +134,7 @@ class PlotErrorOverTimeCallback(Callback):
             y_hat = model(x, extra_params=extra_params)
 
             next_x_temperature = model.get_predicted_temperature(x[-1], y_hat[0])
-            actual_next_x_temperature = actual_x_temperature + y[0]
+            actual_next_x_temperature = model.get_predicted_temperature(actual_x_temperature, y[0])
 
             # e(t) = sum((gt[t,:,:]-pred[t,:,])**2) / mean_t(sum((gt[t,:,:])**2))
             relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.max(torch.mean(actual_next_x_temperature**2), torch.tensor(1e-6))
