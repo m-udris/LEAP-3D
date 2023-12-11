@@ -12,7 +12,7 @@ from leap3d.train import train_model, train
 from leap3d.transforms import get_target_to_train_transform, normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform
 
 
-def train_unet2d_param_window_normalized(experiment_name='unet2d_p_w10_l1+mse_loss', window_size=10, window_step_size=10, max_epochs=50, *args, **kwargs):
+def train_unet2d_param_window_normalized(experiment_name='unet2d_p_w10_l1+mse_loss_b32', window_size=10, window_step_size=10, max_epochs=50, *args, **kwargs):
     loss_function = lambda y_hat, y: 0.5 * nn.functional.l1_loss(y_hat, y) + 0.5 * nn.functional.mse_loss(y_hat, y)
     train(
         experiment_name=experiment_name,
@@ -20,6 +20,7 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_p_w10_l1+mse_lo
         window_step_size=window_step_size,
         max_epochs=max_epochs,
         loss_function=loss_function,
+        batch_size=32,
         *args,
         **kwargs
     )

@@ -101,18 +101,22 @@ class PlotErrorOverTimeCallback(Callback):
         current_epoch = trainer.current_epoch
         error_data = self.get_error_over_time(model, evaluation_dataset)
 
-        table = wandb.Table(data=error_data, columns = ["step", "abs_error", "rel_error"])
+        table = wandb.Table(data=error_data, columns = ["step", "abs_error", "rel_error", "r2_score"])
         wandb.log(
             {f"Relative error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "rel_error",
                 title=f"Relative score over time after epoch {current_epoch}")})
         wandb.log(
             {f"Absolute error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "abs_error",
                 title=f"Absolute error over time after epoch {current_epoch}")})
+        wandb.log(
+            {f"R2 over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "r2_score",
+                title=f"Absolute error over time after epoch {current_epoch}")})
 
     def get_error_over_time(self, model, dataset):
         error_data = []
         absolute_error_sum = 0
         relative_error_sum = 0
+        r2_score_sum = 0
         count = 0
 
         model.eval()
@@ -138,22 +142,28 @@ class PlotErrorOverTimeCallback(Callback):
             absolute_error = torch.sum(torch.abs(actual_next_x_temperature - next_x_temperature)) / torch.max(torch.mean(actual_next_x_temperature), torch.tensor(1e-6))
             absolute_error = absolute_error.detach().cpu().numpy()
 
+            r2_score_value = r2_score(next_x_temperature, actual_next_x_temperature)
+
             relative_error_sum += relative_error
             absolute_error_sum += absolute_error
+            r2_score_sum += r2_score_value
 
             count += 1
 
             if count % 100 == 0:
                 average_relative_error = relative_error_sum / count
                 average_absolute_error = absolute_error_sum / count
-                error_data.append([sample_idx, average_absolute_error, average_relative_error])
+                average_r2_score = r2_score_sum / count
+                error_data.append([sample_idx, average_absolute_error, average_relative_error, average_r2_score])
                 average_relative_error = 0
                 absolute_error_sum = 0
+                relative_error_sum = 0
                 count = 0
 
         if count > 0:
             average_relative_error = relative_error_sum / count
             average_absolute_error = absolute_error_sum / count
-            error_data.append([sample_idx, average_absolute_error, average_relative_error])
+            average_r2_score = r2_score_sum / count
+            error_data.append([sample_idx, average_absolute_error, average_relative_error, average_r2_score])
 
         return error_data
