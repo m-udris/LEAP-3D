@@ -110,7 +110,7 @@ class PlotErrorOverTimeCallback(Callback):
                 title=f"Absolute error over time after epoch {current_epoch}")})
         wandb.log(
             {f"R2 over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "r2_score",
-                title=f"Absolute error over time after epoch {current_epoch}")})
+                title=f"R2 over time after epoch {current_epoch}")})
 
     def get_error_over_time(self, model, dataset):
         error_data = []
