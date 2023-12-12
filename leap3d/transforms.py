@@ -58,9 +58,10 @@ def get_target_to_train_transform(train_min_value, train_max_value, target_min_v
         if not inplace:
             x = x.clone()
         if inverse:
-            x = (x * t2_inverse) - t1
+            x = (x * (train_max_value - train_min_value)) / (target_max_value - target_min_value)
+            # x = (x * t2_inverse) - t1
             return x
-        x = (x + t1) * t2
+        x = x * (target_max_value - target_min_value) / (train_max_value - train_min_value)
         return x
 
     def transform(x, inplace=False, inverse=False):
