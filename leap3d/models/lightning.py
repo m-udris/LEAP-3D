@@ -46,6 +46,9 @@ class LEAP3D_UNet(BaseModel):
         self.is_teacher_forcing = False
         self.lr = lr
 
+    def forward(self, x, extra_params):
+        return self.net(x, extra_params)
+
     def f_step(self, batch, batch_idx, train=False, steps=None, *args, **kwargs):
         x_window, extra_params_window, y_window = batch
         if len(x_window.shape) == 4:

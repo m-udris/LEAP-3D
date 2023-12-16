@@ -9,7 +9,7 @@ from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 import wandb
-from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, get_checkpoint_only_last_epoch_callback
+from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
 from leap3d.dataset import ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
@@ -186,8 +186,9 @@ def train(
     if not no_callbacks:
         callbacks += [
             LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
-            PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=20),
-            PlotErrorOverTimeCallback()
+            # PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=20),
+            # PlotErrorOverTimeCallback()
+            Rollout2DUNetCallback(scan_parameters)
         ]
 
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)

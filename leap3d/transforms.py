@@ -50,10 +50,6 @@ def normalize_temperature_3d(x, melting_point, base_temperature=0, temperature_c
 
 
 def get_target_to_train_transform(train_min_value, train_max_value, target_min_value, target_max_value, simplified=True):
-    t1 = (target_min_value - train_min_value) / (target_max_value - target_min_value)
-    t2 = (target_max_value - target_min_value) / (train_max_value - train_min_value)
-    t2_inverse = (train_max_value - train_min_value) / (target_max_value - target_min_value)
-
     def transform_simplified(x, inplace=False, inverse=False):
         if not inplace:
             x = x.clone()

@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import Callable, List
 import lightning.pytorch as pl
 from matplotlib import animation
+import numpy as np
 import torch
 from torchmetrics.functional import r2_score
 import pytorch_lightning as pl
@@ -8,6 +10,73 @@ from pytorch_lightning.callbacks import Callback
 import wandb
 
 from leap3d.plotting import plot_model_top_layer_temperature_comparison
+
+
+def get_recursive_model_predictions(model, dataset):
+    model.eval()
+    next_x_temperature = None
+    with torch.no_grad():
+        for (x, extra_params, y) in dataset:
+            x = x[0].to(model.device)
+            x_original = x[-1].clone().detach()
+            extra_params = extra_params.to(model.device)
+            y = y[0].to(model.device)
+
+            if next_x_temperature is not None:
+                x[-1] = next_x_temperature
+            y_hat = model(x, extra_params=extra_params)[0]
+
+            next_x_temperature = model.get_predicted_temperature(x[-1], y_hat)
+
+            x_original = x_original.cpu()
+            y = y.squeeze().cpu()
+            y_hat = y_hat.squeeze().cpu()
+            next_x_temperature_copy = next_x_temperature.cpu()
+            yield x_original, y, y_hat, next_x_temperature_copy
+
+
+def get_r2_scores(pred_list, target_list, return_parts=False):
+    r2_scores = []
+    numerators = []
+    denominators = []
+    for y_hat, y in zip(pred_list, target_list):
+        r2_scores.append(r2_score(y_hat, y))
+        if return_parts:
+            numerators.append(torch.sum((y_hat - y) ** 2))
+            denominators.append(torch.sum((y - torch.mean(y)) ** 2))
+    if return_parts:
+        return r2_scores, numerators, denominators
+    return r2_scores
+
+
+def get_relative_error(pred_list, target_list):
+    relative_errors = []
+    target_list_squares = np.array(target_list)**2
+    target_list_temp_sums = np.sum(target_list_squares, axis=(1,2))
+    target_list_mean = np.mean(target_list_temp_sums)
+
+    for y_hat, y in zip(pred_list, target_list):
+        relative_error = torch.sum((y_hat - y)**2) / target_list_mean
+        relative_errors.append(relative_error)
+    return relative_errors
+
+
+def get_absolute_error(pred_list, target_list):
+    absolute_errors = []
+    target_list_abs = np.abs(np.array(target_list))
+    target_list_temp_sums = np.sum(target_list_abs, axis=(1,2))
+    target_list_mean = np.mean(target_list_temp_sums)
+
+    for y_hat, y in zip(pred_list, target_list):
+        absolute_error = torch.sum(np.abs(y_hat - y)) / target_list_mean
+        absolute_errors.append(absolute_error)
+    return absolute_errors
+
+def log_plot(plot_name, value_name, values):
+    table = wandb.Table(data=[[t, value] for (t, value) in enumerate(values)], columns = ["step", value_name])
+    wandb.log(
+        {plot_name : wandb.plot.line(table, "step", value_name,
+            title=plot_name)})
 
 
 class LogR2ScoreOverTimePlotCallback(Callback):
@@ -135,7 +204,7 @@ class PlotErrorOverTimeCallback(Callback):
 
             next_x_temperature = model.get_predicted_temperature(x[-1], y_hat[0])
             actual_next_x_temperature = model.get_predicted_temperature(actual_x_temperature, y[0])
-
+            # print(dataset[sample_idx + 1][0][0, -1] - actual_next_x_temperature)
             # e(t) = sum((gt[t,:,:]-pred[t,:,])**2) / mean_t(sum((gt[t,:,:])**2))
             relative_error = torch.sum((actual_next_x_temperature - next_x_temperature)**2) / torch.max(torch.mean(actual_next_x_temperature**2), torch.tensor(1e-6))
             relative_error = relative_error.detach().cpu().numpy()
@@ -167,3 +236,46 @@ class PlotErrorOverTimeCallback(Callback):
             error_data.append([sample_idx, average_absolute_error, average_relative_error, average_r2_score])
 
         return error_data
+
+
+class Rollout2DUNetCallback(Callback):
+    def __init__(self, scan_parameters, steps=10, samples=100):
+        super().__init__()
+        self.scan_parameters = scan_parameters
+        self.steps = steps
+        self.samples = samples
+
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        evaluation_dataset = trainer.datamodule.leap_eval
+        current_epoch = trainer.current_epoch
+        predictions = get_recursive_model_predictions(pl_module, evaluation_dataset)
+
+        x_gt_values = []
+        y_values = []
+        y_hat_values = []
+        x_pred_values = []
+        for x, y, y_hat, x_pred_temperature in predictions:
+            x_gt_values.append(x)
+            y_values.append(y)
+            y_hat_values.append(y_hat)
+            x_pred_values.append(x_pred_temperature)
+
+        # x_gt_values start at t = 0, x_pred_values start at t = 1
+        self.calculate_and_log_r2(x_gt_values[1:], y_values, x_pred_values, y_hat_values, current_epoch)
+        self.calculate_and_log_relative_error(x_gt_values[1:], x_pred_values, current_epoch)
+        self.calculate_and_log_absolute_error(x_gt_values[1:], x_pred_values, current_epoch)
+
+    def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, epoch):
+        r2_scores = get_r2_scores(y_hat_values, y_values)
+        log_plot(f"Temperature Diff R2 score for rollout, epoch {epoch}", "R2 Score", r2_scores)
+
+        r2_scores = get_r2_scores(x_pred_values, x_gt_values)
+        log_plot(f"Temperature R2 score for rollout, epoch {epoch}", "R2 Score", r2_scores)
+
+    def calculate_and_log_relative_error(self, x_gt_values, x_pred_values, epoch):
+        relative_errors = get_relative_error(x_pred_values, x_gt_values)
+        log_plot(f"Relative error for rollout, epoch {epoch}", "Relative error", relative_errors)
+
+    def calculate_and_log_absolute_error(self, x_gt_values, x_pred_values, epoch):
+        absolute_errors = get_absolute_error(x_pred_values, x_gt_values)
+        log_plot(f"Absolute error for rollout, epoch {epoch}", "Absolute error", absolute_errors)
