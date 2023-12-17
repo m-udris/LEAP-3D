@@ -120,12 +120,12 @@ def plot_model_at_timestep(timestep, setup=False):
     return [im1, im2, im3, im4, im5, im6, im7, im8]
 
 
-frames_step = 1
+frames_step = 5
 num_frames = (len(x_gt_values) - 1) // frames_step
 t_start = 0
 
 ani = matplotlib.animation.FuncAnimation(fig, lambda t: plot_model_at_timestep(t_start + frames_step + t*frames_step), frames=num_frames, blit=True, interval=500, repeat_delay=1000, init_func=lambda: plot_model_at_timestep(t_start, setup=True))
 
 FFwriter = matplotlib.animation.FFMpegWriter(fps=2)
-animation_filepath = f"./plots/{model_name}_full_rolout.mp4"
+animation_filepath = f"./plots/{model_name}_full_rolout_5_step.mp4"
 ani.save(animation_filepath, writer=FFwriter)
