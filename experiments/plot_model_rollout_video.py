@@ -126,5 +126,6 @@ t_start = 0
 
 ani = matplotlib.animation.FuncAnimation(fig, lambda t: plot_model_at_timestep(t_start + frames_step + t*frames_step), frames=num_frames, blit=True, interval=500, repeat_delay=1000, init_func=lambda: plot_model_at_timestep(t_start, setup=True))
 
+FFwriter = matplotlib.animation.FFMpegWriter(fps=2)
 animation_filepath = f"./plots/{model_name}_full_rolout.mp4"
-ani.save(animation_filepath, fps=2)
+ani.save(animation_filepath, writer=FFwriter)
