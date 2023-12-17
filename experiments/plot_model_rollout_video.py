@@ -126,5 +126,5 @@ t_start = 0
 
 ani = matplotlib.animation.FuncAnimation(fig, lambda t: plot_model_at_timestep(t_start + frames_step + t*frames_step), frames=num_frames, blit=True, interval=500, repeat_delay=1000, init_func=lambda: plot_model_at_timestep(t_start, setup=True))
 
-animation_filepath = f"./Plots/{model_name}_full_rolout.mp4"
-ani.save(animation_filepath, fps=2, progress_callback=lambda frame_number, _: print(f"{frame_number}", end="\r"))
+animation_filepath = f"./plots/{model_name}_full_rolout.mp4"
+ani.save(animation_filepath, fps=2)
