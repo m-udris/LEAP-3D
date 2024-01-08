@@ -45,6 +45,7 @@ class LEAP3D_UNet(BaseModel):
             raise ValueError(f"Unknown loss function {loss_function}")
         self.is_teacher_forcing = False
         self.lr = lr
+        self.in_channels = in_channels
 
     def forward(self, x, extra_params):
         return self.net(x, extra_params)
@@ -52,10 +53,10 @@ class LEAP3D_UNet(BaseModel):
     def f_step(self, batch, batch_idx, train=False, steps=None, *args, **kwargs):
         x_window, extra_params_window, y_window = batch
         if len(x_window.shape) == 4:
-            return self.f_step_single(x_window, extra_params_window, y_window, train=train)
+            return self.f_step_single(x_window[:, :self.in_channels], extra_params_window, y_window, train=train)
         if x_window.shape[1] == 1:
-            return self.f_step_single(x_window[:, 0], extra_params_window[:, 0], y_window[:, 0], train=train)
-        return self.f_step_window(x_window, extra_params_window, y_window, train=train)
+            return self.f_step_single(x_window[:, 0, :self.in_channels], extra_params_window[:, 0], y_window[:, 0], train=train)
+        return self.f_step_window(x_window[:, :, :self.in_channels], extra_params_window, y_window, train=train)
 
     def f_step_single(self, x, extra_params, y, train=False, log_loss=True):
         y_hat = self.net(x, extra_params)
