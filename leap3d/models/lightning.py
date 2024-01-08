@@ -48,7 +48,9 @@ class LEAP3D_UNet(BaseModel):
         self.in_channels = in_channels
 
     def forward(self, x, extra_params):
+        logging.info(f"X shape: {x.shape}, extra_params shape: {extra_params.shape}")
         x = x[:, :self.in_channels]
+        logging.info(f"after: X shape: {x.shape}, extra_params shape: {extra_params.shape}")
         return self.net(x, extra_params)
 
     def f_step(self, batch, batch_idx, train=False, steps=None, *args, **kwargs):
