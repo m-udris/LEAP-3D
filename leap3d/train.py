@@ -89,7 +89,7 @@ def train(
         train_transforms_inverse: transforms.Compose = 'default',
         target_transforms_inverse: transforms.Compose = 'default',
         transform_target_to_train: transforms.Compose = DEFAULT_TARGET_TO_TRAIN_TRANSFORM,
-        channels: List[Channel] = [Channel.LASER_POSITION, Channel.Temperature],
+        channels: List[Channel] = [Channel.LASER_POSITION, Channel.TEMPERATURE],
         in_channels: int = 3,
         out_channels: int = 1,
         window_size: int = 1,
