@@ -49,8 +49,8 @@ class LEAP3D_UNet(BaseModel):
 
     def forward(self, x, extra_params):
         logging.info(f"X shape: {x.shape}, extra_params shape: {extra_params.shape}")
-        x = x[:, :self.in_channels]
-        assert x.shape[1] == self.in_channels
+        x = x[:self.in_channels]
+        assert x.shape[0] == self.in_channels
         logging.info(f"after: X shape: {x.shape}, extra_params shape: {extra_params.shape}")
         return self.net(x, extra_params)
 
