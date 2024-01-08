@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.dataset import ExtraParam, LEAP3DDataModule
+from leap3d.dataset import Channel, ExtraParam, LEAP3DDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.models.unet2d import UNet2D
@@ -89,6 +89,7 @@ def train(
         train_transforms_inverse: transforms.Compose = 'default',
         target_transforms_inverse: transforms.Compose = 'default',
         transform_target_to_train: transforms.Compose = DEFAULT_TARGET_TO_TRAIN_TRANSFORM,
+        channels: List[Channel] = [Channel.LASER_POSITION, Channel.Temperature],
         in_channels: int = 3,
         out_channels: int = 1,
         window_size: int = 1,
@@ -172,7 +173,8 @@ def train(
         extra_params_transform = extra_params_transform,
         transform_inverse = train_transforms_inverse,
         target_transform_inverse = target_transforms_inverse,
-        force_prepare=hparams['force_prepare']
+        force_prepare=hparams['force_prepare'],
+        channels=channels,
     )
 
     plot_dir = Path("./plots/")

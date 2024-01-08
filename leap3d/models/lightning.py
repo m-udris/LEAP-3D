@@ -48,17 +48,20 @@ class LEAP3D_UNet(BaseModel):
         self.in_channels = in_channels
 
     def forward(self, x, extra_params):
+        x = x[:, :self.in_channels]
         return self.net(x, extra_params)
 
     def f_step(self, batch, batch_idx, train=False, steps=None, *args, **kwargs):
         x_window, extra_params_window, y_window = batch
         if len(x_window.shape) == 4:
-            return self.f_step_single(x_window[:, :self.in_channels], extra_params_window, y_window, train=train)
+            return self.f_step_single(x_window, extra_params_window, y_window, train=train)
         if x_window.shape[1] == 1:
-            return self.f_step_single(x_window[:, 0, :self.in_channels], extra_params_window[:, 0], y_window[:, 0], train=train)
-        return self.f_step_window(x_window[:, :, :self.in_channels], extra_params_window, y_window, train=train)
+            return self.f_step_single(x_window[:, 0], extra_params_window[:, 0], y_window[:, 0], train=train)
+        return self.f_step_window(x_window, extra_params_window, y_window, train=train)
 
     def f_step_single(self, x, extra_params, y, train=False, log_loss=True):
+        logging.info(f"X shape: {x.shape}, extra_params shape: {extra_params.shape}, y shape: {y.shape}")
+        x = x[:, :self.in_channels]
         y_hat = self.net(x, extra_params)
         y = y.reshape(y_hat.shape)
         loss = self.loss_function(y_hat, y)
