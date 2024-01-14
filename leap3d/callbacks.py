@@ -40,7 +40,7 @@ def get_r2_scores(pred_list, target_list, return_parts=False):
     numerators = []
     denominators = []
     for y_hat, y in zip(pred_list, target_list):
-        r2_scores.append(r2_score(y_hat, y))
+        r2_scores.append(r2_score(y_hat.reshape(-1), y.reshape(-1)))
         if return_parts:
             numerators.append(torch.sum((y_hat - y) ** 2))
             denominators.append(torch.sum((y - torch.mean(y)) ** 2))
