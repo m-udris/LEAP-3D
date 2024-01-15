@@ -351,7 +351,7 @@ class LEAP3DDataModule(pl.LightningDataModule):
         return DataLoader(self.leap_train, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0)
 
     def val_dataloader(self):
-        return DataLoader(self.leap_val, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0)
+        return DataLoader(self.leap_val, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
         return DataLoader(self.leap_test, batch_size=self.batch_size, num_workers=self.num_workers)
