@@ -266,6 +266,11 @@ class Rollout2DUNetCallback(Callback):
             # x_gt_values start at t = 0, x_pred_values start at t = 1
             self.calculate_and_log_r2(x_gt_values[1:], y_values, x_pred_values, y_hat_values, current_epoch)
             self.calculate_and_log_relative_error(x_gt_values[1:], x_pred_values, current_epoch)
+            del x_gt_values
+            del y_values
+            del y_hat_values
+            del x_pred_values
+            torch.cuda.empty_cache()
             # self.calculate_and_log_absolute_error(x_gt_values[1:], x_pred_values, current_epoch)
 
     def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, epoch):
