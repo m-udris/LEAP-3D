@@ -16,7 +16,9 @@ def get_recursive_model_predictions(model, dataset):
     model.eval()
     next_x_temperature = None
     with torch.no_grad():
-        for (x, extra_params, y) in dataset[:10000]:
+        for index, (x, extra_params, y) in enumerate(dataset):
+            if index >= 10000:
+                break
             x = x[0].to(model.device)
             x_original = x[-1].clone().detach()
             extra_params = extra_params.to(model.device)
