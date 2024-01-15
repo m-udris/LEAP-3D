@@ -289,7 +289,7 @@ class LEAP3DDataModule(pl.LightningDataModule):
                  transform: callable=None, target_transform: callable=None, extra_params_transform: callable=None,
                  transform_inverse: callable=None, target_transform_inverse: callable=None,
                  force_prepare=False,
-                 num_workers=1):
+                 num_workers=0):
         super().__init__()
         self.scan_parameters_filepath = scan_parameters_filepath
         self.rough_coordinates_filepath = rough_coordinates_filepath
@@ -348,10 +348,10 @@ class LEAP3DDataModule(pl.LightningDataModule):
                                        transform_inverse=self.transform_inverse, target_transform_inverse=self.target_transform_inverse)
 
     def train_dataloader(self):
-        return DataLoader(self.leap_train, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.leap_train, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0)
 
     def val_dataloader(self):
-        return DataLoader(self.leap_val, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.leap_val, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0)
 
     def test_dataloader(self):
         return DataLoader(self.leap_test, batch_size=self.batch_size, num_workers=self.num_workers)
