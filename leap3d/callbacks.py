@@ -16,7 +16,7 @@ def get_recursive_model_predictions(model, dataset):
     model.eval()
     next_x_temperature = None
     with torch.no_grad():
-        for (x, extra_params, y) in dataset:
+        for (x, extra_params, y) in dataset[:10000]:
             x = x[0].to(model.device)
             x_original = x[-1].clone().detach()
             extra_params = extra_params.to(model.device)
@@ -250,20 +250,21 @@ class Rollout2DUNetCallback(Callback):
         current_epoch = trainer.current_epoch
         predictions = get_recursive_model_predictions(pl_module, evaluation_dataset)
 
-        x_gt_values = []
-        y_values = []
-        y_hat_values = []
-        x_pred_values = []
-        for x, y, y_hat, x_pred_temperature in predictions:
-            x_gt_values.append(x)
-            y_values.append(y)
-            y_hat_values.append(y_hat)
-            x_pred_values.append(x_pred_temperature)
+        with torch.no_grad:
+            x_gt_values = []
+            y_values = []
+            y_hat_values = []
+            x_pred_values = []
+            for x, y, y_hat, x_pred_temperature in predictions:
+                x_gt_values.append(x)
+                y_values.append(y)
+                y_hat_values.append(y_hat)
+                x_pred_values.append(x_pred_temperature)
 
-        # x_gt_values start at t = 0, x_pred_values start at t = 1
-        self.calculate_and_log_r2(x_gt_values[1:], y_values, x_pred_values, y_hat_values, current_epoch)
-        self.calculate_and_log_relative_error(x_gt_values[1:], x_pred_values, current_epoch)
-        # self.calculate_and_log_absolute_error(x_gt_values[1:], x_pred_values, current_epoch)
+            # x_gt_values start at t = 0, x_pred_values start at t = 1
+            self.calculate_and_log_r2(x_gt_values[1:], y_values, x_pred_values, y_hat_values, current_epoch)
+            self.calculate_and_log_relative_error(x_gt_values[1:], x_pred_values, current_epoch)
+            # self.calculate_and_log_absolute_error(x_gt_values[1:], x_pred_values, current_epoch)
 
     def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, epoch):
         r2_scores = get_r2_scores(y_hat_values, y_values)
