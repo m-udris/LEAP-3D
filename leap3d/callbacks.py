@@ -250,7 +250,7 @@ class Rollout2DUNetCallback(Callback):
         current_epoch = trainer.current_epoch
         predictions = get_recursive_model_predictions(pl_module, evaluation_dataset)
 
-        with torch.no_grad:
+        with torch.no_grad():
             x_gt_values = []
             y_values = []
             y_hat_values = []
