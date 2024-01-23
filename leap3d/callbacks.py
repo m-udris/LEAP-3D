@@ -292,10 +292,10 @@ class Rollout2DUNetCallback(Callback):
 
                 previous_x_pred_value = x_pred_temperature
 
-            relative_error_normalizer = np.array(relative_error_normalizer_list).mean()
+            relative_error_normalizer = np.mean(np.array(relative_error_normalizer_list))
             relative_errors = [relative_error / relative_error_normalizer for relative_error in relative_errors]
 
-            absolute_error_normalizer = np.array(absolute_error_normalizer_list).mean()
+            absolute_error_normalizer = np.mean(np.array(absolute_error_normalizer_list))
             absolute_errors = [absolute_error / absolute_error_normalizer for absolute_error in absolute_errors]
 
         log_plot(f"Temperature Diff R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_diff_r2_scores)
