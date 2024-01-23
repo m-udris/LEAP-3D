@@ -284,11 +284,11 @@ class Rollout2DUNetCallback(Callback):
 
                 relative_error = torch.sum((y_hat - y)**2)
                 relative_errors.append(relative_error)
-                relative_error_normalizer_list.append(np.sum(y**2))
+                relative_error_normalizer_list.append(torch.sum(y**2))
 
                 absolute_error = torch.sum(torch.abs(y_hat - y))
                 absolute_errors.append(absolute_error)
-                absolute_error_normalizer_list.append(np.sum(np.abs(y)))
+                absolute_error_normalizer_list.append(torch.sum(torch.abs(y)))
 
                 previous_x_pred_value = x_pred_temperature
 
