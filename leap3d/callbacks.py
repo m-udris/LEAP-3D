@@ -30,10 +30,10 @@ def get_recursive_model_predictions(model, dataset):
 
             next_x_temperature = model.get_predicted_temperature(x[-1], y_hat)
 
-            x_original = x_original.cpu().numpy()
-            y = y.squeeze().cpu().numpy()
-            y_hat = y_hat.squeeze().cpu().numpy()
-            next_x_temperature_copy = next_x_temperature.cpu().numpy()
+            x_original = x_original.detach().cpu()
+            y = y.squeeze().detach().cpu()
+            y_hat = y_hat.squeeze().detach().cpu()
+            next_x_temperature_copy = next_x_temperature.detach().cpu()
             yield x_original, y, y_hat, next_x_temperature_copy
 
 
@@ -281,11 +281,11 @@ class Rollout2DUNetCallback(Callback):
                 if previous_x_pred_value is not None:
                     temperature_r2_scores.append(get_r2_score(previous_x_pred_value, x))
 
-                    relative_errors.append(np.sum((previous_x_pred_value - x)**2))
-                    relative_error_normalizer_list.append(np.sum(x**2))
+                    relative_errors.append(torch.sum((previous_x_pred_value - x)**2))
+                    relative_error_normalizer_list.append(torch.sum(x**2))
 
-                    absolute_errors.append(np.abs(previous_x_pred_value - x))
-                    absolute_error_normalizer_list.append(np.sum(np.abs(x)))
+                    absolute_errors.append(torch.abs(previous_x_pred_value - x))
+                    absolute_error_normalizer_list.append(torch.sum(torch.abs(x)))
 
                 temperature_diff_r2_scores.append(get_r2_score(y_hat, y))
 
