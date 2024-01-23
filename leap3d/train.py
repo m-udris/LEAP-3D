@@ -187,7 +187,7 @@ def train(
     ]
     if not no_callbacks:
         callbacks += [
-            # LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
+            LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
             # PlotTopLayerTemperatureCallback(scan_parameters, plot_dir, steps=10, samples=20),
             # PlotErrorOverTimeCallback()
             Rollout2DUNetCallback(scan_parameters)
