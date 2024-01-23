@@ -13,10 +13,10 @@ class Double3DConv(torch.nn.Module):
             mid_channels = out_channels
 
         self.double_conv = nn.Sequential(
-            nn.Conv3d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
+            nn.Conv3d(in_channels, mid_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=False),
             nn.BatchNorm3d(mid_channels),
             activation(inplace=True),
-            nn.Conv3d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.Conv3d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=False),
             nn.BatchNorm3d(out_channels),
             activation(inplace=True)
         )
@@ -47,7 +47,7 @@ class Up3D(torch.nn.Module):
             self.conv = Double3DConv(in_channels, out_channels, in_channels // 2, activation=activation)
         else:
             self.upsample = nn.ConvTranspose3d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self.conv = Double3DConv(in_channels, out_channels, activation=activation)
+            self.conv = Double3DConv(in_channels, out_channels, activation=activation, padding_mode='replicate')
 
     def forward(self, x1, x2):
         # x1 - previous layer output
