@@ -282,10 +282,10 @@ class Rollout2DUNetCallback(Callback):
                     temperature_r2_scores.append(get_r2_score(previous_x_pred_value, x))
 
                     relative_errors.append(torch.sum((previous_x_pred_value - x)**2))
-                    relative_error_normalizer_list.append(np.sum(x**2))
+                    relative_error_normalizer_list.append(np.sum(x.numpy()**2))
 
                     absolute_errors.append(torch.sum(np.abs(previous_x_pred_value - x)))
-                    absolute_error_normalizer_list.append(np.sum(np.abs(x)))
+                    absolute_error_normalizer_list.append(np.sum(np.abs(x.numpy())))
 
                 temperature_diff_r2_scores.append(get_r2_score(y_hat, y))
 
@@ -293,10 +293,10 @@ class Rollout2DUNetCallback(Callback):
                 previous_x_pred_value = x_pred_temperature
 
             relative_error_normalizer = np.mean(np.array(relative_error_normalizer_list))
-            relative_errors = [(relative_error / relative_error_normalizer).numpy() for relative_error in relative_errors]
+            relative_errors = [relative_error / relative_error_normalizer for relative_error in relative_errors]
 
             absolute_error_normalizer = np.mean(np.array(absolute_error_normalizer_list))
-            absolute_errors = [(absolute_error / absolute_error_normalizer).numpy() for absolute_error in absolute_errors]
+            absolute_errors = [absolute_error / absolute_error_normalizer for absolute_error in absolute_errors]
 
         log_plot(f"Temperature Diff R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_diff_r2_scores)
         log_plot(f"Temperature R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_r2_scores)
