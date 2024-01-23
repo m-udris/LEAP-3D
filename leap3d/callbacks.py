@@ -30,10 +30,10 @@ def get_recursive_model_predictions(model, dataset):
 
             next_x_temperature = model.get_predicted_temperature(x[-1], y_hat)
 
-            x_original = x_original.cpu()
-            y = y.squeeze().cpu()
-            y_hat = y_hat.squeeze().cpu()
-            next_x_temperature_copy = next_x_temperature.cpu()
+            x_original = x_original.cpu().numpy()
+            y = y.squeeze().cpu().numpy()
+            y_hat = y_hat.squeeze().cpu().numpy()
+            next_x_temperature_copy = next_x_temperature.cpu().numpy()
             yield x_original, y, y_hat, next_x_temperature_copy
 
 
