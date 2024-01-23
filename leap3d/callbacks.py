@@ -280,13 +280,15 @@ class Rollout2DUNetCallback(Callback):
             for x, y, y_hat, x_pred_temperature in predictions:
                 if previous_x_pred_value is not None:
                     temperature_r2_scores.append(get_r2_score(previous_x_pred_value, x))
+
+                    relative_errors.append(torch.sum((previous_x_pred_value - x)**2))
+                    relative_error_normalizer_list.append(torch.sum(x**2))
+
+                    absolute_errors.append(torch.abs(previous_x_pred_value - x))
+                    absolute_error_normalizer_list.append(torch.sum(torch.abs(x)))
+
                 temperature_diff_r2_scores.append(get_r2_score(y_hat, y))
 
-                relative_errors.append(torch.sum((y_hat - y)**2))
-                relative_error_normalizer_list.append(torch.sum(y**2))
-
-                absolute_errors.append(torch.abs(y_hat - y))
-                absolute_error_normalizer_list.append(torch.sum(torch.abs(y)))
 
                 previous_x_pred_value = x_pred_temperature
 
