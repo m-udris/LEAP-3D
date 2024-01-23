@@ -42,15 +42,29 @@ def get_r2_scores(pred_list, target_list, return_parts=False):
     numerators = []
     denominators = []
     for y_hat, y in zip(pred_list, target_list):
-        r2_scores.append(r2_score(y_hat.reshape(-1), y.reshape(-1)))
         if return_parts:
-            numerators.append(torch.sum((y_hat - y) ** 2))
-            denominators.append(torch.sum((y - torch.mean(y)) ** 2))
+            r2_score_value, numerator, denominator = get_r2_score(y_hat, y, return_parts=True)
+            r2_scores.append(r2_score_value)
+            numerators.append(numerator)
+            denominators.append(denominator)
+        else:
+            r2_score_value = get_r2_score(y_hat, y)
+            r2_scores.append(r2_score_value)
     if return_parts:
         return r2_scores, numerators, denominators
     return r2_scores
 
 
+def get_r2_score(y_hat, y, return_parts=False):
+    r2_score_value = r2_score(y_hat.reshape(-1), y.reshape(-1))
+    if return_parts:
+        numerator = torch.sum((y_hat - y) ** 2)
+        denominator = torch.sum((y - torch.mean(y)) ** 2)
+        return r2_score_value, numerator, denominator
+    return r2_score_value
+
+
+# TODO: Refactor into a class
 def get_relative_error(pred_list, target_list):
     relative_errors = []
     target_list_squares = np.array(target_list)**2
@@ -63,6 +77,7 @@ def get_relative_error(pred_list, target_list):
     return relative_errors
 
 
+# TODO: Refactor into a class
 def get_absolute_error(pred_list, target_list):
     absolute_errors = []
     target_list_abs = np.abs(np.array(target_list))
@@ -252,26 +267,42 @@ class Rollout2DUNetCallback(Callback):
         current_epoch = trainer.current_epoch
         predictions = get_recursive_model_predictions(pl_module, evaluation_dataset)
 
-        with torch.no_grad():
-            x_gt_values = []
-            y_values = []
-            y_hat_values = []
-            x_pred_values = []
-            for x, y, y_hat, x_pred_temperature in predictions:
-                x_gt_values.append(x)
-                y_values.append(y)
-                y_hat_values.append(y_hat)
-                x_pred_values.append(x_pred_temperature)
+        previous_x_pred_value = None
 
-            # x_gt_values start at t = 0, x_pred_values start at t = 1
-            self.calculate_and_log_r2(x_gt_values[1:], y_values, x_pred_values, y_hat_values, current_epoch)
-            self.calculate_and_log_relative_error(x_gt_values[1:], x_pred_values, current_epoch)
-            del x_gt_values
-            del y_values
-            del y_hat_values
-            del x_pred_values
-            torch.cuda.empty_cache()
-            # self.calculate_and_log_absolute_error(x_gt_values[1:], x_pred_values, current_epoch)
+        temperature_diff_r2_scores = []
+        temperature_r2_scores = []
+        relative_errors = []
+        relative_error_normalizer_list = []
+        absolute_errors = []
+        absolute_error_normalizer_list = []
+
+        with torch.no_grad():
+            for x, y, y_hat, x_pred_temperature in predictions:
+                if previous_x_pred_value is not None:
+                    temperature_r2_scores.append(get_r2_score(previous_x_pred_value, x))
+                temperature_diff_r2_scores.append(get_r2_score(y_hat, y))
+
+                relative_error = torch.sum((y_hat - y)**2)
+                relative_errors.append(relative_error)
+                relative_error_normalizer_list.append(np.sum(y**2))
+
+                absolute_error = torch.sum(torch.abs(y_hat - y))
+                absolute_errors.append(absolute_error)
+                absolute_error_normalizer_list.append(np.sum(np.abs(y)))
+
+                previous_x_pred_value = x_pred_temperature
+
+            relative_error_normalizer = np.array(relative_error_normalizer_list).mean()
+            relative_errors = [relative_error / relative_error_normalizer for relative_error in relative_errors]
+
+            absolute_error_normalizer = np.array(absolute_error_normalizer_list).mean()
+            absolute_errors = [absolute_error / absolute_error_normalizer for absolute_error in absolute_errors]
+
+        log_plot(f"Temperature Diff R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_diff_r2_scores)
+        log_plot(f"Temperature R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_r2_scores)
+        log_plot(f"Relative error for rollout, epoch {current_epoch}", "Relative error", relative_errors)
+        log_plot(f"Absolute error for rollout, epoch {current_epoch}", "Absolute error", absolute_errors)
+
 
     def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, epoch):
         r2_scores = get_r2_scores(y_hat_values, y_values)
