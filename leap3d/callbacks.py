@@ -284,7 +284,7 @@ class Rollout2DUNetCallback(Callback):
                     relative_errors.append(torch.sum((previous_x_pred_value - x)**2))
                     relative_error_normalizer_list.append(torch.sum(x**2))
 
-                    absolute_errors.append(torch.abs(previous_x_pred_value - x))
+                    absolute_errors.append(torch.sum(torch.abs(previous_x_pred_value - x)))
                     absolute_error_normalizer_list.append(torch.sum(torch.abs(x)))
 
                 temperature_diff_r2_scores.append(get_r2_score(y_hat, y))
