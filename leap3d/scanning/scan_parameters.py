@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 import numpy.typing
@@ -54,12 +55,17 @@ class ScanParameters():
         self.laser_y_min = (self.y_min + self.safety_offset)
         self.laser_y_max = (self.y_max - self.safety_offset)
 
+        self.rough_coordinates_step_size = self.get_rough_coordinates_step_size()
+
     def get_bounds(self):
         return self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max
 
     def get_laser_bounds(self):
         return self.laser_x_min, self.laser_x_max, \
                self.laser_y_min, self.laser_y_max
+
+    def get_rough_coordinates_step_size(self):
+        return np.abs(self.rough_coordinates['x_rough'][1, 0, 0] - self.rough_coordinates['x_rough'][0, 0, 0])
 
     def get_cross_section_scanning_bounds(self, laser_x, laser_y):
         """Calculate scanning bounds of the cross section"""
@@ -99,6 +105,28 @@ class ScanParameters():
             for X_rows, Y_rows, Z_rows in zip(X_planes, Y_planes, Z_planes):
                 for x, y, z in zip(X_rows, Y_rows, Z_rows):
                     points.append((x, y, z))
+        return points
+
+    def get_coordinates_around_position(self, x: float, y: float, size: int, scale: float=0.25, is_3d: bool=False):
+        step_size = self.rough_coordinates_step_size
+        x_start = x - (step_size * 0.5 * (size))
+        x_end = x + (step_size * 0.5 * (size))
+        y_start = y - (step_size * 0.5 * (size))
+        y_end = y + (step_size * 0.5 * (size))
+
+        z_start = self.rough_coordinates['z_rough'][0, 0, 0]
+        z_end = self.rough_coordinates['z_rough'][0, 0, -1]
+
+        x_points = np.linspace(x_start, x_end, int(size // scale))
+        y_points = np.linspace(y_start, y_end, int(size // scale))
+
+        if is_3d:
+            z_points = np.linspace(z_start, z_end, int(len(self.rough_coordinates['z_rough'][0, 0, :]) // scale))
+        else:
+            z_points = [np.max(self.rough_coordinates['z_rough'][0, 0, :])]
+
+        points = [(x, y, z) for x in x_points for y in y_points for z in z_points]
+
         return points
 
     def __repr__(self):

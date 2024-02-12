@@ -124,10 +124,6 @@ def prepare_scan_results(scan_result_filepath, scan_parameters, window_size=1, w
 
     scan_results = ScanResults(scan_result_filepath)
 
-    training_points = []
-    extra_params_points = []
-    targets = []
-
     for timestep in range(0, scan_results.total_timesteps - window_size, window_step_size):
         training_points_window = []
         extra_params_window = []

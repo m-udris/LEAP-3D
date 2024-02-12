@@ -13,9 +13,11 @@ from leap3d.train import DEFAULT_EXTRA_PARAMS, DEFAULT_TRAIN_TRANSFORM_2D, DEFAU
 case_params = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, case_index=20)
 
 plot_dir = Path("./plots/")
-dataset_dir = Path(sys.argv[1])
+dataset_dir = DATASET_DIR
+# dataset_dir = Path(sys.argv[1])
 
-checkpoint_filepath = Path(sys.argv[2])
+# checkpoint_filepath = Path(sys.argv[2])
+checkpoint_filepath = Path("D:/ETH Zurich/Master Thesis/Surf-GNN/Data/Models/unet2d_p_w5_l1_loss.ckpt")
 model = LEAP3D_UNet2D.load_from_checkpoint(checkpoint_filepath)
 model.eval()
 
@@ -26,9 +28,9 @@ eval_cases = [20]
 datamodule = LEAP3DDataModule(
         PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
         is_3d=False,
-        batch_size=128,
+        batch_size=64,
         train_cases=train_cases, test_cases=test_cases, eval_cases=eval_cases,
-        window_size=10, window_step_size=10,
+        window_size=5, window_step_size=5,
         num_workers=NUM_WORKERS,
         extra_params=DEFAULT_EXTRA_PARAMS,
         transform = DEFAULT_TRAIN_TRANSFORM_2D,
@@ -43,9 +45,9 @@ datamodule.setup(stage="")
 
 dataset = datamodule.leap_eval
 
-fig, axes, ims = plot_model_top_layer_temperature_comparison(case_params, model, dataset, steps=len(dataset) - 1, samples=1)
+fig, axes, ims = plot_model_top_layer_temperature_comparison(case_params, model, dataset, steps=2000, samples=1)
 
-ani = animation.ArtistAnimation(fig, ims, repeat=True, interval=20, blit=True, repeat_delay=1000)
+ani = animation.ArtistAnimation(fig, ims, repeat=True, interval=100, blit=True, repeat_delay=1000)
 
-animation_filepath = plot_dir / f"predicted_top_layer_temperature_for_whole_case.gif"
+animation_filepath = plot_dir / f"predicted_top_layer_temperature_for_whole_case_unet2d_L1_2500_steps.gif"
 ani.save(animation_filepath, fps=10, progress_callback=lambda frame_number, total_frames: print(f"{frame_number}/{total_frames}", end="\r"))

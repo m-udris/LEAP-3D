@@ -5,6 +5,7 @@ from scipy import interpolate
 import scipy
 
 from leap3d.config import SCALE_DISTANCE_BY, SCALE_TIME_BY
+from leap3d.scanning import scan_parameters
 class ScanResults():
     def __init__(self, results_filename: str | Path,
                  scale_distance_by: float=None,
@@ -90,14 +91,32 @@ class ScanResults():
 
         return melt_pool_grid
 
-    def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters, timestep: int, only_high_quality: bool=False):
-        temperature = self.get_rough_temperatures_at_timestep(timestep).flatten()
-        melt_pool_coordinates, melt_pool_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
+    def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters, timestep: int, resolution: str=None):
+        if resolution not in [None, 'low', 'high']:
+            raise ValueError("Resolution must be one of [None, 'low', 'high']")
 
-        if only_high_quality:
-            return melt_pool_coordinates, melt_pool_temperature
-        coordinates = scan_parameters.get_rough_coordinates_points_list() + melt_pool_coordinates
-        temperatures = list(temperature) + melt_pool_temperature
+        if resolution is None or resolution == 'low':
+            low_res_coordinates = scan_parameters.get_rough_coordinates_points_list()
+            low_res_temperature = list(self.get_rough_temperatures_at_timestep(timestep).flatten())
+        if resolution == 'low':
+            return low_res_coordinates, low_res_temperature
+
+        if resolution is None or resolution == 'high':
+            high_res_coordinates, high_res_temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
+
+        if resolution == 'high':
+            return high_res_coordinates, high_res_temperature
+
+        coordinates = []
+        temperatures = []
+
+        for point, value in zip(low_res_coordinates, low_res_temperature):
+            if point not in high_res_coordinates:
+                coordinates.append(point)
+                temperatures.append(value)
+
+        coordinates.extend(high_res_coordinates)
+        temperatures.extend(high_res_temperature)
 
         return coordinates, temperatures
 
@@ -135,6 +154,7 @@ class ScanResults():
         return T_interpolated
 
     def get_interpolated_data(self, scan_parameters, timestep, shape=(256, 256, 64), method='nearest'):
+        # TODO: fix so that it's aligned to the correct grid
         coordinates, temperature = self.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
 
         xi = np.linspace(scan_parameters.x_min, scan_parameters.x_max, shape[0])
@@ -146,3 +166,106 @@ class ScanResults():
         temperature = temperature.reshape(shape)
 
         return new_coordinate_points, temperature
+
+    def get_interpolated_grid_around_laser(self, timestep: int,
+                                                size: int, step_scale: float,
+                                                scan_parameters: scan_parameters,
+                                                include_high_resolution_points: bool=False,
+                                                is_3d: bool=False):
+        """Get interpolated grid around laser at timestep.
+
+        Args:
+            timestep (int): Timestep to get grid around laser
+            size (int): Square edge length in amount of points of rough coordinates around laser
+            step_scale (float): Scale of new step size compared to rough coordinates. E.g. 0.25 means 4 times as many points
+            scan_parameters (scan_parameters): Scan parameters
+            include_high_res (bool, optional): Whether to include high res points. Defaults to False.
+            is_3d (bool, optional): Whether to get 3D grid. Defaults to False."""
+        laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
+        rough_coordinates = scan_parameters.rough_coordinates
+        x_rough = rough_coordinates['x_rough']
+        y_rough = rough_coordinates['y_rough']
+        z_rough = rough_coordinates['z_rough']
+        grid_points = ([x[0][0] for x in x_rough], [y[0] for y in y_rough[0]], [z for z in z_rough[0][0]])
+
+        rough_temperature = self.get_rough_temperatures_at_timestep(timestep)
+
+        points_to_interpolate = scan_parameters.get_coordinates_around_position(laser_x, laser_y, size,
+                                                                                scale=step_scale, is_3d=is_3d)
+
+        points_to_interpolate = np.array(points_to_interpolate)
+
+        if include_high_resolution_points:
+            high_res_points, high_res_temps = self.get_melt_pool_coordinates_and_temperature(timestep)
+            if len(high_res_points) == 0:
+                interpolated_values = interpolate.interpn(grid_points, rough_temperature, points_to_interpolate, method='linear')
+            else:
+                step_size = scan_parameters.rough_coordinates_step_size * step_scale
+
+                # get ranges of x and y and align them to the new grid
+                half_step = step_size / 2
+                x_min = np.min(x_rough) - half_step
+                x_max = np.max(x_rough) - half_step
+                y_min = np.min(y_rough) + half_step
+                y_max = np.max(y_rough) - half_step
+                # We don't need to align z
+                z_min = np.min(z_rough)
+                z_max = np.max(z_rough)
+
+                upscaled_x_range = np.arange(x_min, x_max, step_size)
+                desired_x_min = np.min(points_to_interpolate[:, 0])
+                desired_x_max = np.max(points_to_interpolate[:, 0])
+                upscaled_x_range = upscaled_x_range[(upscaled_x_range >= desired_x_min - step_size) & (upscaled_x_range <= desired_x_max + step_size)]
+
+                upscaled_y_range = np.arange(y_min, y_max, step_size)
+                desired_y_min = np.min(points_to_interpolate[:, 1])
+                desired_y_max = np.max(points_to_interpolate[:, 1])
+                upscaled_y_range = upscaled_y_range[(upscaled_y_range >= desired_y_min - step_size) & (upscaled_y_range <= desired_y_max + step_size)]
+
+                z_min = z_min if is_3d else z_max - 3 * step_size
+                upscaled_z_range = np.arange(z_min, z_max + step_size, step_size)  # z coords are <= 0
+
+                upscaled_rough_coordinates = [(x, y, z) for x in upscaled_x_range for y in upscaled_y_range for z in upscaled_z_range]
+                upscaled_rough_temperatures = interpolate.interpn(grid_points, rough_temperature, upscaled_rough_coordinates, method='linear', bounds_error=False, fill_value=None)
+                upscaled_rough_temperatures = upscaled_rough_temperatures.reshape(upscaled_x_range.shape[0], upscaled_y_range.shape[0], upscaled_z_range.shape[0])
+
+                for high_res_point, high_res_temp in zip(high_res_points, high_res_temps):
+                    x, y, z = high_res_point
+                    if upscaled_z_range[0] - z > step_size:
+                        continue
+                    x_diff = np.abs(upscaled_x_range - x)
+                    if np.min(x_diff) > step_size:
+                        continue
+                    x_index = np.argmin(x_diff)
+                    y_diff = np.abs(upscaled_y_range - y)
+                    if np.min(y_diff) > step_size:
+                        continue
+                    y_index = np.argmin(y_diff)
+                    z_index = np.argmin(np.abs(upscaled_z_range - z))
+                    upscaled_rough_temperatures[x_index, y_index, z_index] = high_res_temp
+
+                upscaled_grid_points = [upscaled_x_range, upscaled_y_range, upscaled_z_range]
+                interpolated_values = interpolate.interpn(upscaled_grid_points, upscaled_rough_temperatures, points_to_interpolate, method='linear', bounds_error=False, fill_value=None)
+        else:
+            interpolated_values = interpolate.interpn(grid_points, rough_temperature, points_to_interpolate, method='linear')
+
+        points_to_interpolate = np.array(points_to_interpolate)
+        edge_length = int(size // step_scale)
+        shape = (edge_length, edge_length, 64) if is_3d else (edge_length, edge_length)
+        x_coords = points_to_interpolate[:, 0].reshape(shape)
+        y_coords = points_to_interpolate[:, 1].reshape(shape)
+        z_coords = points_to_interpolate[:, 2].reshape(shape)
+        interpolated_values = interpolated_values.reshape(shape)
+
+        return (x_coords, y_coords, z_coords), interpolated_values
+
+    # def get_points_around_laser(self, timestep: int, size: int, scan_parameters: scan_parameters, include_high_res: bool=False, is_3d: bool=False):
+    #     # TODO: do we need this?
+    #     raise NotImplementedError
+    #     # Step 1. Interpolate low res to high res
+    #     # Step 2. if include high res, add high res points to low res grid
+    #     # Step 3. Get points around laser. Do this by masking the grid according to distance to laser in x and y axes, then remove padding
+
+    #     laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
+
+
