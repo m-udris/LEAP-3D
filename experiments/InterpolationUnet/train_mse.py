@@ -98,7 +98,7 @@ def train():
     model = InterpolationUNet2D(**hparams)
     checkpoint_filename = wandb_config['name']
     callbacks = [
-        get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss')
+        get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss', mode='min')
     ]
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 
