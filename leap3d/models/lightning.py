@@ -129,3 +129,55 @@ class LEAP3D_UNet3D(LEAP3D_UNet):
         net = UNet3D(in_channels, out_channels, **kwargs)
         super(LEAP3D_UNet3D, self).__init__(net, in_channels, out_channels, lr=lr, transform=transform, *args, **kwargs)
         self.is_teacher_forcing = False
+
+
+class InterpolationUNet(BaseModel):
+    def __init__(self, net, in_channels=1, out_channels=1, lr=1e-3, loss_function: str | Callable ='mse', *args, **kwargs):
+        super(InterpolationUNet, self).__init__(net, in_channels, out_channels, *args, **kwargs)
+        if loss_function == 'mse':
+            self.loss_function = nn.functional.mse_loss
+        elif loss_function == 'heat_loss':
+            self.loss_function = heat_loss
+        elif loss_function == 'l1':
+            self.loss_function = nn.functional.l1_loss
+        elif callable(loss_function):
+            self.loss_function = loss_function
+        else:
+            raise ValueError(f"Unknown loss function {loss_function}")
+        self.is_teacher_forcing = False
+        self.lr = lr
+        self.in_channels = in_channels
+
+    def forward(self, x, extra_params):
+        return self.net(x, extra_params)
+
+    def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
+        x, extra_params, y = batch
+        y_hat = self.net(x, extra_params)
+        y = y.reshape(y_hat.shape)
+        loss = self.loss_function(y_hat, y)
+
+        metrics_dict = {
+            "loss": loss,
+            "r2": self.r2_metric(y_hat.reshape(-1), y.reshape(-1)),
+            "mae": self.mae_metric(y_hat, y),
+            "heat_loss": heat_loss(y_hat, y),
+            "mse": nn.functional.mse_loss(y_hat, y),
+        }
+        self.log_metrics_dict(metrics_dict, train)
+
+        return loss, y_hat
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        return optimizer
+
+class InterpolationUNet2D(InterpolationUNet):
+    def __init__(self, in_channels=1, out_channels=1, lr=1e-3, *args, **kwargs):
+        net = UNet2D(in_channels, out_channels, **kwargs)
+        super(InterpolationUNet2D, self).__init__(net, in_channels, out_channels, lr=lr, *args, **kwargs)
+
+class InterpolationUNet3D(InterpolationUNet):
+    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, *args, **kwargs):
+        net = UNet3D(in_channels, out_channels, **kwargs)
+        super(InterpolationUNet2D, self).__init__(net, in_channels, out_channels, lr=lr, *args, **kwargs)

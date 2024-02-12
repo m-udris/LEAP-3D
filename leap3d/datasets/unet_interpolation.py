@@ -176,6 +176,8 @@ class UnetInterpolationDataModule(pl.LightningDataModule):
                  extra_params: List[ExtraParam]=None,
                  transforms: Dict[str, callable]={}, inverse_transforms: Dict[str, callable]={},
                  force_prepare=False, num_workers=0):
+        super().__init__()
+
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
