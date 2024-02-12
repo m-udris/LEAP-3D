@@ -200,51 +200,56 @@ class UnetInterpolationDataModule(pl.LightningDataModule):
         self.force_prepare = force_prepare
         self.num_workers = num_workers
 
-    def prepare_data(self):
+    def prepare_data(self, stage=None):
         prepared_train_filepath = self.processed_data_dir / "unet_interpolation_dataset.hdf5"
         prepared_test_filepath = self.processed_data_dir / "test_unet_interpolation_dataset.hdf5"
 
-        if self.force_prepare or not isfile(prepared_train_filepath):
+        if (stage is None or stage == 'train') and (self.force_prepare or not isfile(prepared_train_filepath)):
             prepare_raw_data(
                 self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_train_filepath,
                 self.train_cases, Channel.TEMPERATURE_AROUND_LASER, self.extra_params, is_3d=self.is_3d)
-        if self.force_prepare or not isfile(prepared_test_filepath):
+        if (stage is None or stage == 'test') and (self.force_prepare or not isfile(prepared_test_filepath)):
             prepare_raw_data(
                 self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_test_filepath,
                 self.test_cases, Channel.TEMPERATURE_AROUND_LASER, self.extra_params, is_3d=self.is_3d)
 
     def setup(self, stage=None, split_ratio=0.8):
-        self.test_dataset = UnetInterpolationDataset(self.processed_data_dir, train=False,
+        if stage is None or stage == 'test':
+            self.test_dataset = UnetInterpolationDataset(self.processed_data_dir, train=False,
                                                   extra_params=self.extra_params,
                                                   transforms=self.transforms, inverse_transforms=self.inverse_transforms)
-        full_dataset = UnetInterpolationDataset(self.processed_data_dir, train=True,
-                                                  extra_params=self.extra_params,
-                                                  transforms=self.transforms, inverse_transforms=self.inverse_transforms)
+        if stage is None or stage == 'train':
+            full_dataset = UnetInterpolationDataset(self.processed_data_dir, train=True,
+                                                    extra_params=self.extra_params,
+                                                    transforms=self.transforms, inverse_transforms=self.inverse_transforms)
 
-        train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
-        val_points_count = len(full_dataset) - train_points_count
-        self.train_dataset, self.val_dataset = random_split(
-            full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
-        )
+            train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
+            val_points_count = len(full_dataset) - train_points_count
+            self.train_dataset, self.val_dataset = random_split(
+                full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
+            )
 
-    def train_dataloader(self):
+    def train_dataloader(self, *args, **kwargs):
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            persistent_workers=self.num_workers > 0)
+            persistent_workers=self.num_workers > 0,
+            *args, **kwargs)
 
-    def val_dataloader(self):
+    def val_dataloader(self, *args, **kwargs):
         return DataLoader(
             self.val_dataset,
             batch_size=self.batch_size,
-            num_workers=self.num_workers)
+            num_workers=self.num_workers,
+            *args, **kwargs)
 
-    def test_dataloader(self):
+    def test_dataloader(self, *args, **kwargs):
         return DataLoader(
             self.test_dataset,
             batch_size=self.batch_size,
-            num_workers=self.num_workers)
+            num_workers=self.num_workers,
+            *args, **kwargs)
 
     def teardown(self, stage: str) -> None:
         pass
