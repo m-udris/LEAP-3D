@@ -204,7 +204,7 @@ class UnetInterpolationDataModule(pl.LightningDataModule):
         prepared_train_filepath = self.processed_data_dir / "unet_interpolation_dataset.hdf5"
         prepared_test_filepath = self.processed_data_dir / "test_unet_interpolation_dataset.hdf5"
 
-        if (stage is None or stage == 'train') and (self.force_prepare or not isfile(prepared_train_filepath)):
+        if (stage is None or stage == 'fit') and (self.force_prepare or not isfile(prepared_train_filepath)):
             prepare_raw_data(
                 self.scan_parameters_filepath, self.rough_coordinates_filepath, self.raw_data_dir, prepared_train_filepath,
                 self.train_cases, Channel.TEMPERATURE_AROUND_LASER, self.extra_params, is_3d=self.is_3d)
@@ -218,7 +218,7 @@ class UnetInterpolationDataModule(pl.LightningDataModule):
             self.test_dataset = UnetInterpolationDataset(self.processed_data_dir, train=False,
                                                   extra_params=self.extra_params,
                                                   transforms=self.transforms, inverse_transforms=self.inverse_transforms)
-        if stage is None or stage == 'train':
+        if stage is None or stage == 'fit':
             full_dataset = UnetInterpolationDataset(self.processed_data_dir, train=True,
                                                     extra_params=self.extra_params,
                                                     transforms=self.transforms, inverse_transforms=self.inverse_transforms)
