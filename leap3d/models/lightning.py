@@ -3,10 +3,8 @@ from typing import Callable
 
 import torch
 from torch import nn
-import pytorch_lightning as pl
-from torchmetrics.regression import R2Score, MeanAbsoluteError
 
-from leap3d.models import BaseModel, CNN, UNet2D, UNet3D
+from leap3d.models import BaseModel, CNN, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
 from leap3d.losses import heat_loss
 
 
@@ -15,7 +13,6 @@ class LEAP3D_CNN(BaseModel):
         super(LEAP3D_CNN, self).__init__()
         self.loss_function = nn.functional.mse_loss
         self.net = CNN()
-        self.r2_metric = R2Score()
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -30,25 +27,14 @@ class LEAP3D_CNN(BaseModel):
 
 
 class LEAP3D_UNet(BaseModel):
-    def __init__(self, net, in_channels=4, out_channels=1, lr=1e-3, transform=None, loss_function: str | Callable ='mse', *args, **kwargs):
-        super(LEAP3D_UNet, self).__init__(net, in_channels, out_channels, *args, **kwargs)
-        self.transform = kwargs.get("transform", transform)
-        if loss_function == 'mse':
-            self.loss_function = nn.functional.mse_loss
-        elif loss_function == 'heat_loss':
-            self.loss_function = heat_loss
-        elif loss_function == 'l1':
-            self.loss_function = nn.functional.l1_loss
-        elif callable(loss_function):
-            self.loss_function = loss_function
-        else:
-            raise ValueError(f"Unknown loss function {loss_function}")
-        self.is_teacher_forcing = False
+    def __init__(self, net, lr=1e-3, transform=None, loss_function: str | Callable ='mse', is_teacher_forcing: bool=False, *args, **kwargs):
+        super(LEAP3D_UNet, self).__init__(net=net, loss_function=loss_function, *args, **kwargs)
+        self.transform = transform
+
+        self.is_teacher_forcing = is_teacher_forcing
         self.lr = lr
-        self.in_channels = in_channels
 
     def forward(self, x, extra_params):
-        x = x[:self.in_channels]
         return self.net(x, extra_params)
 
     def f_step(self, batch, batch_idx, train=False, steps=None, *args, **kwargs):
@@ -60,7 +46,6 @@ class LEAP3D_UNet(BaseModel):
         return self.f_step_window(x_window, extra_params_window, y_window, train=train)
 
     def f_step_single(self, x, extra_params, y, train=False, log_loss=True):
-        x = x[:, :self.in_channels]
         y_hat = self.net(x, extra_params)
         y = y.reshape(y_hat.shape)
         loss = self.loss_function(y_hat, y)
@@ -116,18 +101,21 @@ class LEAP3D_UNet(BaseModel):
         return optimizer
 
 class LEAP3D_UNet2D(LEAP3D_UNet):
-    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
-        net = UNet2D(in_channels, out_channels, **kwargs)
-        super(LEAP3D_UNet2D, self).__init__(net, in_channels, out_channels, lr=lr, transform=transform, *args, **kwargs)
-        # self.transform = kwargs.get("transform", transform)
-        # self.loss_function = nn.functional.mse_loss
-        self.is_teacher_forcing = False
-        # self.lr = lr
+    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, transform=None, is_teacher_forcing=False, *args, **kwargs):
+        if "fcn_core_layers" not in kwargs:
+            net = UNet(in_channels, out_channels, **kwargs)
+        else:
+            net = ConditionalUNet(in_channels, out_channels, **kwargs)
+
+        super(LEAP3D_UNet2D, self).__init__(net, lr=lr, transform=transform, is_teacher_forcing=is_teacher_forcing, *args, **kwargs)
 
 class LEAP3D_UNet3D(LEAP3D_UNet):
     def __init__(self, in_channels=4, out_channels=1, lr=1e-3, transform=None, *args, **kwargs):
-        net = UNet3D(in_channels, out_channels, **kwargs)
-        super(LEAP3D_UNet3D, self).__init__(net, in_channels, out_channels, lr=lr, transform=transform, *args, **kwargs)
+        if "fcn_core_layers" not in kwargs:
+            net = UNet3d(in_channels, out_channels, **kwargs)
+        else:
+            net = ConditionalUNet3d(in_channels, out_channels, **kwargs)
+        super(LEAP3D_UNet3D, self).__init__(net, lr=lr, transform=transform, *args, **kwargs)
         self.is_teacher_forcing = False
 
 
@@ -174,10 +162,10 @@ class InterpolationUNet(BaseModel):
 
 class InterpolationUNet2D(InterpolationUNet):
     def __init__(self, in_channels=1, out_channels=1, lr=1e-3, *args, **kwargs):
-        net = UNet2D(in_channels, out_channels, **kwargs)
+        net = ConditionalUNet(in_channels, out_channels, **kwargs)
         super(InterpolationUNet2D, self).__init__(net, in_channels, out_channels, lr=lr, *args, **kwargs)
 
 class InterpolationUNet3D(InterpolationUNet):
     def __init__(self, in_channels=4, out_channels=1, lr=1e-3, *args, **kwargs):
-        net = UNet3D(in_channels, out_channels, **kwargs)
+        net = ConditionalUNet3d(in_channels, out_channels, **kwargs)
         super(InterpolationUNet2D, self).__init__(net, in_channels, out_channels, lr=lr, *args, **kwargs)

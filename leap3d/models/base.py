@@ -1,7 +1,10 @@
-import pytorch_lightning as pl
-from torch import optim
+from typing import Callable
+import torch
+from torch import nn, optim
 from torchmetrics.regression import R2Score, MeanAbsoluteError
+import pytorch_lightning as pl
 
+from leap3d.losses import heat_loss
 
 class BaseModel(pl.LightningModule):
     """ Base LEAP3D model.
@@ -16,18 +19,26 @@ class BaseModel(pl.LightningModule):
         Neural network
 
     """
-    def __init__(self, net=None, *args, **kwargs) -> None:
+    def __init__(self, net=None, loss_function: str | Callable ='mse', *args, **kwargs) -> None:
         super().__init__()
         self.net = net
         self.save_hyperparameters(ignore=['net'])
         self.r2_metric = R2Score()
         self.mae_metric = MeanAbsoluteError()
 
+        if loss_function == 'mse':
+            self.loss_function = nn.functional.mse_loss
+        elif loss_function == 'heat_loss':
+            self.loss_function = heat_loss
+        elif loss_function == 'l1':
+            self.loss_function = nn.functional.l1_loss
+        elif callable(loss_function):
+            self.loss_function = loss_function
+        else:
+            raise ValueError(f"Unknown loss function {loss_function}")
+
     def forward(self, *args, **kwargs):
         return self.net(*args, **kwargs)
-
-    # def predict_step(self, batch, batch_idx, dataloader_idx=0):
-    #     return self(batch)
 
     def training_step(self, batch, batch_idx, *args, **kwargs):
         return self.f_step(batch, batch_idx, train=True, *args, **kwargs)[0]
