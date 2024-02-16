@@ -349,20 +349,22 @@ class ConditionalUNet3d(UNet3d, FCNCore):
     def forward(self, x, extra_params):
         in_shape, x = self.adapt_input_shape(x)
 
-        x_down = [None for _ in range(len(self.down) + 1)]
+        # x_down = [None for _ in range(len(self.down) + 1)]
 
-        x = self.inc(x)
-        x_down[0] = x
-        for i, down in enumerate(self.down):
-            x_down[i+1] = down(x_down[i])
-            # x_down.append(x)
+        x1 = self.inc(x)
 
-        # x = x_down.pop()
+        x2 = self.down[0](x1)
+        x3 = self.down[1](x2)
+        x4 = self.down[2](x3)
+        x5 = self.down[3](x4)
 
-        x = self.call_fcn_core(x_down[-1], extra_params)
+        x = self.call_fcn_core(x5, extra_params)
 
-        for up, x_d in zip(self.up, x_down[-2::-1]):
-            x = up(x, x_d)
+        # for up in self.up:
+        x = self.up[0](x, x4)
+        x = self.up[1](x, x3)
+        x = self.up[2](x, x2)
+        x = self.up[3](x, x1)
 
         x = self.outc(x)
 
