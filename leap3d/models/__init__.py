@@ -1,6 +1,8 @@
 import enum
 
 from leap3d.models.base import BaseModel
+from leap3d.models.cnn import CNN
+from leap3d.models.unet import UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
 from leap3d.models.lightning import LEAP3D_CNN, LEAP3D_UNet2D, LEAP3D_UNet3D
 
 class Architecture(enum.Enum):
