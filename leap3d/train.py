@@ -12,9 +12,8 @@ import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
 from leap3d.dataset import Channel, ExtraParam, LEAP3DDataModule
-from leap3d.models import Architecture, LEAP3D_UNet2D
+from leap3d.models import Architecture
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
-from leap3d.models.unet2d import UNet2D
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
