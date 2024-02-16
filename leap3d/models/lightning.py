@@ -55,7 +55,7 @@ class LEAP3D_UNet(BaseModel):
                 "loss": loss,
                 "r2": self.r2_metric(y_hat.reshape(-1), y.reshape(-1)),
                 "mae": self.mae_metric(y_hat, y),
-                "heat_loss": heat_loss(y_hat, y),
+                # "heat_loss": heat_loss(y_hat, y),
                 "mse": nn.functional.mse_loss(y_hat, y),
             }
             self.log_metrics_dict(metrics_dict, train)
@@ -84,7 +84,7 @@ class LEAP3D_UNet(BaseModel):
             "loss": loss,
             "r2": self.r2_metric(y_hat_window.reshape(-1), y_window.reshape(-1)),
             "mae": self.mae_metric(y_hat_window, y_window),
-            "heat_loss": heat_loss(y_hat, y),
+            # "heat_loss": heat_loss(y_hat, y),
             "mse": nn.functional.mse_loss(y_hat, y),
         }
         self.log_metrics_dict(metrics_dict, train)
