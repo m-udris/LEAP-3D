@@ -91,7 +91,7 @@ class TemperatureAroundLaser(Channel):
 
 
 class ScanningAngle(Channel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__('scanning_angle', 1, False)
 
     def get(self, scan_parameters=None, *args, **kwargs):
@@ -99,7 +99,7 @@ class ScanningAngle(Channel):
 
 
 class LaserPower(Channel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__('laser_power', 1, False)
 
     def get(self, scan_results=None, timestep=None, *args, **kwargs):
@@ -107,7 +107,7 @@ class LaserPower(Channel):
 
 
 class LaserRadius(Channel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__('laser_radius', 1, False)
 
     def get(self, scan_results=None, timestep=None, *args, **kwargs):
