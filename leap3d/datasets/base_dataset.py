@@ -209,10 +209,10 @@ class LEAPDataModule(pl.LightningDataModule):
 
         return points_written
 
-    def get_scan_case_ids_and_result_filepaths(self, data_dir: str="path/to/dir", cases: int | List=None):
+    def get_scan_case_ids_and_result_filepaths(self, cases: int | List=None):
         if type(cases) == int:
             cases = range(cases)
-
+        data_dir = self.raw_data_directory
         filenames = [
             filename for filename in listdir(data_dir)
                 if isfile(join(data_dir, filename)) and re.match(r"^case_\d*\.npz$", filename) is not None]
