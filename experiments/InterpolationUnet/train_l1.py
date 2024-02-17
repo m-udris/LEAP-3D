@@ -93,7 +93,7 @@ def train():
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
                     input_shape=[64,64], target_shape=[64,64],
-                    extra_params=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
+                    extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
