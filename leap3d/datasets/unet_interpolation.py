@@ -192,7 +192,7 @@ class UnetInterpolationDataModule(LEAPDataModule):
             train_cases=train_cases, test_cases=test_cases,
             input_shape=input_shape, target_shape=target_shape,
             input_channels=input_channels,
-            extra_params=extra_input_channels,
+            extra_input_channels=extra_input_channels,
             target_channels=target_channels,
             transforms=transforms,
             inverse_transforms=inverse_transforms,
