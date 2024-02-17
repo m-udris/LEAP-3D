@@ -90,11 +90,11 @@ class LEAPDataModule(pl.LightningDataModule):
         self.input_shape = input_shape if is_3d else input_shape[:2]
         self.target_shape = target_shape if is_3d else target_shape[:2]
 
-        self.input_channels = input_channels
+        self.input_channels = [channel(self.is_3d) for channel in input_channels]
         self.input_channel_len = sum([channel.channels for channel in input_channels])
-        self.extra_input_channels = extra_input_channels
+        self.extra_input_channels = [channel(self.is_3d) for channel in extra_input_channels]
         self.extra_input_channel_len = sum([channel.channels for channel in extra_input_channels])
-        self.target_channels = target_channels
+        self.target_channels = [channel(self.is_3d) for channel in target_channels]
         self.target_channel_len = sum([channel.channels for channel in target_channels])
 
         self.transforms = transforms
@@ -170,13 +170,13 @@ class LEAPDataModule(pl.LightningDataModule):
 
             for channel in self.input_channels:
                 input_channels.extend(
-                    channel(self.is_3d).get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+                    channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
             for channel in self.extra_input_channels:
-                extra_input_channels.extend(channel(self.is_3d).get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+                extra_input_channels.extend(channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
             for channel in self.target_channels:
-                target_channels.extend(channel(self.is_3d).get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+                target_channels.extend(channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
             yield input_channels, extra_input_channels, target_channels
 
