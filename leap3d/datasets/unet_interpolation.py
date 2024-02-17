@@ -185,8 +185,8 @@ class UnetInterpolationDataModule(LEAPDataModule):
         super().__init__(
             scan_parameters_filepath=scan_parameters_filepath,
             rough_coordinates_filepath=rough_coordinates_filepath,
-            raw_data_dir=raw_data_directory,
-            processed_data_dir=prepared_data_path,
+            raw_data_directory=raw_data_directory,
+            prepared_data_path=prepared_data_path,
             is_3d=is_3d,
             batch_size=batch_size,
             train_cases=train_cases, test_cases=test_cases,
