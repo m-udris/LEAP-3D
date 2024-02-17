@@ -1,2 +1,2 @@
-from leap3d.datasets.params import Channel, ExtraParam
+from leap3d.datasets.base_dataset import LEAPDataset, LEAPDataModule
 from leap3d.datasets.unet_interpolation import UnetInterpolationDataModule, UnetInterpolationDataset
