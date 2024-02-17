@@ -91,11 +91,11 @@ class LEAPDataModule(pl.LightningDataModule):
         self.target_shape = target_shape if is_3d else target_shape[:2]
 
         self.input_channels = [channel(self.is_3d) for channel in input_channels]
-        self.input_channel_len = sum([channel.channels for channel in input_channels])
+        self.input_channel_len = sum([channel.channels for channel in self.input_channels])
         self.extra_input_channels = [channel(self.is_3d) for channel in extra_input_channels]
-        self.extra_input_channel_len = sum([channel.channels for channel in extra_input_channels])
+        self.extra_input_channel_len = sum([channel.channels for channel in self.extra_input_channels])
         self.target_channels = [channel(self.is_3d) for channel in target_channels]
-        self.target_channel_len = sum([channel.channels for channel in target_channels])
+        self.target_channel_len = sum([channel.channels for channel in self.target_channels])
 
         self.transforms = transforms
         self.inverse_transforms = inverse_transforms
