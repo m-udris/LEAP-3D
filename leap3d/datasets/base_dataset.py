@@ -209,7 +209,7 @@ class LEAPDataModule(pl.LightningDataModule):
 
         return points_written
 
-    def get_scan_case_ids_and_result_filepaths(data_dir: str="path/to/dir", cases: int | List=None):
+    def get_scan_case_ids_and_result_filepaths(self, data_dir: str="path/to/dir", cases: int | List=None):
         if type(cases) == int:
             cases = range(cases)
 
