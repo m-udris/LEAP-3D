@@ -12,8 +12,8 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.dataset import Channel, ExtraParam, LEAP3DDataModule
-from leap3d.datasets.unet_interpolation import UnetInterpolationDataModule
+from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets import UNetInterpolationDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.models.lightning import InterpolationUNet2D
@@ -35,7 +35,9 @@ def train():
         'out_channels': 1,
         'fcn_core_layers': 1,
         'extra_params_number': 3,
-        'extra_params': [ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS],
+        'input_channels': [RoughTemperatureAroundLaser],
+        'target_channels': [TemperatureAroundLaser],
+        'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
         'tags': ['UNET', '2D', 'interpolation', 'mse_loss'],
         'force_prepare': False,
@@ -49,7 +51,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': 'interpolation_unet_2d_mse_loss_b256',
+        'name': f'interpolation_unet_2d_mse_loss_b{hparams["batch_size"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -60,12 +62,10 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            lambda x: torch.unsqueeze(x, 0),  # TODO: Fix data so that this is not needed
             transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            lambda x: torch.unsqueeze(x, 0),  # TODO: Fix data so that this is not needed
             transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'extra_params': transforms.Compose([
@@ -87,10 +87,11 @@ def train():
         ])
     }
 
-    datamodule = UnetInterpolationDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
+    datamodule = UNetInterpolationDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    extra_params=[ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS],
+                    input_shape=[64,64], target_shape=[64,64],
+                    extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)
 

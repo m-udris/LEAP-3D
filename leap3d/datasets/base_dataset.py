@@ -173,10 +173,12 @@ class LEAPDataModule(pl.LightningDataModule):
                     channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
             for channel in self.extra_input_channels:
-                extra_input_channels.extend(channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+                extra_input_channels.extend(
+                    channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
             for channel in self.target_channels:
-                target_channels.extend(channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+                target_channels.extend(
+                    channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
             yield input_channels, extra_input_channels, target_channels
 

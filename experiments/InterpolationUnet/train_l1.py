@@ -13,7 +13,7 @@ import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
 from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
-from leap3d.datasets import UnetInterpolationDataModule
+from leap3d.datasets import UNetInterpolationDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.models.lightning import InterpolationUNet2D
@@ -51,7 +51,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': 'interpolation_unet_2d_l1_loss_b256',
+        'name': f'interpolation_unet_2d_l1_loss_b{hparams["batch_size"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -62,12 +62,10 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            # lambda x: torch.unsqueeze(x, 0),  # TODO: Fix data so that this is not needed
             transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            # lambda x: torch.unsqueeze(x, 0),  # TODO: Fix data so that this is not needed
             transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'extra_params': transforms.Compose([
@@ -89,7 +87,7 @@ def train():
         ])
     }
 
-    datamodule = UnetInterpolationDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
+    datamodule = UNetInterpolationDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
                     input_shape=[64,64], target_shape=[64,64],
