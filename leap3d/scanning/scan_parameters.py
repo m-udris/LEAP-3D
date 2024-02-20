@@ -107,7 +107,7 @@ class ScanParameters():
                     points.append((x, y, z))
         return points
 
-    def get_coordinates_around_position(self, x: float, y: float, size: int, scale: float=0.25, is_3d: bool=False):
+    def get_bounds_around_position(self, x: float, y: float, size: int):
         step_size = self.rough_coordinates_step_size
         x_start = x - (step_size * 0.5 * (size))
         x_end = x + (step_size * 0.5 * (size))
@@ -116,6 +116,11 @@ class ScanParameters():
 
         z_start = self.rough_coordinates['z_rough'][0, 0, 0]
         z_end = self.rough_coordinates['z_rough'][0, 0, -1]
+
+        return x_start, x_end, y_start, y_end, z_start, z_end
+
+    def get_coordinates_around_position(self, x: float, y: float, size: int, scale: float=0.25, is_3d: bool=False):
+        x_start, x_end, y_start, y_end, z_start, z_end = self.get_bounds_around_position(x, y, size)
 
         x_points = np.linspace(x_start, x_end, int(size // scale))
         y_points = np.linspace(y_start, y_end, int(size // scale))

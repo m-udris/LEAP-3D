@@ -5,7 +5,7 @@ import torch
 from torch import nn
 
 from leap3d.models import BaseModel, CNN, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
-from leap3d.losses import heat_loss
+from leap3d.losses import heat_loss, weighted_l1_loss, heavy_weighted_l1_loss
 
 
 class LEAP3D_CNN(BaseModel):
@@ -121,18 +121,12 @@ class LEAP3D_UNet3D(LEAP3D_UNet):
 
 class InterpolationUNet(BaseModel):
     def __init__(self, net, lr=1e-3, loss_function: str | Callable ='mse', *args, **kwargs):
+        if loss_function == 'wl1':
+            loss_function = weighted_l1_loss
+        if loss_function == 'hwl1':
+            loss_function = heavy_weighted_l1_loss
         super(InterpolationUNet, self).__init__(net, loss_function=loss_function, *args, **kwargs)
-        # if loss_function == 'mse':
-        #     self.loss_function = nn.functional.mse_loss
-        # elif loss_function == 'heat_loss':
-        #     self.loss_function = heat_loss
-        # elif loss_function == 'l1':
-        #     self.loss_function = nn.functional.l1_loss
-        # elif callable(loss_function):
-        #     self.loss_function = loss_function
-        # else:
-        #     raise ValueError(f"Unknown loss function {loss_function}")
-        self.is_teacher_forcing = False
+
         self.lr = lr
 
     def forward(self, x, extra_params):

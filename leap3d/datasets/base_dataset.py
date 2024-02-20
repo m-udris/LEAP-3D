@@ -133,13 +133,19 @@ class LEAPDataModule(pl.LightningDataModule):
 
         offset = 0
         with h5py.File(processed_data_filepath, 'w') as f:
-            input_dset = self.create_h5_input_dataset(f)
-            extra_input_dset = self.create_h5_extra_input_dataset(f)
-            target_dset = self.create_h5_target_dataset(f)
+            datasets = self.create_h5_datasets(f)
 
             for case_id, scan_result_filepath in scan_case_id_and_result_filepaths:
                 data_generator = self.get_data_generator(case_id, scan_result_filepath, params_file, rough_coordinates)
-                offset += self.write_data_to_h5(data_generator, input_dset, extra_input_dset, target_dset, offset)
+                offset += self.write_data_to_h5(data_generator, datasets, offset)
+
+    def create_h5_datasets(self, h5py_file):
+        datasets = {}
+        datasets['input'] = self.create_h5_input_dataset(h5py_file)
+        datasets['extra_input'] = self.create_h5_extra_input_dataset(h5py_file)
+        datasets['target'] = self.create_h5_target_dataset(h5py_file)
+
+        return datasets
 
     def create_h5_input_dataset(self, h5py_file):
         input_dset_shape = [1, self.input_channel_len, *self.input_shape]
@@ -164,50 +170,60 @@ class LEAPDataModule(pl.LightningDataModule):
         scan_parameters = ScanParameters(params_file, rough_coordinates, case_id)
 
         for timestep in range(scan_results.total_timesteps - 1):
-            input_channels = []
-            extra_input_channels = []
-            target_channels = []
+            yield self.get_data_generator_timestep(scan_results, scan_parameters, timestep)
 
-            for channel in self.input_channels:
-                input_channels.extend(
-                    channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+    def get_data_generator_timestep(self, scan_results, scan_parameters, timestep):
+        input_channels = []
+        extra_input_channels = []
+        target_channels = []
 
-            for channel in self.extra_input_channels:
-                extra_input_channels.extend(
-                    channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+        for channel in self.input_channels:
+            input_channels.extend(
+                channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
-            for channel in self.target_channels:
-                target_channels.extend(
-                    channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+        for channel in self.extra_input_channels:
+            extra_input_channels.extend(
+                channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
 
-            yield input_channels, extra_input_channels, target_channels
+        for channel in self.target_channels:
+            target_channels.extend(
+                channel.get(scan_parameters=scan_parameters, scan_results=scan_results, timestep=timestep))
+
+        return {
+            "input": input_channels,
+            "extra_input": extra_input_channels,
+            "target": target_channels
+        }
 
     def write_to_h5_dataset(self, dset, data, offset):
-        dset.resize(offset + len(data), axis=0)
-        dset[offset:] = np.array(data)
+        data = np.array(data)
+        dset.resize(offset + data.shape[0], axis=0)
+        dset[offset:] = data
         dset.flush()
 
-    def write_data_to_h5(self, data_generator, input_dset, extra_input_dset, target_dset, offset):
-        train_buffer, extra_train_buffer, target_buffer = [], [], []
+    def write_data_to_h5(self, data_generator, datasets, offset):
+        buffers = {name: [] for name in datasets.keys()}
         points_written = 0
-        buffer_size = 2000
-        for input_points, extra_input_points, target_points in data_generator:
-            train_buffer.append(input_points)
-            extra_train_buffer.append(extra_input_points)
-            target_buffer.append(target_points)
-            if len(train_buffer) == buffer_size:
-                self.write_to_h5_dataset(input_dset, train_buffer, offset)
-                self.write_to_h5_dataset(extra_input_dset, extra_train_buffer, offset)
-                self.write_to_h5_dataset(target_dset, target_buffer, offset)
+        buffer_size = 200
+
+        items_in_buffer = 0
+        for points in data_generator:
+            for data_name, values in points.items():
+                buffers[data_name].append(values)
+            items_in_buffer += 1
+
+            if items_in_buffer == buffer_size:
+                for dset_name, dset in datasets.items():
+                    self.write_to_h5_dataset(dset, buffers[dset_name], offset)
                 offset += buffer_size
                 points_written += buffer_size
-                train_buffer, extra_train_buffer, target_buffer = [], [], []
+                buffers = {name: [] for name in datasets.keys()}
+                items_in_buffer = 0
 
-        if len(train_buffer) > 0:
-            self.write_to_h5_dataset(input_dset, train_buffer, offset)
-            self.write_to_h5_dataset(extra_input_dset, extra_train_buffer, offset)
-            self.write_to_h5_dataset(target_dset, target_buffer, offset)
-            points_written += len(train_buffer)
+        if items_in_buffer > 0:
+            for dset_name, dset in datasets.items():
+                self.write_to_h5_dataset(dset, buffers[dset_name], offset)
+            points_written += items_in_buffer
 
         return points_written
 

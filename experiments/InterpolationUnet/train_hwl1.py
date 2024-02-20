@@ -20,7 +20,7 @@ from leap3d.models.lightning import InterpolationUNet2D
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
-
+from leap3d.losses import weighted_l1_loss
 
 def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation'
@@ -39,11 +39,11 @@ def train():
         'target_channels': [TemperatureAroundLaser],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['UNET', '2D', 'interpolation', 'l1_loss'],
+        'tags': ['UNET', '2D', 'interpolation', 'hwl1_loss'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'l1'
+        'loss_function': 'hwl1'
     }
 
     # start a new wandb run to track this script
@@ -51,7 +51,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'interpolation_unet_2d_l1_loss_b{hparams["batch_size"]}',
+        'name': f'interpolation_unet_2d_hwl1_loss_b{hparams["batch_size"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
