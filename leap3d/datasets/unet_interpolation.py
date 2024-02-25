@@ -64,7 +64,7 @@ class UNetInterpolationDataModule(LEAPDataModule):
             num_workers=num_workers
         )
         self.dataset_class = UNetInterpolationDataset
-        self.rough_coordinates_box_size = 16
+        self.rough_coordinates_box_size = 32
         self.interpolated_coordinates_scale = 0.25
 
     def create_h5_datasets(self, h5py_file):
