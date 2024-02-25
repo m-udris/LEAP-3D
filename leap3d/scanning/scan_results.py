@@ -195,7 +195,7 @@ class ScanResults():
         if include_high_resolution_points:
             high_res_points, high_res_temps = self.get_melt_pool_coordinates_and_temperature(timestep)
             if len(high_res_points) == 0:
-                interpolated_values = interpolate.interpn(grid_points, rough_temperature, points_to_interpolate, method='linear')
+                interpolated_values = interpolate.interpn(grid_points, rough_temperature, points_to_interpolate, method='linear', bounds_error=False, fill_value=None)
             else:
                 step_size = scan_parameters.rough_coordinates_step_size * step_scale
 
@@ -244,7 +244,7 @@ class ScanResults():
                 upscaled_grid_points = [upscaled_x_range, upscaled_y_range, upscaled_z_range]
                 interpolated_values = interpolate.interpn(upscaled_grid_points, upscaled_rough_temperatures, points_to_interpolate, method='linear', bounds_error=False, fill_value=None)
         else:
-            interpolated_values = interpolate.interpn(grid_points, rough_temperature, points_to_interpolate, method='linear')
+            interpolated_values = interpolate.interpn(grid_points, rough_temperature, points_to_interpolate, method='linear', bounds_error=False, fill_value=None)
 
         points_to_interpolate = np.array(points_to_interpolate)
         edge_length = int(size // step_scale)

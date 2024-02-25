@@ -98,18 +98,13 @@ class UNetInterpolationDataModule(LEAPDataModule):
         contour = np.array(contours[0])
         # Rescale coordinates from unit distance into meters
         contour = ((contour - 128) / 128) * 0.0012
-        # for x, y in contours[0]:
-        #     new_x = ((x - 128) / 128) * 0.0012
-        #     new_y = ((y - 128) / 128) * 0.0012
-        #     contour.append((new_x, new_y))
-        # contour = np.array(contour)
         pg = sg.Polygon(contour)
+
         laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
         points = scan_parameters.get_coordinates_around_position(laser_x, laser_y,
                                                                  self.rough_coordinates_box_size,
                                                                  scale=self.interpolated_coordinates_scale,
                                                                  is_3d=self.is_3d)
-        # points = [(p[0], p[1]) for p in points]
         distances = [np.abs(pg.exterior.distance(sg.Point(p[:2]))) for p in points]
         distances = np.array(distances).reshape(self.target_shape)
         return distances
