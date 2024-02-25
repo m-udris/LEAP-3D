@@ -25,4 +25,4 @@ dependencies:
   - scikit-image
   - typer
   - trimesh
-
+  - shapely

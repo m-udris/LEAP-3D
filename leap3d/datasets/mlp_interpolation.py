@@ -76,6 +76,7 @@ class MLPInterpolationDataModule(LEAPDataModule):
             force_prepare=force_prepare,
             num_workers=num_workers
         )
+        self.dataset_class = MLPInterpolationDataset
         self.melting_pool_offset = 0
         self.melt_pool_shape = (8,)
         self.rough_coordinates_size = 16
@@ -170,17 +171,17 @@ class MLPInterpolationDataModule(LEAPDataModule):
             dset[offset:] = data
         dset.flush()
 
-    def setup(self, stage: str, split_ratio: float=0.8):
-        if stage == 'fit' or stage is None:
-            full_dataset_path = self.prepared_data_path / "dataset.hdf5"
-            full_dataset = MLPInterpolationDataset(full_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
+    # def setup(self, stage: str, split_ratio: float=0.8):
+    #     if stage == 'fit' or stage is None:
+    #         full_dataset_path = self.prepared_data_path / "dataset.hdf5"
+    #         full_dataset = MLPInterpolationDataset(full_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
 
-            train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
-            val_points_count = len(full_dataset) - train_points_count
-            self.train_dataset, self.val_dataset = random_split(
-                full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
-            )
+    #         train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
+    #         val_points_count = len(full_dataset) - train_points_count
+    #         self.train_dataset, self.val_dataset = random_split(
+    #             full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
+    #         )
 
-        if stage == 'test' or stage is None:
-            test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
-            self.test_dataset = MLPInterpolationDataset(test_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
+    #     if stage == 'test' or stage is None:
+    #         test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
+    #         self.test_dataset = MLPInterpolationDataset(test_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)

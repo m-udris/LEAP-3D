@@ -1,3 +1,6 @@
+# TODO: REFACTOR INTO datasets MODULE
+# Almost everything here is deprecated, but it should still work as-is for now.
+
 from enum import Enum
 import logging
 from os import listdir

@@ -72,15 +72,12 @@ class ScanResults():
 
         return coordinates, temperatures
 
-    def get_melt_pool_temperature_grid(self, timestep: int):
+    def get_melt_pool_temperature_grid(self, scan_parameters, timestep: int):
         melt_pool_grid = np.zeros((256, 256, 64))
         coordinates, temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
         if len(coordinates) == 0:
             return melt_pool_grid
-
-        x_coords = set([coord[0] for coord in coordinates])
-        sorted_x_coords = sorted(list(x_coords))
-        coord_delta = list(set([sorted_x_coords[i+1] - sorted_x_coords[i] for i in range(len(sorted_x_coords) - 1)]))[0]
+        coord_delta = scan_parameters.rough_coordinates_step_size * 0.25
 
         new_x_coords = [int((coord[0]) / coord_delta) + 128  for coord in coordinates]
         new_y_coords = [int((coord[1]) / coord_delta) + 128 for coord in coordinates]

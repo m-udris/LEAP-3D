@@ -73,6 +73,8 @@ class LEAPDataModule(pl.LightningDataModule):
                  num_workers=0):
         super().__init__()
 
+        self.dataset_class = LEAPDataset
+
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
@@ -244,7 +246,7 @@ class LEAPDataModule(pl.LightningDataModule):
     def setup(self, stage: str, split_ratio: float=0.8):
         if stage == 'fit' or stage is None:
             full_dataset_path = self.prepared_data_path / "dataset.hdf5"
-            full_dataset = LEAPDataset(full_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
+            full_dataset = self.dataset_class(full_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
 
             train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
             val_points_count = len(full_dataset) - train_points_count
@@ -254,7 +256,7 @@ class LEAPDataModule(pl.LightningDataModule):
 
         if stage == 'test' or stage is None:
             test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
-            self.test_dataset = LEAPDataset(test_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
+            self.test_dataset = self.dataset_class(test_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0)

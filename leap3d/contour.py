@@ -29,7 +29,7 @@ def get_melting_pool_contour_2d(temperature_grid, threshold=MELTING_POINT, top_k
     contours = []
 
     top_k = top_k or temperature_grid.shape[2]
-    for i in range(1, min(top_k, temperature_grid.shape[2])):
+    for i in range(1, min(top_k, temperature_grid.shape[2]) + 1):
         current_layer = temperature_grid[:, :, -i]
         contours.append(measure.find_contours(current_layer, level=threshold))
 

@@ -17,3 +17,9 @@ def heavy_weighted_l1_loss(y_hat, y):
     w = 1 - torch.abs(1 - y)**2
     loss = w * nn.functional.l1_loss(y_hat, y, reduction='none')
     return torch.mean(loss)
+
+
+def distance_l1_loss_2d(y_hat, y, distances):
+    w = 1.25 - distances / torch.max(distances)
+    loss = w * nn.functional.l1_loss(y_hat, y, reduction='none')
+    return torch.mean(loss)

@@ -5,7 +5,7 @@ import torch
 from torch import nn
 
 from leap3d.models import BaseModel, CNN, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
-from leap3d.losses import heat_loss, weighted_l1_loss, heavy_weighted_l1_loss
+from leap3d.losses import distance_l1_loss_2d, heat_loss, weighted_l1_loss, heavy_weighted_l1_loss
 
 
 class LEAP3D_CNN(BaseModel):
@@ -133,10 +133,13 @@ class InterpolationUNet(BaseModel):
         return self.net(x, extra_params)
 
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
-        x, extra_params, y = batch
+        x, extra_params, y, loss_weights = batch
         y_hat = self.net(x, extra_params)
         y = y.reshape(y_hat.shape)
-        loss = self.loss_function(y_hat, y)
+        if self.loss_function == distance_l1_loss_2d:
+            loss = self.loss_function(y_hat, y, loss_weights)
+        else:
+            loss = self.loss_function(y_hat, y)
 
         metrics_dict = {
             "loss": loss,
@@ -154,11 +157,13 @@ class InterpolationUNet(BaseModel):
         return optimizer
 
 class InterpolationUNet2D(InterpolationUNet):
-    def __init__(self, in_channels=1, out_channels=1, lr=1e-3, *args, **kwargs):
+    def __init__(self, in_channels=1, out_channels=1, lr=1e-3, loss_function: str | Callable ='mse', *args, **kwargs):
         net = ConditionalUNet(in_channels, out_channels, **kwargs)
-        super(InterpolationUNet2D, self).__init__(net, lr=lr, *args, **kwargs)
+        if loss_function == 'dl1':
+            loss_function = distance_l1_loss_2d
+        super(InterpolationUNet2D, self).__init__(net, lr=lr, loss_function=loss_function, *args, **kwargs)
 
 class InterpolationUNet3D(InterpolationUNet):
-    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, *args, **kwargs):
+    def __init__(self, in_channels=4, out_channels=1, lr=1e-3, loss_function: str | Callable ='mse', *args, **kwargs):
         net = ConditionalUNet3d(in_channels, out_channels, **kwargs)
-        super(InterpolationUNet2D, self).__init__(net, lr=lr, *args, **kwargs)
+        super(InterpolationUNet2D, self).__init__(net, lr=lr, loss_function=loss_function, *args, **kwargs)
