@@ -12,7 +12,7 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
 from leap3d.datasets import MLPInterpolationDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
@@ -34,7 +34,7 @@ def train():
         'in_channels': 1,
         'out_channels': 1,
         'extra_params_number': 3,
-        'input_channels': [RoughTemperatureAroundLaser],
+        'input_channels': [LowResRoughTemperatureAroundLaser],
         'target_channels': [TemperatureAroundLaser],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
