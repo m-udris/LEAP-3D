@@ -13,8 +13,6 @@ class Architecture(enum.Enum):
     LEAP3D_UNET3D = 'leap3d_unet3d'
 
     def get_model(self, *args, **kwargs) -> BaseModel:
-        if self == Architecture.LEAP3D_CNN:
-            return LEAP3D_CNN(*args, **kwargs)
         if self == Architecture.LEAP3D_UNET2D:
             return LEAP3D_UNet2D(*args, **kwargs)
         if self == Architecture.LEAP3D_UNET3D:

@@ -16,17 +16,17 @@ from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, Temperat
 from leap3d.datasets import MLPInterpolationDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
-from leap3d.models.lightning import InterpolationUNet2D
+from leap3d.models.lightning import InterpolationMLP
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
 
 def train():
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_32_no_melt'
 
     hparams = {
-        'batch_size': 128,
+        'batch_size': 32,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
@@ -42,7 +42,9 @@ def train():
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'l1'
+        'loss_function': 'l1',
+        'input_shape': [32, 32],
+        'target_shape': [128,128]
     }
 
     # start a new wandb run to track this script
@@ -56,7 +58,7 @@ def train():
     }
 
     logging.basicConfig(level=logging.INFO)
-    # wandb_logger = WandbLogger(log_model="all", **wandb_config)
+    wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
     train_transforms = {
         'input': transforms.Compose([
@@ -96,18 +98,18 @@ def train():
                     include_distances_to_melting_pool=False,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
-    datamodule.prepare_data()
-    datamodule.setup()
-    # model = InterpolationUNet2D(**hparams)
-    # checkpoint_filename = wandb_config['name']
-    # callbacks = [
-    #     get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss', mode='min')
-    # ]
-    # trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
+    # datamodule.prepare_data()
+    # datamodule.setup()
+    model = InterpolationMLP(**hparams)
+    checkpoint_filename = wandb_config['name']
+    callbacks = [
+        get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss', mode='min')
+    ]
+    trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 
-    # trainer.test(model, datamodule=datamodule)
+    trainer.test(model, datamodule=datamodule)
 
-    # wandb.finish()
+    wandb.finish()
 
 if __name__ == '__main__':
     train()

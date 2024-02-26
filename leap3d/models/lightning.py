@@ -164,20 +164,19 @@ class InterpolationMLP(BaseModel):
     def forward(self, x_grid, points):
         x_grid = self.cnn(x_grid)
         x = x_grid.reshape(x_grid.shape[0], -1)
-        x = x.unsqueeze(1).repeat(points.shape[0], points.shape[1], 1)
+        x = x.unsqueeze(1).repeat(1, points.shape[1], 1)
         x = torch.cat((x, points), dim=-1)
         return self.mlp(x)
 
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
         x, extra_params, y, y_coord_bounds, laser_data = batch[:5]
-        # melting_pool, target_distances_to_melting_pool = batch
         target_coord_points = []
         for coord_point in y_coord_bounds:
             x_coords = torch.linspace(coord_point[0], coord_point[1], 128)
             y_coords = torch.linspace(coord_point[2], coord_point[3], 128)
-            target_points = torch.tensor(np.meshgrid(x_coords, y_coords)).T.reshape(-1, 2)
+            target_points = torch.tensor(np.array(np.meshgrid(x_coords, y_coords))).mT.reshape(-1, 2)
             target_coord_points.append(target_points.unsqueeze(0))
-        point_coords = torch.cat(target_coord_points, dim=0)
+        point_coords = torch.cat(target_coord_points, dim=0).to(self.device)
 
         if len(batch) > 5:
             melting_pool = batch[5]
@@ -186,15 +185,18 @@ class InterpolationMLP(BaseModel):
 
         # Get relative coordinates to laser position
         laser_coordinates = laser_data[:, :2]
-        point_coords = point_coords - laser_coordinates
+        point_coords = point_coords - laser_coordinates.reshape(-1, 1, 2)
 
         extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
         points = torch.cat((point_coords, extra_params), dim=2)
 
+        x = x.to(self.device)
+        points = points.to(self.device)
         y_hat = self.forward(x, points)
         y_hat = y_hat.reshape(y_hat.shape[0], -1)
         y = y.reshape(y.shape[0], -1)
-        y = torch.cat((y, melting_pool[:, :, 3]), dim=1)
+        if len(batch) > 5:
+            y = torch.cat((y, melting_pool[:, :, 3]), dim=1)
         loss = self.loss_function(y_hat, y)
 
         metrics_dict = {
