@@ -150,7 +150,7 @@ class OutConv3d(OutConv):
 
 
 class UNet(torch.nn.Module):
-    def __init__(self, input_dimension, output_dimension,n_conv=16, depth=4, bilinear=False, activation=nn.LeakyReLU, bias=False, **kwargs):
+    def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, bilinear=False, activation=nn.LeakyReLU, bias=False, **kwargs):
         super(UNet, self).__init__()
         self.input_dimension = input_dimension
         self.output_dimension = output_dimension

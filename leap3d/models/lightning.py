@@ -1,29 +1,13 @@
 import logging
 from typing import Callable
 
+import numpy as np
 import torch
 from torch import nn
 
-from leap3d.models import BaseModel, CNN, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
+from leap3d.models import BaseModel, CNN, MLP, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
 from leap3d.losses import distance_l1_loss_2d, heat_loss, weighted_l1_loss, heavy_weighted_l1_loss
 
-
-class LEAP3D_CNN(BaseModel):
-    def __init__(self):
-        super(LEAP3D_CNN, self).__init__()
-        self.loss_function = nn.functional.mse_loss
-        self.net = CNN()
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self.net(x)
-        loss = self.loss_function(y_hat, y)
-
-        self.r2_metric(y_hat.squeeze(), y.squeeze())
-
-        self.log_dict({"train_loss": loss, "train_r2": self.r2_metric})
-
-        return loss
 
 
 class LEAP3D_UNet(BaseModel):
@@ -167,3 +151,55 @@ class InterpolationUNet3D(InterpolationUNet):
     def __init__(self, in_channels=4, out_channels=1, lr=1e-3, loss_function: str | Callable ='mse', *args, **kwargs):
         net = ConditionalUNet3d(in_channels, out_channels, **kwargs)
         super(InterpolationUNet2D, self).__init__(net, lr=lr, loss_function=loss_function, *args, **kwargs)
+
+
+class InterpolationMLP(BaseModel):
+    def __init__(self, input_shape=[32,32], extra_params_number=3, input_dimension=1, output_dimension=1, n_conv=16, depth=4, hidden_layers=[1024], activation=nn.LeakyReLU, bias=False, *args, **kwargs):
+        super(InterpolationMLP, self).__init__(*args, **kwargs)
+        self.cnn = CNN(input_dimension=input_dimension, output_dimension=output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
+        mlp_input_size = self.cnn.get_output_features_count(input_shape)
+        self.mlp = MLP(input_dimension=mlp_input_size + extra_params_number + 2, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
+
+    def forward(self, x_grid, points):
+        x_grid = self.cnn(x_grid)
+        x = x_grid.reshape(x_grid.shape[0], -1)
+        x = x.unsqueeze(1).repeat(points.shape[0], points.shape[1], 1)
+        x = torch.cat((x, points), dim=-1)
+        return self.mlp(x)
+
+    def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
+        x, extra_params, y, y_coord_bounds, melting_pool, laser_data, target_distances_to_melting_pool = batch
+        target_coord_points = []
+        for coord_point in y_coord_bounds:
+            x_coords = torch.linspace(coord_point[0], coord_point[1], 128)
+            y_coords = torch.linspace(coord_point[2], coord_point[3], 128)
+            target_points = torch.tensor(np.meshgrid(x_coords, y_coords)).T.reshape(-1, 2)
+            target_coord_points.append(target_points.unsqueeze(0))
+        target_coord_points = torch.cat(target_coord_points, dim=0)
+
+        melting_pool_coords = melting_pool[:, :, :2]
+        point_coords = torch.cat((target_coord_points, melting_pool_coords), dim=1)
+
+        # Get relative coordinates to laser position
+        laser_coordinates = laser_data[:, :2]
+        point_coords = point_coords - laser_coordinates
+
+        extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
+        points = torch.cat((point_coords, extra_params), dim=2)
+
+        y_hat = self.forward(x, points)
+        y_hat = y_hat.reshape(y_hat.shape[0], -1)
+        y = y.reshape(y.shape[0], -1)
+        y = torch.cat((y, melting_pool[:, :, 3]), dim=1)
+        loss = self.loss_function(y_hat, y)
+
+        metrics_dict = {
+            "loss": loss,
+            "r2": self.r2_metric(y_hat.reshape(-1), y.reshape(-1)),
+            "mae": self.mae_metric(y_hat, y),
+            "heat_loss": heat_loss(y_hat, y),
+            "mse": nn.functional.mse_loss(y_hat, y),
+        }
+        self.log_metrics_dict(metrics_dict, train)
+
+        return loss, y_hat
