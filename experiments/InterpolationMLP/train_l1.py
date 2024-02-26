@@ -29,7 +29,7 @@ def train():
         'batch_size': 32,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 100,
+        'max_epochs': 10,
         'transforms': 'default',
         'in_channels': 1,
         'out_channels': 1,
