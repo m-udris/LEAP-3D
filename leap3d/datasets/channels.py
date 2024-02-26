@@ -68,6 +68,16 @@ class RoughTemperatureAroundLaser(Channel):
         return [scan_results.get_interpolated_grid_around_laser(timestep, 32, 0.25, scan_parameters, False, self.is_3d)[1]]
 
 
+class LowResRoughTemperatureAroundLaser(Channel):
+    def __init__(self, is_3d=False):
+        super().__init__('rough_temperature_around_laser', 1, True)
+        self.is_3d = is_3d
+
+    def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
+        return [scan_results.get_interpolated_grid_around_laser(timestep, 32, 1, scan_parameters, False, self.is_3d)[1]]
+
+
+
 class TemperatureAroundLaser(Channel):
     def __init__(self, is_3d=False):
         super().__init__('temperature_around_laser', 1, True)

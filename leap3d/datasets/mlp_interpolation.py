@@ -7,7 +7,7 @@ from torch.utils.data import random_split
 from leap3d.contour import get_melting_pool_contour_2d
 
 from leap3d.datasets import LEAPDataModule, LEAPDataset
-from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
 import shapely.geometry as sg
 
 
@@ -25,8 +25,8 @@ class MLPInterpolationDataset(LEAPDataset):
         self.laser_data = self.data_file['laser_data']
         self.target_distances_to_melting_pool = self.data_file['distances_to_melting_pool']
 
-        self.melting_pool_transform = self.transforms.get('melting_pool', lambda x: x)
-        self.laser_data_transform = self.transforms.get('laser_data', lambda x: x)
+        self.melting_pool_transform = transforms.get('melting_pool', lambda x: x)
+        self.laser_data_transform = transforms.get('laser_data', lambda x: x)
 
     def __getitem__(self, idx):
         input = self.inputs[idx]
@@ -57,8 +57,8 @@ class MLPInterpolationDataModule(LEAPDataModule):
                  is_3d: bool=False,
                  batch_size: int=32,
                  train_cases: int | List=None, test_cases: int | List=None,
-                 input_shape: List[int]=[64, 64, 16], target_shape: List[int]=[64, 64, 16],
-                 input_channels=[RoughTemperatureAroundLaser], extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
+                 input_shape: List[int]=[64, 64, 16], target_shape: List[int]=[128, 128, 64],
+                 input_channels=[LowResRoughTemperatureAroundLaser], extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
                  target_channels=[TemperatureAroundLaser],
                  transforms: Dict[str, Callable]={}, inverse_transforms: Dict[str, Callable]={},
                  force_prepare=False,
