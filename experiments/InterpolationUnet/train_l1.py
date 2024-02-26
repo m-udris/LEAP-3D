@@ -23,7 +23,7 @@ from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, n
 
 
 def train():
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation_no_distances'
 
     hparams = {
         'batch_size': 128,
@@ -43,7 +43,9 @@ def train():
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'l1'
+        'loss_function': 'l1',
+        'input_shape': [128,128],
+        'target_shape': [128,128]
     }
 
     # start a new wandb run to track this script
@@ -90,7 +92,7 @@ def train():
     datamodule = UNetInterpolationDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    input_shape=[128,128], target_shape=[128,128],
+                    input_shape=hparams['input_shape'], target_shape=hparams['target_shape'],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)

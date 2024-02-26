@@ -13,20 +13,29 @@ import shapely.geometry as sg
 
 class MLPInterpolationDataset(LEAPDataset):
     def __init__(self, data_filepath: str="path/to/dir",
-                 transforms: Dict={}, inverse_transforms: Dict={}):
+                 transforms: Dict={}, inverse_transforms: Dict={},
+                 include_melting_pool: bool=False,
+                 include_distances_to_melting_pool: bool=False):
         super().__init__(
             data_filepath=data_filepath,
             transforms=transforms,
             inverse_transforms=inverse_transforms
         )
-        self.target_coordinates = self.data_file['target_coordinates']
-        self.melting_pool = self.data_file['melting_pool']
-        self.melting_pool_indices = self.data_file['melting_pool_indices']
-        self.laser_data = self.data_file['laser_data']
-        self.target_distances_to_melting_pool = self.data_file['distances_to_melting_pool']
+        self.include_melting_pool = include_melting_pool
+        self.include_distances_to_melting_pool = include_distances_to_melting_pool
 
-        self.melting_pool_transform = transforms.get('melting_pool', lambda x: x)
+        self.target_coordinates = self.data_file['target_coordinates']
+
+        if self.include_melting_pool:
+            self.melting_pool = self.data_file['melting_pool']
+            self.melting_pool_indices = self.data_file['melting_pool_indices']
+            self.melting_pool_transform = transforms.get('melting_pool', lambda x: x)
+
+        self.laser_data = self.data_file['laser_data']
         self.laser_data_transform = transforms.get('laser_data', lambda x: x)
+
+        if self.include_distances_to_melting_pool:
+            self.target_distances_to_melting_pool = self.data_file['distances_to_melting_pool']
 
     def __getitem__(self, idx):
         input = self.inputs[idx]
@@ -38,16 +47,26 @@ class MLPInterpolationDataset(LEAPDataset):
         target = self.target_transform(target)
 
         target_coordinates = self.target_coordinates[idx]
-        target_distances_to_melting_pool = self.target_distances_to_melting_pool[idx]
-
-        melting_pool_idx_start, melting_pool_idx_end = self.melting_pool_indices[idx]
-        melting_pool = self.melting_pool[int(melting_pool_idx_start):int(melting_pool_idx_end)]
         laser_data = self.laser_data[idx]
-
-        melting_pool = self.melting_pool_transform(melting_pool)
         laser_data = self.laser_data_transform(laser_data)
 
-        return input, extra_input, target, target_coordinates, melting_pool, laser_data, target_distances_to_melting_pool
+        outputs = [input, extra_input, target, target_coordinates, laser_data]
+
+        if not self.include_melting_pool and not self.include_distances_to_melting_pool:
+            return outputs
+
+        if self.include_melting_pool:
+            melting_pool_idx_start, melting_pool_idx_end = self.melting_pool_indices[idx]
+            melting_pool = self.melting_pool[int(melting_pool_idx_start):int(melting_pool_idx_end)]
+            melting_pool = self.melting_pool_transform(melting_pool)
+
+            outputs.append(melting_pool)
+
+        if self.include_distances_to_melting_pool:
+            target_distances_to_melting_pool = self.target_distances_to_melting_pool[idx]
+            outputs.append(target_distances_to_melting_pool)
+
+        return outputs
 
 
 class MLPInterpolationDataModule(LEAPDataModule):
@@ -61,6 +80,8 @@ class MLPInterpolationDataModule(LEAPDataModule):
                  input_channels=[LowResRoughTemperatureAroundLaser], extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
                  target_channels=[TemperatureAroundLaser],
                  transforms: Dict[str, Callable]={}, inverse_transforms: Dict[str, Callable]={},
+                 include_melting_pool: bool=False,
+                 include_distances_to_melting_pool: bool=False,
                  force_prepare=False,
                  num_workers=0):
         super().__init__(
@@ -82,17 +103,21 @@ class MLPInterpolationDataModule(LEAPDataModule):
         )
         self.dataset_class = MLPInterpolationDataset
         self.melting_pool_offset = 0
-        self.melt_pool_shape = (9,)
+        self.melt_pool_shape = (9,) if include_distances_to_melting_pool else (8,)
         self.rough_coordinates_box_size = 32
         self.interpolated_coordinates_scale = 0.25
+        self.include_melting_pool = include_melting_pool
+        self.include_distances_to_melting_pool = include_distances_to_melting_pool
 
     def create_h5_datasets(self, h5py_file):
         datasets = super().create_h5_datasets(h5py_file)
         datasets['target_coordinates'] = self.create_h5_target_coordinates_dataset(h5py_file)
-        datasets['melting_pool'] = self.create_h5_melting_pool_dataset(h5py_file)
-        datasets['melting_pool_indices'] = self.create_h5_melting_pool_indices_dataset(h5py_file)
+        if self.include_melting_pool:
+            datasets['melting_pool'] = self.create_h5_melting_pool_dataset(h5py_file)
+            datasets['melting_pool_indices'] = self.create_h5_melting_pool_indices_dataset(h5py_file)
         datasets['laser_data'] = self.create_h5_laser_data_dataset(h5py_file)
-        datasets['distances_to_melting_pool'] = self.create_h5_distances_to_melting_pool_dataset(h5py_file)
+        if self.include_distances_to_melting_pool:
+            datasets['distances_to_melting_pool'] = self.create_h5_distances_to_melting_pool_dataset(h5py_file)
 
         return datasets
 
@@ -130,14 +155,18 @@ class MLPInterpolationDataModule(LEAPDataModule):
         data = super().get_data_generator_timestep(scan_results, scan_parameters, timestep)
         data['target_coordinates'] = self.get_target_coordinates(scan_results, scan_parameters, timestep)
 
-        contour_shape = self.get_melting_pool_contour(scan_results, scan_parameters, timestep)
+        contour_shape = None
+        if self.include_distances_to_melting_pool:
+            contour_shape = self.get_melting_pool_contour(scan_results, scan_parameters, timestep)
+            data['distances_to_melting_pool'] = self.get_target_distances_to_melting_pool_2d(scan_results, scan_parameters, contour_shape, timestep)
 
-        melting_pool, melting_pool_indices = self.get_melting_pool(scan_results, scan_parameters, contour_shape, timestep)
-        data['melting_pool'] = melting_pool
-        data['melting_pool_indices'] = melting_pool_indices
+        if self.include_melting_pool:
+            melting_pool, melting_pool_indices = self.get_melting_pool(scan_results, scan_parameters, contour_shape, timestep)
+            data['melting_pool'] = melting_pool
+            data['melting_pool_indices'] = melting_pool_indices
+
         data['laser_data'] = self.get_laser_data(scan_results, timestep)
 
-        data['distances_to_melting_pool'] = self.get_target_distances_to_melting_pool_2d(scan_results, scan_parameters, contour_shape, timestep)
 
         return data
 
@@ -178,11 +207,12 @@ class MLPInterpolationDataModule(LEAPDataModule):
             max_z = np.max(melt_pool_data[:, 2])
             melt_pool_data = melt_pool_data[melt_pool_data[:, 2] == max_z]
 
-        if isinstance(contour_shape, sg.Point):
-            distances = [contour_shape.distance(sg.Point(p[:2])) for p in melt_pool_data[:, :2]]
-        else:
-            distances = [np.abs(contour_shape.exterior.distance(sg.Point(p[:2]))) for p in melt_pool_data[:, :2]]
-        melt_pool_data = np.column_stack((melt_pool_data, distances))
+        if self.include_distances_to_melting_pool:
+            if isinstance(contour_shape, sg.Point):
+                distances = [contour_shape.distance(sg.Point(p[:2])) for p in melt_pool_data[:, :2]]
+            else:
+                distances = [np.abs(contour_shape.exterior.distance(sg.Point(p[:2]))) for p in melt_pool_data[:, :2]]
+            melt_pool_data = np.column_stack((melt_pool_data, distances))
 
         n_points = melt_pool_data.shape[0]
 
@@ -223,3 +253,27 @@ class MLPInterpolationDataModule(LEAPDataModule):
             distances = [np.abs(contour_shape.exterior.distance(sg.Point(p[:2]))) for p in points]
 
         return np.array(distances).reshape(self.target_shape)
+
+    def setup(self, stage: str, split_ratio: float=0.8):
+        if stage == 'fit' or stage is None:
+            full_dataset_path = self.prepared_data_path / "dataset.hdf5"
+            full_dataset = self.dataset_class(
+                full_dataset_path,
+                transforms=self.transforms,
+                inverse_transforms=self.inverse_transforms,
+                include_melting_pool=self.include_melting_pool,
+                include_distances_to_melting_pool=self.include_distances_to_melting_pool)
+
+            train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
+            val_points_count = len(full_dataset) - train_points_count
+            self.train_dataset, self.val_dataset = random_split(
+                full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
+            )
+
+        if stage == 'test' or stage is None:
+            test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
+            self.test_dataset = self.dataset_class(test_dataset_path,
+                                                   transforms=self.transforms,
+                                                   inverse_transforms=self.inverse_transforms,
+                                                   include_melting_pool=self.include_melting_pool,
+                                                   include_distances_to_melting_pool=self.include_distances_to_melting_pool)

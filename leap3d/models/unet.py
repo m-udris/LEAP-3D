@@ -151,7 +151,7 @@ class OutConv3d(OutConv):
 
 class UNet(torch.nn.Module):
     def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, bilinear=False, activation=nn.LeakyReLU, bias=False, **kwargs):
-        super(UNet, self).__init__()
+        super(UNet, self).__init__(**kwargs)
         self.input_dimension = input_dimension
         self.output_dimension = output_dimension
         self.n_conv = n_conv
@@ -274,7 +274,7 @@ class UNet3d(UNet):
 
 
 class FCNCore(nn.Module):
-    def __init__(self, fcn_core_layers=1, input_shape=[64, 64], n_conv=16, depth=4, extra_params_number=3, activation=nn.LeakyReLU):
+    def __init__(self, fcn_core_layers=1, input_shape=[64, 64], n_conv=16, depth=4, extra_params_number=3, activation=nn.LeakyReLU, **kwargs):
         super(FCNCore, self).__init__()
         self.fcn_core = self.get_fcn_core(fcn_core_layers, input_shape, n_conv, depth, extra_params_number, activation)
 

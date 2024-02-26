@@ -1,7 +1,10 @@
+from typing import Callable, List, Dict
 from pathlib import Path
+
 import numpy as np
 import shapely.geometry as sg
-from typing import Callable, List, Dict
+import torch
+from torch.utils.data import random_split
 
 from leap3d.contour import get_melting_pool_contour_2d
 from leap3d.datasets import LEAPDataModule, LEAPDataset
@@ -10,14 +13,16 @@ from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAro
 
 class UNetInterpolationDataset(LEAPDataset):
     def __init__(self, data_filepath: str="path/to/dir",
-                 transforms: Dict={}, inverse_transforms: Dict={}):
+                 transforms: Dict={}, inverse_transforms: Dict={},
+                 include_distances_to_melting_pool: bool=False):
         super().__init__(
             data_filepath=data_filepath,
             transforms=transforms,
             inverse_transforms=inverse_transforms
         )
-        self.distances_to_melting_pool = self.data_file['distances_to_melting_pool']
-
+        self.include_distances_to_melting_pool = include_distances_to_melting_pool
+        if self.include_distances_to_melting_pool:
+            self.distances_to_melting_pool = self.data_file['distances_to_melting_pool']
 
     def __getitem__(self, idx):
         input = self.inputs[idx]
@@ -27,6 +32,9 @@ class UNetInterpolationDataset(LEAPDataset):
         input = self.input_transform(input)
         extra_input = self.extra_input_transform(extra_input)
         target = self.target_transform(target)
+
+        if not self.include_distances_to_melting_pool:
+            return input, extra_input, target
 
         distances_to_melting_pool = self.distances_to_melting_pool[idx]
 
@@ -44,6 +52,7 @@ class UNetInterpolationDataModule(LEAPDataModule):
                  input_channels=[RoughTemperatureAroundLaser], extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
                  target_channels=[TemperatureAroundLaser],
                  transforms: Dict[str, Callable]={}, inverse_transforms: Dict[str, Callable]={},
+                 include_distances_to_melting_pool: bool=False,
                  force_prepare=False,
                  num_workers=0):
         super().__init__(
@@ -63,13 +72,15 @@ class UNetInterpolationDataModule(LEAPDataModule):
             force_prepare=force_prepare,
             num_workers=num_workers
         )
+        self.include_distances_to_melting_pool = include_distances_to_melting_pool
         self.dataset_class = UNetInterpolationDataset
         self.rough_coordinates_box_size = 32
         self.interpolated_coordinates_scale = 0.25
 
     def create_h5_datasets(self, h5py_file):
         datasets = super().create_h5_datasets(h5py_file)
-        datasets['distances_to_melting_pool'] = self.create_h5_distances_to_melting_pool_dataset(h5py_file)
+        if self.include_distances_to_melting_pool:
+            datasets['distances_to_melting_pool'] = self.create_h5_distances_to_melting_pool_dataset(h5py_file)
 
         return datasets
 
@@ -81,7 +92,8 @@ class UNetInterpolationDataModule(LEAPDataModule):
 
     def get_data_generator_timestep(self, scan_results, scan_parameters, timestep):
         data = super().get_data_generator_timestep(scan_results, scan_parameters, timestep)
-        data['distances_to_melting_pool'] = self.get_target_distances_to_melting_pool(scan_results, scan_parameters, timestep)
+        if self.include_distances_to_melting_pool:
+            data['distances_to_melting_pool'] = self.get_target_distances_to_melting_pool(scan_results, scan_parameters, timestep)
 
         return data
 
@@ -119,3 +131,25 @@ class UNetInterpolationDataModule(LEAPDataModule):
         distances = [np.abs(laser_point.distance(sg.Point(point))) for point in points_to_interpolate]
         distances = np.array(distances).reshape(self.target_shape)
         return distances
+
+    def setup(self, stage: str, split_ratio: float=0.8):
+        if stage == 'fit' or stage is None:
+            full_dataset_path = self.prepared_data_path / "dataset.hdf5"
+            full_dataset = self.dataset_class(
+                full_dataset_path,
+                transforms=self.transforms,
+                inverse_transforms=self.inverse_transforms,
+                include_distances_to_melting_pool=self.include_distances_to_melting_pool)
+
+            train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
+            val_points_count = len(full_dataset) - train_points_count
+            self.train_dataset, self.val_dataset = random_split(
+                full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
+            )
+
+        if stage == 'test' or stage is None:
+            test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
+            self.test_dataset = self.dataset_class(test_dataset_path,
+                                                   transforms=self.transforms,
+                                                   inverse_transforms=self.inverse_transforms,
+                                                   include_distances_to_melting_pool=self.include_distances_to_melting_pool)

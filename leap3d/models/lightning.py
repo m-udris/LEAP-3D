@@ -117,10 +117,11 @@ class InterpolationUNet(BaseModel):
         return self.net(x, extra_params)
 
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
-        x, extra_params, y, loss_weights = batch
+        x, extra_params, y = batch[:3]
         y_hat = self.net(x, extra_params)
         y = y.reshape(y_hat.shape)
         if self.loss_function == distance_l1_loss_2d:
+            loss_weights = batch[3]
             loss = self.loss_function(y_hat, y, loss_weights)
         else:
             loss = self.loss_function(y_hat, y)
@@ -168,17 +169,20 @@ class InterpolationMLP(BaseModel):
         return self.mlp(x)
 
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
-        x, extra_params, y, y_coord_bounds, melting_pool, laser_data, target_distances_to_melting_pool = batch
+        x, extra_params, y, y_coord_bounds, laser_data = batch[:5]
+        # melting_pool, target_distances_to_melting_pool = batch
         target_coord_points = []
         for coord_point in y_coord_bounds:
             x_coords = torch.linspace(coord_point[0], coord_point[1], 128)
             y_coords = torch.linspace(coord_point[2], coord_point[3], 128)
             target_points = torch.tensor(np.meshgrid(x_coords, y_coords)).T.reshape(-1, 2)
             target_coord_points.append(target_points.unsqueeze(0))
-        target_coord_points = torch.cat(target_coord_points, dim=0)
+        point_coords = torch.cat(target_coord_points, dim=0)
 
-        melting_pool_coords = melting_pool[:, :, :2]
-        point_coords = torch.cat((target_coord_points, melting_pool_coords), dim=1)
+        if len(batch) > 5:
+            melting_pool = batch[5]
+            melting_pool_coords = melting_pool[:, :, :2]
+            point_coords = torch.cat((point_coords, melting_pool_coords), dim=1)
 
         # Get relative coordinates to laser position
         laser_coordinates = laser_data[:, :2]

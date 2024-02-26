@@ -89,9 +89,11 @@ def train():
     datamodule = MLPInterpolationDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    input_shape=[128,128], target_shape=[128,128],
+                    input_shape=[32, 32], target_shape=[128,128],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
+                    include_melting_pool=False,
+                    include_distances_to_melting_pool=False,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
     datamodule.prepare_data()
