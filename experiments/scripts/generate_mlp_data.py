@@ -32,6 +32,7 @@ def generate_case_dataset(path, case_id, is_test=False, force_prepare=False):
         target_channels=[TemperatureAroundLaser],
         transforms={},
         inverse_transforms={},
+        include_melting_pool=True,
         include_distances_to_melting_pool=False,
         force_prepare=force_prepare,
         num_workers=NUM_WORKERS
