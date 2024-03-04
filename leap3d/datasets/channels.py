@@ -60,31 +60,48 @@ class RoughTemperatureDifference(Channel):
 
 
 class RoughTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False):
+    def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25):
         super().__init__('rough_temperature_around_laser', 1, True)
         self.is_3d = is_3d
+        self.box_size = box_size
+        self.box_step_scale = box_step_scale
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        return [scan_results.get_interpolated_grid_around_laser(timestep, 32, 0.25, scan_parameters, False, self.is_3d)[1]]
+        return [scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, self.box_step_scale, scan_parameters, False, self.is_3d)[1]]
+
+
+class OffsetRoughTemperatureAroundLaser(Channel):
+    def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25):
+        super().__init__('rough_temperature_around_laser', 1, True)
+        self.is_3d = is_3d
+        self.box_size = box_size
+        self.box_step_scale = box_step_scale
+
+    def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
+        return [scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, self.box_step_scale, scan_parameters, False, self.is_3d)[1]]
+
 
 
 class LowResRoughTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False):
+    def __init__(self, is_3d=False, box_size=32):
         super().__init__('rough_temperature_around_laser', 1, True)
         self.is_3d = is_3d
+        self.box_size = box_size
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        return [scan_results.get_interpolated_grid_around_laser(timestep, 32, 1, scan_parameters, False, self.is_3d)[1]]
+        return [scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, 1, scan_parameters, False, self.is_3d)[1]]
 
 
 
 class TemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False):
+    def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25):
         super().__init__('temperature_around_laser', 1, True)
         self.is_3d = is_3d
+        self.box_size = box_size
+        self.box_step_scale = box_step_scale
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        return [scan_results.get_interpolated_grid_around_laser(timestep, 32, 0.25, scan_parameters, True, self.is_3d)[1]]
+        return [scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, self.box_step_scale, scan_parameters, True, self.is_3d)[1]]
 
 
 class ScanningAngle(Channel):

@@ -120,13 +120,19 @@ class ScanParameters():
         return x_start, x_end, y_start, y_end, z_start, z_end
 
     def get_coordinates_around_position(self, x: float, y: float, size: int, scale: float=0.25, is_3d: bool=False):
-        x_start, x_end, y_start, y_end, z_start, z_end = self.get_bounds_around_position(x, y, size)
+        bounds = self.get_bounds_around_position(x, y, size)
 
-        x_points = np.linspace(x_start, x_end, int(size // scale))
-        y_points = np.linspace(y_start, y_end, int(size // scale))
+        return self.get_coordinates_within_bounds(bounds, size, scale, is_3d)
+
+    def get_coordinates_within_bounds(self,
+                                      bounds: Tuple[float, float, float, float, float, float],
+                                      size: int, scale: float=0.25, is_3d: bool=False):
+        x_min, x_max, y_min, y_max, z_min, z_max = bounds
+        x_points = np.linspace(x_min, x_max, int(size // scale))
+        y_points = np.linspace(y_min, y_max, int(size // scale))
 
         if is_3d:
-            z_points = np.linspace(z_start, z_end, int(len(self.rough_coordinates['z_rough'][0, 0, :]) // scale))
+            z_points = np.linspace(z_min, z_max, int(len(self.rough_coordinates['z_rough'][0, 0, :]) // scale))
         else:
             z_points = [np.max(self.rough_coordinates['z_rough'][0, 0, :])]
 
@@ -134,9 +140,45 @@ class ScanParameters():
 
         return points
 
+
+    def get_offset_bounds_around_laser(self, laser_data, size: int=24, offset_ratio: float=2/3):
+        laser_x, laser_y = laser_data[:2]
+        angle = self.scanning_angle
+        step_size = self.rough_coordinates_step_size
+        laser_velocity_x = laser_data[4]
+        direction = -np.sign(laser_velocity_x)
+
+        radius = size * step_size / 2
+        center_x = laser_x + offset_ratio * direction * radius * np.cos(angle)
+        center_y = laser_y + offset_ratio * direction * radius * np.sin(angle)
+
+        x_min, x_max, y_min, y_max, z_min, z_max = self.get_bounds_around_position(center_x, center_y, size)
+
+        scan_x_min = self.laser_x_min
+        scan_x_max = self.laser_x_max
+        scan_y_min = self.laser_y_min
+        scan_y_max = self.laser_y_max
+
+        oob_limit = radius * (1 - offset_ratio)
+        if x_min < scan_x_min - oob_limit:
+            x_max += scan_x_min - oob_limit - x_min
+            x_min = scan_x_min - oob_limit
+        if x_max > scan_x_max + oob_limit:
+            x_min -= x_max - scan_x_max - oob_limit
+            x_max = scan_x_max + oob_limit
+        if y_min < scan_y_min - oob_limit:
+            y_max += scan_y_min - oob_limit - y_min
+            y_min = scan_y_min - oob_limit
+        if y_max > scan_y_max + oob_limit:
+            y_min -= y_max - scan_y_max - oob_limit
+            y_max = scan_y_max + oob_limit
+
+        return x_min, x_max, y_min, y_max, z_min, z_max
+
+
     def __repr__(self):
         return f"""Case index:\t{self.case_index}
-Substrate Temperature:\t{self.substrate_temperature}
+Substrate Temperature:\t{self.substrate_temperature}1
 Scanning Angle (rad):\t{self.scanning_angle}
 Hatching Distance (m):\t{self.hatching_distance}
 Scanning Strategy:\t{self.scanning_strategy}"""

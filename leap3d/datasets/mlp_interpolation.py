@@ -82,6 +82,7 @@ class MLPInterpolationDataModule(LEAPDataModule):
                  transforms: Dict[str, Callable]={}, inverse_transforms: Dict[str, Callable]={},
                  include_melting_pool: bool=False,
                  include_distances_to_melting_pool: bool=False,
+                 melting_pool_points: int=5600,
                  force_prepare=False,
                  num_workers=0):
         super().__init__(
@@ -108,13 +109,14 @@ class MLPInterpolationDataModule(LEAPDataModule):
         self.interpolated_coordinates_scale = 0.25
         self.include_melting_pool = include_melting_pool
         self.include_distances_to_melting_pool = include_distances_to_melting_pool
+        self.melting_pool_points = melting_pool_points
 
     def create_h5_datasets(self, h5py_file):
         datasets = super().create_h5_datasets(h5py_file)
         datasets['target_coordinates'] = self.create_h5_target_coordinates_dataset(h5py_file)
         if self.include_melting_pool:
             datasets['melting_pool'] = self.create_h5_melting_pool_dataset(h5py_file)
-            datasets['melting_pool_indices'] = self.create_h5_melting_pool_indices_dataset(h5py_file)
+            # datasets['melting_pool_indices'] = self.create_h5_melting_pool_indices_dataset(h5py_file)
         datasets['laser_data'] = self.create_h5_laser_data_dataset(h5py_file)
         if self.include_distances_to_melting_pool:
             datasets['distances_to_melting_pool'] = self.create_h5_distances_to_melting_pool_dataset(h5py_file)
@@ -128,16 +130,11 @@ class MLPInterpolationDataModule(LEAPDataModule):
         return h5py_file.create_dataset("target_coordinates", dset_shape, maxshape=dset_maxshape, chunks=True)
 
     def create_h5_melting_pool_dataset(self, h5py_file):
-        dset_shape = (1, *self.melt_pool_shape)  # x, y, z, temperature, temperature gradient x, temperature gradient y, temperature gradient z, phase indicator, distance_to_contour
+        dset_shape = (1, self.melting_pool_points, *self.melt_pool_shape)  # x, y, z, temperature, temperature gradient x, temperature gradient y, temperature gradient z, phase indicator, distance_to_contour
         dset_maxshape = (None, *dset_shape[1:])
 
         return h5py_file.create_dataset("melting_pool", dset_shape, maxshape=dset_maxshape, chunks=True)
 
-    def create_h5_melting_pool_indices_dataset(self, h5py_file):
-        dset_shape = (1, 2)  # start index, end index
-        dset_maxshape = (None, 2)
-
-        return h5py_file.create_dataset("melting_pool_indices", dset_shape, maxshape=dset_maxshape, chunks=True)
 
     def create_h5_laser_data_dataset(self, h5py_file):
         dset_shape = (1, 7)  # x position, y position, laser power, laser radius, laser velocity x, laser velocity y, existence of melt pool
@@ -161,12 +158,10 @@ class MLPInterpolationDataModule(LEAPDataModule):
             data['distances_to_melting_pool'] = self.get_target_distances_to_melting_pool_2d(scan_results, scan_parameters, contour_shape, timestep)
 
         if self.include_melting_pool:
-            melting_pool, melting_pool_indices = self.get_melting_pool(scan_results, scan_parameters, contour_shape, timestep)
+            melting_pool = self.get_melting_pool(scan_results, scan_parameters, contour_shape, timestep)
             data['melting_pool'] = melting_pool
-            data['melting_pool_indices'] = melting_pool_indices
 
         data['laser_data'] = self.get_laser_data(scan_results, timestep)
-
 
         return data
 
@@ -194,11 +189,10 @@ class MLPInterpolationDataModule(LEAPDataModule):
 
 
     def get_melting_pool(self, scan_results, scan_parameters, contour_shape, timestep):
+        melt_pool_points = np.zeros((self.melting_pool_points, *self.melt_pool_shape))
         melt_pool_data = scan_results.melt_pool[timestep]
         if melt_pool_data == [[]]:
-            melt_pool_data = np.zeros((0, *self.melt_pool_shape))
-            melting_pool_indices = np.array([self.melting_pool_offset, self.melting_pool_offset])
-            return melt_pool_data, melting_pool_indices
+            return melt_pool_points
 
         melt_pool_data = np.array(melt_pool_data)
 
@@ -216,30 +210,15 @@ class MLPInterpolationDataModule(LEAPDataModule):
 
         n_points = melt_pool_data.shape[0]
 
-        melting_pool_indices = np.array([self.melting_pool_offset, self.melting_pool_offset + n_points])
-        self.melting_pool_offset += n_points
+        melt_pool_points[:n_points] = melt_pool_data
 
-        return melt_pool_data, melting_pool_indices
+        return melt_pool_points
 
     def get_laser_data(self, scan_results, timestep):
         laser_data = np.array(scan_results.laser_data[timestep])
 
         return laser_data
 
-    def write_to_h5_dataset(self, dset, data, offset):
-        if dset.name == '/melting_pool':
-            flattened_data = []
-            for item in data:
-                flattened_data.extend(item)
-            data = np.array(flattened_data)
-            dset.resize(self.melting_pool_offset + data.shape[0], axis=0)
-            dset[self.melting_pool_offset:] = data
-            self.melting_pool_offset += data.shape[0]
-        else:
-            data = np.array(data)
-            dset.resize(offset + data.shape[0], axis=0)
-            dset[offset:] = data
-        dset.flush()
 
     def get_target_distances_to_melting_pool_2d(self, scan_results, scan_parameters, contour_shape, timestep):
         laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)

@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import random_split, DataLoader, Dataset
 
-from leap3d.datasets.channels import LaserPosition, RoughTemperature, RoughTemperatureDifference, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets.channels import Channel, LaserPosition, RoughTemperature, RoughTemperatureDifference, ScanningAngle, LaserPower, LaserRadius
 from leap3d.scanning import ScanParameters, ScanResults
 
 
@@ -92,11 +92,16 @@ class LEAPDataModule(pl.LightningDataModule):
         self.input_shape = input_shape if is_3d else input_shape[:2]
         self.target_shape = target_shape if is_3d else target_shape[:2]
 
-        self.input_channels = [channel(is_3d=self.is_3d) for channel in input_channels]
+        if not any([isinstance(channel, Channel) for channel in input_channels]):
+            self.input_channels = [channel(is_3d=self.is_3d) for channel in input_channels]
         self.input_channel_len = sum([channel.channels for channel in self.input_channels])
-        self.extra_input_channels = [channel(is_3d=self.is_3d) for channel in extra_input_channels]
+
+        if not any([isinstance(channel, Channel) for channel in extra_input_channels]):
+            self.extra_input_channels = [channel(is_3d=self.is_3d) for channel in extra_input_channels]
         self.extra_input_channel_len = sum([channel.channels for channel in self.extra_input_channels])
-        self.target_channels = [channel(is_3d=self.is_3d) for channel in target_channels]
+
+        if not any([isinstance(channel, Channel) for channel in target_channels]):
+            self.target_channels = [channel(is_3d=self.is_3d) for channel in target_channels]
         self.target_channel_len = sum([channel.channels for channel in self.target_channels])
 
         self.transforms = transforms
@@ -105,9 +110,11 @@ class LEAPDataModule(pl.LightningDataModule):
         self.force_prepare = force_prepare
         self.num_workers = num_workers
 
-    def prepare_data(self):
-        self.prepare_train_data()
-        self.prepare_test_data()
+    def prepare_data(self, stage: str=None):
+        if stage == 'fit' or stage is None:
+            self.prepare_train_data()
+        if stage == 'test' or stage is None:
+            self.prepare_test_data()
 
     def check_if_prepared_data_exists(self, path):
         return path.exists()
@@ -138,6 +145,7 @@ class LEAPDataModule(pl.LightningDataModule):
             datasets = self.create_h5_datasets(f)
 
             for case_id, scan_result_filepath in scan_case_id_and_result_filepaths:
+                print(f"case id: {case_id}")
                 data_generator = self.get_data_generator(case_id, scan_result_filepath, params_file, rough_coordinates)
                 offset += self.write_data_to_h5(data_generator, datasets, offset)
 

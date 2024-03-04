@@ -103,6 +103,8 @@ class UNetInterpolationDataModule(LEAPDataModule):
         return self.get_target_distances_to_melting_pool_2d(scan_results, scan_parameters, timestep)
 
     def get_target_distances_to_melting_pool_2d(self, scan_results, scan_parameters, timestep):
+        if scan_results.is_melt_pool_empty(timestep):
+            return self.get_target_distances_to_laser(scan_results, scan_parameters, timestep)
         temperature_high_res = scan_results.get_melt_pool_temperature_grid(scan_parameters, timestep)
         contours = get_melting_pool_contour_2d(temperature_high_res, top_k=1)[0]
         if len(contours) == 0:
