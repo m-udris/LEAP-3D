@@ -160,6 +160,7 @@ class InterpolationMLP(BaseModel):
         self.cnn = CNN(input_dimension=input_dimension, output_dimension=output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
         mlp_input_size = self.cnn.get_output_features_count(input_shape)
         self.mlp = MLP(input_dimension=mlp_input_size + extra_params_number + 2, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
+        self.input_shape = input_shape
 
     def forward(self, x_grid, points):
         x = self.forward_cnn(x_grid)
@@ -218,8 +219,8 @@ class InterpolationMLP(BaseModel):
         x, extra_params, y, y_coord_bounds, laser_data, melting_pool = batch[:6]
         target_coord_points = []
         for coord_point in y_coord_bounds:
-            x_coords = torch.linspace(coord_point[0], coord_point[1], 128)
-            y_coords = torch.linspace(coord_point[2], coord_point[3], 128)
+            x_coords = torch.linspace(coord_point[0], coord_point[1], self.input_shape[0] * 4)
+            y_coords = torch.linspace(coord_point[2], coord_point[3], self.input_shape[1] * 4)
             target_points = torch.tensor(np.array(np.meshgrid(x_coords, y_coords))).mT.reshape(-1, 2)
             target_coord_points.append(target_points.unsqueeze(0))
         point_coords = torch.cat(target_coord_points, dim=0).to(self.device)
