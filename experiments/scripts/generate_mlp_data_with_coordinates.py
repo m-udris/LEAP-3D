@@ -64,6 +64,6 @@ def aggregate_datasets(path, cases, is_test=False, force_prepare=False):
 
 if __name__ == '__main__':
     train_cases = list(range(18))
-    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_no_distances', train_cases, False, True)
+    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_no_distances', train_cases, False, False)
     test_cases = [18, 19]
-    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_no_distances', test_cases, False, True)
+    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_no_distances', test_cases, False, False)
