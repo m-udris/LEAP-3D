@@ -238,8 +238,8 @@ class InterpolationMLP(BaseModel):
             new_coord_entry -= laser_data_points[:2]
             new_coord_entry = new_coord_entry.to(self.device)
 
-            extra_params = extra_params_item.unsqueeze(1).repeat(1, new_coord_entry.shape[0], 1)
-            points = torch.cat((new_coord_entry, extra_params), dim=1)
+            extra_params_item = extra_params_item.repeat(new_coord_entry.shape[0], 1)
+            points = torch.cat((new_coord_entry, extra_params_item), dim=1)
 
             y_hat = self.forward_mlp(x_grid, points)
             y_hat_list.append(y_hat.flatten())
