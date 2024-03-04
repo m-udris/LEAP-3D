@@ -87,6 +87,7 @@ class OffsetRoughTemperatureAroundLaser(Channel):
         self.is_3d = is_3d
         self.box_size = box_size
         self.box_step_scale = box_step_scale
+        self.return_coordinates = return_coordinates
         self.offset_ratio = offset_ratio
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
