@@ -140,8 +140,12 @@ class ScanParameters():
 
         return points
 
+    def get_offset_coordinates_around_position(self, laser_data, size: int=16, scale: float=0.25, offset_ratio: float=0.5, is_3d: bool=False):
+        bounds = self.get_offset_bounds_around_laser(laser_data, size, offset_ratio)
 
-    def get_offset_bounds_around_laser(self, laser_data, size: int=24, offset_ratio: float=2/3):
+        return self.get_coordinates_within_bounds(bounds, size, scale, is_3d)
+
+    def get_offset_bounds_around_laser(self, laser_data, size: int=16, offset_ratio: float=0.5):
         laser_x, laser_y = laser_data[:2]
         angle = self.scanning_angle
         step_size = self.rough_coordinates_step_size

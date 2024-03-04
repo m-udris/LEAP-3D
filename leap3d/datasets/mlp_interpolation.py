@@ -83,6 +83,7 @@ class MLPInterpolationDataModule(LEAPDataModule):
                  include_melting_pool: bool=False,
                  include_distances_to_melting_pool: bool=False,
                  melting_pool_points: int=5600,
+                 offset_ratio: float=None,
                  force_prepare=False,
                  num_workers=0):
         super().__init__(
@@ -105,8 +106,9 @@ class MLPInterpolationDataModule(LEAPDataModule):
         self.dataset_class = MLPInterpolationDataset
         self.melting_pool_offset = 0
         self.melt_pool_shape = (9,) if include_distances_to_melting_pool else (8,)
-        self.rough_coordinates_box_size = 32
-        self.interpolated_coordinates_scale = 0.25
+        self.rough_coordinates_box_size = self.target_channels[-1].box_size
+        self.interpolated_coordinates_scale = self.target_channels[-1].box_step_scale
+        self.interpolated_coordinates_offset_ratio = offset_ratio
         self.include_melting_pool = include_melting_pool
         self.include_distances_to_melting_pool = include_distances_to_melting_pool
         self.melting_pool_points = melting_pool_points
@@ -116,7 +118,6 @@ class MLPInterpolationDataModule(LEAPDataModule):
         datasets['target_coordinates'] = self.create_h5_target_coordinates_dataset(h5py_file)
         if self.include_melting_pool:
             datasets['melting_pool'] = self.create_h5_melting_pool_dataset(h5py_file)
-            # datasets['melting_pool_indices'] = self.create_h5_melting_pool_indices_dataset(h5py_file)
         datasets['laser_data'] = self.create_h5_laser_data_dataset(h5py_file)
         if self.include_distances_to_melting_pool:
             datasets['distances_to_melting_pool'] = self.create_h5_distances_to_melting_pool_dataset(h5py_file)
@@ -167,7 +168,11 @@ class MLPInterpolationDataModule(LEAPDataModule):
 
     def get_target_coordinates(self, scan_results, scan_parameters, timestep):
         laser_x, laser_y = scan_results.laser_data[timestep][:2]
-        bounds = scan_parameters.get_bounds_around_position(laser_x, laser_y, self.rough_coordinates_box_size)
+        if self.interpolated_coordinates_offset_ratio is None:
+            bounds = scan_parameters.get_bounds_around_position(laser_x, laser_y, self.rough_coordinates_box_size)
+        else:
+            bounds = scan_parameters.get_offset_bounds_around_laser(scan_results.laser_data[timestep], self.rough_coordinates_box_size, self.interpolated_coordinates_offset_ratio)
+
         if self.is_3d:
             return np.array(bounds)
         return np.array(bounds[:4])

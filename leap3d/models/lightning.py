@@ -197,6 +197,13 @@ class InterpolationMLP(BaseModel):
         y = y.reshape(y.shape[0], -1)
         if len(batch) > 5:
             y = torch.cat((y, melting_pool[:, :, 3]), dim=1)
+            y = y.reshape(-1)
+            y_hat = y.reshape(-1)
+            point_coords = point_coords.reshape(-1, 2)
+            filter_indices = torch.where(point_coords != torch.tensor([0., 0.]) and y != 0)
+            y = y[filter_indices]
+            y_hat = y_hat[filter_indices]
+
         loss = self.loss_function(y_hat, y)
 
         metrics_dict = {

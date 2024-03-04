@@ -191,7 +191,8 @@ class ScanResults():
                                                 size: int, step_scale: float,
                                                 scan_parameters: scan_parameters,
                                                 include_high_resolution_points: bool=False,
-                                                is_3d: bool=False):
+                                                is_3d: bool=False,
+                                                offset_ratio: float=None):
         """Get interpolated grid around laser at timestep.
 
         Args:
@@ -210,8 +211,11 @@ class ScanResults():
 
         rough_temperature = self.get_rough_temperatures_at_timestep(timestep)
 
-        points_to_interpolate = scan_parameters.get_coordinates_around_position(laser_x, laser_y, size,
+        if offset_ratio is None:
+            points_to_interpolate = scan_parameters.get_coordinates_around_position(laser_x, laser_y, size,
                                                                                 scale=step_scale, is_3d=is_3d)
+        else:
+            points_to_interpolate = scan_parameters.get_offset_coordinates_around_position(self.get_laser_data_at_timestep(timestep), size, step_scale, offset_ratio, is_3d)
 
         points_to_interpolate = np.array(points_to_interpolate)
 

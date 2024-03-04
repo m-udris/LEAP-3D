@@ -144,10 +144,10 @@ class LogR2ScoreOverTimePlotCallback(Callback):
         return r2_score_values
 
 
-def get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor="step", mode="max"):
+def get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor="step", mode="max", filename=None):
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        dirpath="./model_checkpoints/", monitor=monitor, mode=mode
-        # save_top_k=1
+        dirpath="./model_checkpoints/", monitor=monitor, mode=mode,
+        save_top_k=1, filename=filename
     )
     return checkpoint_callback
 

@@ -12,7 +12,7 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets.channels import OffsetRoughTemperatureAroundLaser, OffsetTemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
 from leap3d.datasets import UNetInterpolationDataModule
 from leap3d.models import Architecture, LEAP3D_UNet2D
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
@@ -23,7 +23,7 @@ from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, n
 
 
 def train():
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation_no_distances'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation_offset_no_distances'
 
     hparams = {
         'batch_size': 128,
@@ -35,17 +35,17 @@ def train():
         'out_channels': 1,
         'fcn_core_layers': 1,
         'extra_params_number': 3,
-        'input_channels': [RoughTemperatureAroundLaser],
-        'target_channels': [TemperatureAroundLaser],
+        'input_channels': [OffsetRoughTemperatureAroundLaser],
+        'target_channels': [OffsetTemperatureAroundLaser],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['UNET', '2D', 'interpolation', 'l1_loss'],
+        'tags': ['UNET', '2D', 'interpolation', 'l1_loss', 'offset'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
         'loss_function': 'l1',
-        'input_shape': [128,128],
-        'target_shape': [128,128]
+        'input_shape': [24*4,24*4],
+        'target_shape': [24*4,24*4]
     }
 
     # start a new wandb run to track this script
@@ -53,7 +53,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'interpolation_unet_2d_l1_loss_b{hparams["batch_size"]}',
+        'name': f'interpolation_unet_2d_l1_loss_b{hparams["batch_size"]}_offset',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -100,7 +100,7 @@ def train():
     model = InterpolationUNet2D(**hparams)
     checkpoint_filename = wandb_config['name']
     callbacks = [
-        get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss', mode='min', filename='unet_l1')
+        get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss', mode='min', filename='unet_l1_offset')
     ]
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 
