@@ -77,7 +77,7 @@ def train():
         ]),
         'melting_pool': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, 3, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_extra_param(x, 3, max_value=MELTING_POINT, min_value=BASE_TEMPERATURE, inplace=True))
         ])
     }
 
