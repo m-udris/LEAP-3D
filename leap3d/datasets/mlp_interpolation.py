@@ -55,8 +55,7 @@ class MLPInterpolationDataset(LEAPDataset):
             return outputs
 
         if self.include_melting_pool:
-            melting_pool_idx_start, melting_pool_idx_end = self.melting_pool_indices[idx]
-            melting_pool = self.melting_pool[int(melting_pool_idx_start):int(melting_pool_idx_end)]
+            melting_pool = self.melting_pool[idx]
             melting_pool = self.melting_pool_transform(melting_pool)
 
             outputs.append(melting_pool)
