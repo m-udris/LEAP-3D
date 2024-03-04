@@ -65,4 +65,4 @@ if __name__ == '__main__':
     train_cases = list(range(18))
     aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset_no_distances', train_cases, False, False)
     test_cases = [18, 19]
-    aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset__no_distances', test_cases, False, False)
+    aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset_no_distances', test_cases, False, False)
