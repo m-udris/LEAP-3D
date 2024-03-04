@@ -200,7 +200,8 @@ class InterpolationMLP(BaseModel):
             y = y.reshape(-1)
             y_hat = y.reshape(-1)
             point_coords = point_coords.reshape(-1, 2)
-            filter_indices = torch.where(point_coords != torch.zeros((2), device=self.device) and y != 0)
+            tmp = torch.abs(point_coords[:, 0]) + torch.abs(point_coords[:, 1])
+            filter_indices = torch.where(tmp.to(self.device) > 0 and y != 0)
             y = y[filter_indices]
             y_hat = y_hat[filter_indices]
 
