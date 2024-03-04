@@ -48,7 +48,7 @@ def aggregate_datasets(path, cases, is_test=False):
     main_path = Path(path) / filename
     with h5py.File(main_path, 'w') as f:
         for i in cases:
-            subfolder_name = f'case_{i}'
+            subfolder_name = f'train_case_{i}'
             dataset_dir = Path(path) / subfolder_name
             with h5py.File(dataset_dir / 'dataset.hdf5', 'r') as subf:
                 for k in subf.keys():
