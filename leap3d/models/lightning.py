@@ -234,14 +234,16 @@ class InterpolationMLP(BaseModel):
             melt_points = melt_points[melt_point_filter]
 
             melt_point_coords = melt_points[:, :2]
-            new_coord_entry = torch.cat((point_coords_item.reshape(-1, 2), melt_point_coords))
+            new_coord_entry = torch.cat((point_coords_item.reshape(-1, 2), melt_point_coords), dim=0)
             new_coord_entry -= laser_data_points[:2]
             new_coord_entry = new_coord_entry.to(self.device)
 
+            new_coord_entry = new_coord_entry
             extra_params_item = extra_params_item.repeat(new_coord_entry.shape[0], 1)
-            points = torch.cat((new_coord_entry, extra_params_item), dim=1)
-            points = points.unsqueeze(0)
+            points = torch.cat((new_coord_entry, extra_params_item), dim=-1)
 
+            points = points.unsqueeze(0)
+            x_grid = x_grid.unsqueeze(0)
             y_hat = self.forward_mlp(x_grid, points)
             y_hat_list.append(y_hat.flatten())
 

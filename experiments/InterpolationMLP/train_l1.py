@@ -23,7 +23,7 @@ from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, n
 
 
 def train():
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_32_no_melt'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_no_distances_no_coordinates'
 
     hparams = {
         'batch_size': 32,
