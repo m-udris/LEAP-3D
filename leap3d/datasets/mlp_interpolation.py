@@ -28,7 +28,6 @@ class MLPInterpolationDataset(LEAPDataset):
 
         if self.include_melting_pool:
             self.melting_pool = self.data_file['melting_pool']
-            self.melting_pool_indices = self.data_file['melting_pool_indices']
             self.melting_pool_transform = transforms.get('melting_pool', lambda x: x)
 
         self.laser_data = self.data_file['laser_data']
