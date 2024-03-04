@@ -10,7 +10,7 @@ from pytorch_lightning.callbacks import Callback
 import wandb
 
 from leap3d.plotting import plot_model_top_layer_temperature_comparison
-
+from leap3d.config import DATASET_DIR
 
 def get_recursive_model_predictions(model, dataset):
     model.eval()
@@ -146,7 +146,7 @@ class LogR2ScoreOverTimePlotCallback(Callback):
 
 def get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor="step", mode="max", filename=None):
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        dirpath="./model_checkpoints/", monitor=monitor, mode=mode,
+        dirpath=DATASET_DIR / "model_checkpoints/", monitor=monitor, mode=mode,
         save_top_k=1, filename=filename
     )
     return checkpoint_callback
