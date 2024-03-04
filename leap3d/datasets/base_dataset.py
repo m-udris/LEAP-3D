@@ -94,14 +94,20 @@ class LEAPDataModule(pl.LightningDataModule):
 
         if not any([isinstance(channel, Channel) for channel in input_channels]):
             self.input_channels = [channel(is_3d=self.is_3d) for channel in input_channels]
+        else:
+            self.input_channels = input_channels
         self.input_channel_len = sum([channel.channels for channel in self.input_channels])
 
         if not any([isinstance(channel, Channel) for channel in extra_input_channels]):
             self.extra_input_channels = [channel(is_3d=self.is_3d) for channel in extra_input_channels]
+        else:
+            self.extra_input_channels = extra_input_channels
         self.extra_input_channel_len = sum([channel.channels for channel in self.extra_input_channels])
 
         if not any([isinstance(channel, Channel) for channel in target_channels]):
             self.target_channels = [channel(is_3d=self.is_3d) for channel in target_channels]
+        else:
+            self.target_channels = target_channels
         self.target_channel_len = sum([channel.channels for channel in self.target_channels])
 
         self.transforms = transforms

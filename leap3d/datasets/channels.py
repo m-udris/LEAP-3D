@@ -61,7 +61,8 @@ class RoughTemperatureDifference(Channel):
 
 class RoughTemperatureAroundLaser(Channel):
     def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25, return_coordinates=False):
-        super().__init__('rough_temperature_around_laser', 1, True)
+        channel_count = 1 if not return_coordinates else 4 if is_3d else 3
+        super().__init__('rough_temperature_around_laser', channel_count, True)
         self.is_3d = is_3d
         self.box_size = box_size
         self.box_step_scale = box_step_scale
@@ -70,7 +71,7 @@ class RoughTemperatureAroundLaser(Channel):
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
         if self.return_coordinates:
             (x, y, z), t = scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, self.box_step_scale, scan_parameters, False, self.is_3d)
-            laser_x, laser_y = scan_parameters.get_laser_coordinates_at_timestep(timestep)
+            laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
             x = x - laser_x
             y = y - laser_y
             if self.is_3d:
@@ -81,7 +82,7 @@ class RoughTemperatureAroundLaser(Channel):
 
 class OffsetRoughTemperatureAroundLaser(Channel):
     def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25):
-        super().__init__('rough_temperature_around_laser', 1, True)
+        super().__init__('offset_rough_temperature_around_laser', 1, True)
         self.is_3d = is_3d
         self.box_size = box_size
         self.box_step_scale = box_step_scale
@@ -93,7 +94,8 @@ class OffsetRoughTemperatureAroundLaser(Channel):
 
 class LowResRoughTemperatureAroundLaser(Channel):
     def __init__(self, is_3d=False, box_size=32, return_coordinates=False):
-        super().__init__('rough_temperature_around_laser', 1, True)
+        channel_count = 1 if not return_coordinates else 4 if is_3d else 3
+        super().__init__('rough_temperature_around_laser', channel_count, True)
         self.is_3d = is_3d
         self.box_size = box_size
         self.return_coordinates = return_coordinates
@@ -101,7 +103,7 @@ class LowResRoughTemperatureAroundLaser(Channel):
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
         if self.return_coordinates:
             (x, y, z), t = scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, 1, scan_parameters, False, self.is_3d)
-            laser_x, laser_y = scan_parameters.get_laser_coordinates_at_timestep(timestep)
+            laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
             x = x - laser_x
             y = y - laser_y
             if self.is_3d:
