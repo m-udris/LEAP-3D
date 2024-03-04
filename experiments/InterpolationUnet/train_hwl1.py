@@ -43,7 +43,9 @@ def train():
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'hwl1'
+        'loss_function': 'hwl1',
+        'input_shape': [128,128],
+        'target_shape': [128,128]
     }
 
     # start a new wandb run to track this script
