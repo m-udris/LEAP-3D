@@ -9,13 +9,12 @@ from leap3d.datasets.channels import OffsetRoughTemperatureAroundLaser, OffsetTe
 from leap3d.config import NUM_WORKERS, DATA_DIR, ROUGH_COORDS_FILEPATH, PARAMS_FILEPATH, DATASET_DIR
 
 
-def generate_case_dataset(path, case_id, is_test=False, force_prepare=False):
+def generate_case_dataset(path, case_id, force_prepare=False):
     print(f'Generating dataset for case {case_id}...')
-    subfolder_name = ('test_' if is_test else 'train_') + f'case_{case_id}'
+    subfolder_name = f'train_case_{case_id}'
     dataset_dir = Path(path) / subfolder_name
     if not dataset_dir.exists():
         mkdir(dataset_dir)
-
 
     datamodule = UNetInterpolationDataModule(
         scan_parameters_filepath=PARAMS_FILEPATH,
@@ -23,8 +22,8 @@ def generate_case_dataset(path, case_id, is_test=False, force_prepare=False):
         raw_data_directory=DATA_DIR,
         prepared_data_path=dataset_dir,
         is_3d=False,
-        train_cases=[case_id] if not is_test else None,
-        test_cases=[case_id] if is_test else None,
+        train_cases=[case_id],
+        test_cases=None,
         input_shape=[24*4, 24*4],
         target_shape=[24*4, 24*4],
         input_channels=[OffsetRoughTemperatureAroundLaser],
@@ -36,22 +35,23 @@ def generate_case_dataset(path, case_id, is_test=False, force_prepare=False):
         force_prepare=force_prepare,
         num_workers=NUM_WORKERS
     )
-    datamodule.prepare_data('fit' if not is_test else 'test')
+    datamodule.prepare_data('fit')
 
 
-def aggregate_datasets(path, cases, is_test=False, force_prepare=False):
+def generate_cases(path, cases, force_prepare):
     if not Path(path).exists():
         mkdir(path)
     with Pool(min(NUM_WORKERS, len(cases))) as p:
-        p.starmap(generate_case_dataset, [(path, case_id, is_test, force_prepare) for case_id in cases])
+        p.starmap(generate_case_dataset, [(path, case_id, force_prepare) for case_id in cases])
 
+def aggregate_datasets(path, cases, is_test=False):
     filename = ('test_' if is_test else '') + 'dataset.hdf5'
     main_path = Path(path) / filename
     with h5py.File(main_path, 'w') as f:
         for i in cases:
-            subfolder_name = ('test_' if is_test else 'train_') + f'case_{i}'
+            subfolder_name = f'train_case_{i}'
             dataset_dir = Path(path) / subfolder_name
-            with h5py.File(dataset_dir / filename, 'r') as subf:
+            with h5py.File(dataset_dir / 'dataset.hdf5', 'r') as subf:
                 for k in subf.keys():
                     if k not in f.keys():
                         data = subf[k]
@@ -63,6 +63,7 @@ def aggregate_datasets(path, cases, is_test=False, force_prepare=False):
 
 if __name__ == '__main__':
     train_cases = list(range(18))
-    aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset_no_distances', train_cases, False, False)
     test_cases = [18, 19]
-    aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset_no_distances', test_cases, False, False)
+    generate_cases(DATASET_DIR / 'unet_interpolation_offset_no_distances', train_cases + test_cases, force_prepare=False)
+    aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset_no_distances', train_cases, is_test=False)
+    aggregate_datasets(DATASET_DIR / 'unet_interpolation_offset_no_distances', test_cases, is_test=True)
