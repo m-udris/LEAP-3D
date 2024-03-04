@@ -194,7 +194,6 @@ class InterpolationMLP(BaseModel):
 
         extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
         points = torch.cat((point_coords, extra_params), dim=2)
-        points = points.unsqueeze(1)
 
         x = x.to(self.device)
         points = points.to(self.device)
@@ -241,6 +240,7 @@ class InterpolationMLP(BaseModel):
 
             extra_params_item = extra_params_item.repeat(new_coord_entry.shape[0], 1)
             points = torch.cat((new_coord_entry, extra_params_item), dim=1)
+            points = points.unsqueeze(0)
 
             y_hat = self.forward_mlp(x_grid, points)
             y_hat_list.append(y_hat.flatten())
