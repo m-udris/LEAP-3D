@@ -74,6 +74,10 @@ def train():
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, MAX_LASER_RADIUS, inplace=True))
+        ]),
+        'melting_pool': transforms.Compose([
+            torch.tensor,
+            transforms.Lambda(lambda x: normalize_extra_param(x, 3, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ])
     }
 
@@ -94,7 +98,7 @@ def train():
                     input_shape=[32, 32], target_shape=[128,128],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
-                    include_melting_pool=False,
+                    include_melting_pool=True,
                     include_distances_to_melting_pool=False,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
