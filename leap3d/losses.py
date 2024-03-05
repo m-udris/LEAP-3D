@@ -8,7 +8,7 @@ def heat_loss(y_hat, y, eps=0.05):
 
 
 def weighted_l1_loss(y_hat, y):
-    w = 1 - torch.abs(1 - y)
+    w = 1.25 - torch.abs(1 - y)
     loss = w * nn.functional.l1_loss(y_hat, y, reduction='none')
     return torch.mean(loss)
 
