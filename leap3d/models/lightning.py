@@ -189,9 +189,9 @@ class InterpolationMLP(BaseModel):
             target_coord_points.append(target_points.unsqueeze(0))
         point_coords = torch.cat(target_coord_points, dim=0).to(self.device)
 
-        # Get relative coordinates to laser position
-        laser_coordinates = laser_data[:, :2]
-        point_coords = point_coords - laser_coordinates.reshape(-1, 1, 2)
+        # Laser coordinates are already subtracted from the point coordinates during dataset creation
+        # laser_coordinates = laser_data[:, :2]
+        # point_coords = point_coords - laser_coordinates.reshape(-1, 1, 2)
 
         extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
         points = torch.cat((point_coords, extra_params), dim=2)
@@ -235,8 +235,8 @@ class InterpolationMLP(BaseModel):
             melt_points = melt_points[melt_point_filter]
 
             melt_point_coords = melt_points[:, :2]
+            melt_point_coords -= laser_data_points[:2]
             new_coord_entry = torch.cat((point_coords_item.reshape(-1, 2), melt_point_coords), dim=0)
-            new_coord_entry -= laser_data_points[:2]
             new_coord_entry = new_coord_entry.to(self.device)
 
             new_coord_entry = new_coord_entry
