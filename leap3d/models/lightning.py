@@ -219,6 +219,36 @@ class InterpolationMLP(BaseModel):
 
         point_coords = target_coordinates
 
+        # === Compute in parallel, then filter out for loss === (Slower)
+
+        # y = y.reshape(y.shape[0], -1)
+        # melting_pool_coords = melting_pool[:, :, :2]
+        # melting_pool_temps = melting_pool[:, :, 3]
+
+        # point_coords = torch.cat((point_coords, melting_pool_coords), dim=1)
+        # print(y.shape, melting_pool_temps.shape)
+        # y = torch.cat((y, melting_pool_temps), dim=1)
+
+        # extra_params = extra_params.unsqueeze(1)
+        # extra_params_expanded = extra_params.expand((-1, point_coords.shape[1], *extra_params.shape[2:]))
+
+        # points = torch.cat((point_coords, extra_params_expanded), dim=2)
+
+        # x = x.to(self.device)
+        # points = points.to(self.device)
+
+        # y_hat = self.forward(x, points)
+
+        # y_hat = y_hat.reshape(y_hat.shape[0], -1)
+        # # y = y.reshape(y_hat.shape)
+
+        # mask = torch.logical_and(torch.logical_and(points[:, :, 0] > 0, points[:, :, 1] > 0), y > 0).reshape(y.shape)
+
+        # y_hat = y_hat[mask]
+        # y = y[mask]
+
+        # === Filter and compute in sequence, then concatenate === (Faster)
+
         x_grids = self.forward_cnn(x)
 
         temperature_list = []
@@ -251,6 +281,8 @@ class InterpolationMLP(BaseModel):
 
         y_hat = torch.stack(y_hat_list, dim=0).flatten()
         y = torch.stack(temperature_list, dim=0).flatten()
+
+        # === End of filtering and concatenation ===
 
         loss = self.loss_function(y_hat, y)
 
