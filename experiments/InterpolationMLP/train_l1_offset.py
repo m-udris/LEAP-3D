@@ -44,7 +44,8 @@ def train():
         'padding_mode': 'replicate',
         'loss_function': 'l1',
         'input_shape': [24, 24],
-        'target_shape': [24*4, 24*4]
+        'target_shape': [24*4, 24*4],
+        'apply_positional_encoding': True
     }
 
     # start a new wandb run to track this script
