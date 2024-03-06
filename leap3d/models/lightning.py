@@ -172,9 +172,10 @@ class InterpolationMLP(BaseModel):
         x = x_grid.reshape(x_grid.shape[0], -1)
         return x
 
-    def forward_mlp(self, x, points):
+    def forward_mlp(self, x_conv, points):
         # x = x.unsqueeze(1).repeat(1, points.shape[1], 1)
-        x = x.unsqueeze(1).expand(-1, points.shape[1], *x.shape[1:])
+        x_conv = x_conv.unsqueeze(1)
+        x = x_conv.expand(-1, points.shape[1], *x_conv.shape[2:])
 
         x = torch.cat((x, points), dim=-1)
         return self.mlp(x)
@@ -193,15 +194,17 @@ class InterpolationMLP(BaseModel):
 
 
         # extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
-        extra_params = extra_params.unsqueeze(1).expand((-1, point_coords.shape[1], *extra_params.shape[1:]))
+        extra_params = extra_params.unsqueeze(1)
+        extra_params_expanded = extra_params.expand((-1, point_coords.shape[1], *extra_params.shape[2:]))
 
-        points = torch.cat((point_coords, extra_params), dim=2)
+        points = torch.cat((point_coords, extra_params_expanded), dim=2)
 
         x = x.to(self.device)
         points = points.to(self.device)
 
         y_hat = self.forward(x, points)
         y_hat = y_hat.reshape(y_hat.shape[0], -1)
+        y = y.reshape(y_hat.shape)
 
         loss = self.loss_function(y_hat, y)
 
@@ -243,9 +246,9 @@ class InterpolationMLP(BaseModel):
             new_coord_entry = new_coord_entry
 
             # extra_params_item = extra_params_item.repeat(new_coord_entry.shape[0], 1)
-            extra_params_item = extra_params_item.expand((new_coord_entry.shape[0], *extra_params_item.shape))
+            extra_params_item_expanded = extra_params_item.expand((new_coord_entry.shape[0], *extra_params_item.shape))
 
-            points = torch.cat((new_coord_entry, extra_params_item), dim=-1)
+            points = torch.cat((new_coord_entry, extra_params_item_expanded), dim=-1)
 
             points = points.unsqueeze(0)
             x_grid = x_grid.unsqueeze(0)
