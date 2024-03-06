@@ -99,7 +99,7 @@ def train():
                     input_shape=hparams['input_shape'], target_shape=hparams['target_shape'],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
-                    include_melting_pool=True,
+                    include_melting_pool=False,
                     include_distances_to_melting_pool=False,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
