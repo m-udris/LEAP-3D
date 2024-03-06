@@ -173,7 +173,9 @@ class InterpolationMLP(BaseModel):
         return x
 
     def forward_mlp(self, x, points):
-        x = x.unsqueeze(1).repeat(1, points.shape[1], 1)
+        # x = x.unsqueeze(1).repeat(1, points.shape[1], 1)
+        x = x.unsqueeze(1).expand(-1, points.shape[1], *x.shape[1:])
+
         x = torch.cat((x, points), dim=-1)
         return self.mlp(x)
 
@@ -189,11 +191,10 @@ class InterpolationMLP(BaseModel):
             target_coord_points.append(target_points.unsqueeze(0))
         point_coords = torch.cat(target_coord_points, dim=0).to(self.device)
 
-        # Laser coordinates are already subtracted from the point coordinates during dataset creation
-        # laser_coordinates = laser_data[:, :2]
-        # point_coords = point_coords - laser_coordinates.reshape(-1, 1, 2)
 
-        extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
+        # extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
+        extra_params = extra_params.unsqueeze(1).expand((-1, point_coords.shape[1], *extra_params.shape[1:]))
+
         points = torch.cat((point_coords, extra_params), dim=2)
 
         x = x.to(self.device)
@@ -240,7 +241,10 @@ class InterpolationMLP(BaseModel):
             new_coord_entry = new_coord_entry.to(self.device)
 
             new_coord_entry = new_coord_entry
-            extra_params_item = extra_params_item.repeat(new_coord_entry.shape[0], 1)
+
+            # extra_params_item = extra_params_item.repeat(new_coord_entry.shape[0], 1)
+            extra_params_item = extra_params_item.expand((new_coord_entry.shape[0], *extra_params_item.shape))
+
             points = torch.cat((new_coord_entry, extra_params_item), dim=-1)
 
             points = points.unsqueeze(0)

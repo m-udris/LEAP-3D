@@ -6,7 +6,7 @@ import h5py
 
 from leap3d.datasets import MLPInterpolationDataModule
 from leap3d.datasets.channels import OffsetLowResRoughTemperatureAroundLaser, OffsetTemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
-from leap3d.config import NUM_WORKERS, DATA_DIR, ROUGH_COORDS_FILEPATH, PARAMS_FILEPATH, DATASET_DIR
+from leap3d.config import NUM_MP_DATA_PREP_WORKERS, DATA_DIR, ROUGH_COORDS_FILEPATH, PARAMS_FILEPATH, DATASET_DIR
 
 
 def generate_case_dataset(path, case_id, force_prepare=False):
@@ -34,8 +34,7 @@ def generate_case_dataset(path, case_id, force_prepare=False):
         include_melting_pool=True,
         include_distances_to_melting_pool=False,
         force_prepare=force_prepare,
-        num_workers=NUM_WORKERS,
-        offset_ratio=0.5
+        offset_ratio=2/3
     )
     datamodule.prepare_data('fit')
 
@@ -43,7 +42,7 @@ def generate_case_dataset(path, case_id, force_prepare=False):
 def generate_cases(path, cases, force_prepare):
     if not Path(path).exists():
         mkdir(path)
-    with Pool(min(NUM_WORKERS, len(cases))) as p:
+    with Pool(min(NUM_MP_DATA_PREP_WORKERS, len(cases))) as p:
         p.starmap(generate_case_dataset, [(path, case_id, force_prepare) for case_id in cases])
 
 def aggregate_datasets(path, cases, is_test=False):

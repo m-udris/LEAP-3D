@@ -33,3 +33,6 @@ MAX_LASER_RADIUS = float(os.getenv("MAX_LASER_RADIUS"))
 # Device settings
 NUM_WORKERS = int(os.getenv("NUM_WORKERS", 1))
 FORCE_PREPARE = os.getenv("FORCE_PREPARE", False) == "True"
+
+# Multiprocess data generation workers
+NUM_MP_DATA_PREP_WORKERS = int(os.getenv("NUM_MP_DATA_PREP_WORKERS", 10))

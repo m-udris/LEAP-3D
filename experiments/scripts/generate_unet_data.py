@@ -6,7 +6,7 @@ import h5py
 
 from leap3d.datasets import UNetInterpolationDataModule
 from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAroundLaser, ScanningAngle, LaserPower, LaserRadius
-from leap3d.config import NUM_WORKERS, DATA_DIR, ROUGH_COORDS_FILEPATH, PARAMS_FILEPATH, DATASET_DIR
+from leap3d.config import NUM_MP_DATA_PREP_WORKERS, DATA_DIR, ROUGH_COORDS_FILEPATH, PARAMS_FILEPATH, DATASET_DIR
 
 
 def generate_case_dataset(path, case_id, force_prepare=False):
@@ -32,15 +32,14 @@ def generate_case_dataset(path, case_id, force_prepare=False):
         transforms={},
         inverse_transforms={},
         include_distances_to_melting_pool=False,
-        force_prepare=force_prepare,
-        num_workers=NUM_WORKERS
+        force_prepare=force_prepare
     )
     datamodule.prepare_data('fit')
 
 def generate_cases(path, cases, force_prepare):
     if not Path(path).exists():
         mkdir(path)
-    with Pool(min(NUM_WORKERS, len(cases))) as p:
+    with Pool(min(NUM_MP_DATA_PREP_WORKERS, len(cases))) as p:
         p.starmap(generate_case_dataset, [(path, case_id, force_prepare) for case_id in cases])
 
 def aggregate_datasets(path, cases, is_test=False):
@@ -63,6 +62,8 @@ def aggregate_datasets(path, cases, is_test=False):
 if __name__ == '__main__':
     train_cases = list(range(18))
     test_cases = [18, 19]
+    train_cases = list(range(10))
+    test_cases = []
     generate_cases(DATASET_DIR / 'unet_interpolation_no_distances', train_cases + test_cases, force_prepare=False)
     aggregate_datasets(DATASET_DIR / 'unet_interpolation_no_distances', train_cases, is_test=False)
-    aggregate_datasets(DATASET_DIR / 'unet_interpolation_no_distances', test_cases, is_test=True)
+    # aggregate_datasets(DATASET_DIR / 'unet_interpolation_no_distances', test_cases, is_test=True)
