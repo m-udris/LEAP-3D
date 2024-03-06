@@ -183,14 +183,9 @@ class InterpolationMLP(BaseModel):
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
         if len(batch) > 5:
             return self.f_step_with_melt_pool(batch, batch_idx, train=train, *args, **kwargs)
-        x, extra_params, y, y_coord_bounds, laser_data = batch[:5]
-        target_coord_points = []
-        for coord_point in y_coord_bounds:
-            x_coords = torch.linspace(coord_point[0], coord_point[1], 128)
-            y_coords = torch.linspace(coord_point[2], coord_point[3], 128)
-            target_points = torch.tensor(np.array(np.meshgrid(x_coords, y_coords))).mT.reshape(-1, 2)
-            target_coord_points.append(target_points.unsqueeze(0))
-        point_coords = torch.cat(target_coord_points, dim=0).to(self.device)
+        x, extra_params, y, target_coordinates, laser_data = batch[:5]
+
+        point_coords = target_coordinates
 
 
         # extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
@@ -220,26 +215,20 @@ class InterpolationMLP(BaseModel):
         return loss, y_hat
 
     def f_step_with_melt_pool(self, batch, batch_idx, train=False, *args, **kwargs):
-        x, extra_params, y, y_coord_bounds, laser_data, melting_pool = batch[:6]
-        target_coord_points = []
-        for coord_point in y_coord_bounds:
-            x_coords = torch.linspace(coord_point[0], coord_point[1], self.input_shape[0] * 4)
-            y_coords = torch.linspace(coord_point[2], coord_point[3], self.input_shape[1] * 4)
-            target_points = torch.tensor(np.array(np.meshgrid(x_coords, y_coords))).mT.reshape(-1, 2)
-            target_coord_points.append(target_points.unsqueeze(0))
-        point_coords = torch.cat(target_coord_points, dim=0).to(self.device)
+        x, extra_params, y, target_coordinates, laser_data, melting_pool = batch[:6]
+
+        point_coords = target_coordinates
 
         x_grids = self.forward_cnn(x)
 
         temperature_list = []
         y_hat_list = []
-        for x_grid, extra_params_item, point_coords_item, y_points, melt_points, laser_data_points in zip(x_grids, extra_params, point_coords, y, melting_pool, laser_data):
+        for x_grid, extra_params_item, point_coords_item, y_points, melt_points in zip(x_grids, extra_params, point_coords, y, melting_pool):
             melt_point_filter_sum = torch.abs(melt_points[:, 0]) + torch.abs(melt_points[:, 1]) + torch.abs(melt_points[:, 3])
             melt_point_filter = torch.where(melt_point_filter_sum > 0)
             melt_points = melt_points[melt_point_filter]
 
             melt_point_coords = melt_points[:, :2]
-            melt_point_coords -= laser_data_points[:2]
             new_coord_entry = torch.cat((point_coords_item.reshape(-1, 2), melt_point_coords), dim=0)
             new_coord_entry = new_coord_entry.to(self.device)
 

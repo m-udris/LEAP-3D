@@ -123,7 +123,7 @@ class MLPInterpolationDataModule(LEAPDataModule):
         return datasets
 
     def create_h5_target_coordinates_dataset(self, h5py_file):
-        dset_shape = [1, 6 if self.is_3d else 4]  # x_min, x_max, y_min, y_max, [z_min, z_max]
+        dset_shape = [1, np.prod(self.target_shape), 3 if self.is_3d else 2]
         dset_maxshape = [None, *dset_shape[1:]]
 
         return h5py_file.create_dataset("target_coordinates", dset_shape, maxshape=dset_maxshape, chunks=True)
@@ -133,7 +133,6 @@ class MLPInterpolationDataModule(LEAPDataModule):
         dset_maxshape = (None, *dset_shape[1:])
 
         return h5py_file.create_dataset("melting_pool", dset_shape, maxshape=dset_maxshape, chunks=True)
-
 
     def create_h5_laser_data_dataset(self, h5py_file):
         dset_shape = (1, 7)  # x position, y position, laser power, laser radius, laser velocity x, laser velocity y, existence of melt pool
@@ -167,13 +166,13 @@ class MLPInterpolationDataModule(LEAPDataModule):
     def get_target_coordinates(self, scan_results, scan_parameters, timestep):
         laser_x, laser_y = scan_results.laser_data[timestep][:2]
         if self.interpolated_coordinates_offset_ratio is None:
-            bounds = scan_parameters.get_bounds_around_position(laser_x, laser_y, self.rough_coordinates_box_size)
+            coordinates = scan_parameters.get_coordinates_around_position(laser_x, laser_y, self.rough_coordinates_box_size, self.interpolated_coordinates_scale, is_3d=self.is_3d)
         else:
-            bounds = scan_parameters.get_offset_bounds_around_laser(scan_results.laser_data[timestep], self.rough_coordinates_box_size, self.interpolated_coordinates_offset_ratio)
-
+            coordinates = scan_parameters.get_offset_coordinates_around_position(scan_results.laser_data[timestep], self.rough_coordinates_box_size, self.interpolated_coordinates_scale, is_3d=self.is_3d)
+        coordinates = np.array(coordinates)
         if self.is_3d:
-            return np.array(bounds)
-        return np.array(bounds[:4])
+            return coordinates
+        return coordinates[:, :2]
 
     def get_melting_pool_contour(self, scan_results, scan_parameters, timestep):
         temperature_high_res = scan_results.get_melt_pool_temperature_grid(scan_parameters, timestep)
@@ -198,6 +197,9 @@ class MLPInterpolationDataModule(LEAPDataModule):
             return melt_pool_points
 
         melt_pool_data = np.array(melt_pool_data)
+
+        laser_position = np.array(scan_results.get_laser_coordinates_at_timestep(timestep))
+        melt_pool_data[:, :2] = melt_pool_data[:, :2] - laser_position
 
         # filter out points that are not in the last layer if 2D
         if not self.is_3d:
