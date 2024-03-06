@@ -81,7 +81,7 @@ class RoughTemperatureAroundLaser(Channel):
 
 
 class OffsetRoughTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False, box_size=24, box_step_scale=0.25, offset_ratio=0.5, return_coordinates=False):
+    def __init__(self, is_3d=False, box_size=24, box_step_scale=0.25, offset_ratio=2/3, return_coordinates=False):
         channel_count = 1 if not return_coordinates else 4 if is_3d else 3
         super().__init__('offset_rough_temperature_around_laser', channel_count, True)
         self.is_3d = is_3d
@@ -123,7 +123,7 @@ class LowResRoughTemperatureAroundLaser(Channel):
 
 
 class OffsetLowResRoughTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False, box_size=24, offset_ratio=0.5, return_coordinates=False):
+    def __init__(self, is_3d=False, box_size=24, offset_ratio=2/3, return_coordinates=False):
         channel_count = 1 if not return_coordinates else 4 if is_3d else 3
         super().__init__('offset_low_res_rough_temperature_around_laser', channel_count, True)
         self.is_3d = is_3d
@@ -157,7 +157,7 @@ class TemperatureAroundLaser(Channel):
 
 
 class OffsetTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False, box_size=24, box_step_scale=0.25, offset_ratio=0.5):
+    def __init__(self, is_3d=False, box_size=24, box_step_scale=0.25, offset_ratio=2/3):
         super().__init__('offset_temperature_around_laser', 1, True)
         self.is_3d = is_3d
         self.box_size = box_size

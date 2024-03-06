@@ -7,7 +7,7 @@ from torch import nn
 
 from leap3d.models import BaseModel, CNN, MLP, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
 from leap3d.losses import distance_l1_loss_2d, heat_loss, weighted_l1_loss, heavy_weighted_l1_loss
-
+from leap3d.positional_encoding import positional_encoding
 
 
 class LEAP3D_UNet(BaseModel):
@@ -155,11 +155,17 @@ class InterpolationUNet3D(InterpolationUNet):
 
 
 class InterpolationMLP(BaseModel):
-    def __init__(self, input_shape=[32,32], extra_params_number=3, input_dimension=1, output_dimension=1, n_conv=16, depth=4, hidden_layers=[1024, 2048, 2048], activation=nn.LeakyReLU, bias=False, *args, **kwargs):
+    def __init__(self, input_shape=[32,32], extra_params_number=3, input_dimension=1, output_dimension=1, n_conv=16, depth=4, hidden_layers=[1024, 2048, 2048], apply_positional_encoding=False, positional_encoding_L=3, activation=nn.LeakyReLU, bias=False, *args, **kwargs):
         super(InterpolationMLP, self).__init__(*args, **kwargs)
         self.cnn = CNN(input_dimension=input_dimension, output_dimension=output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
-        mlp_input_size = self.cnn.get_output_features_count(input_shape)
-        self.mlp = MLP(input_dimension=mlp_input_size + extra_params_number + 2, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
+
+        self.apply_positional_encoding = apply_positional_encoding
+        self.positional_encoding_L = positional_encoding_L
+
+        mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
+        mlp_input_size += 2 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
+
+        self.mlp = MLP(input_dimension=mlp_input_size, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
         self.input_shape = input_shape
 
     def forward(self, x_grid, points):
@@ -187,6 +193,8 @@ class InterpolationMLP(BaseModel):
 
         point_coords = target_coordinates
 
+        if self.apply_positional_encoding:
+            point_coords = positional_encoding(point_coords, L=self.positional_encoding_L).reshape(*point_coords.shape[:2], -1)
 
         # extra_params = extra_params.unsqueeze(1).repeat(1, point_coords.shape[1], 1)
         extra_params = extra_params.unsqueeze(1)

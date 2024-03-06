@@ -44,7 +44,8 @@ def train():
         'padding_mode': 'replicate',
         'loss_function': 'l1',
         'input_shape': [32, 32],
-        'target_shape': [128,128]
+        'target_shape': [128,128],
+        'apply_positional_encoding': True
     }
 
     # start a new wandb run to track this script
@@ -98,7 +99,7 @@ def train():
                     input_shape=[32, 32], target_shape=[128,128],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
-                    include_melting_pool=True,
+                    include_melting_pool=False,
                     include_distances_to_melting_pool=False,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
