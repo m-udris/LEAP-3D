@@ -232,6 +232,9 @@ class InterpolationMLP(BaseModel):
 
         point_coords = target_coordinates
 
+        if self.apply_positional_encoding:
+            point_coords = positional_encoding(point_coords, L=self.positional_encoding_L).reshape(*point_coords.shape[:2], -1)
+
         # === Compute in parallel, then filter out for loss === (Slower)
 
         # y = y.reshape(y.shape[0], -1)
@@ -272,7 +275,9 @@ class InterpolationMLP(BaseModel):
             melt_points = melt_points[melt_point_filter]
 
             melt_point_coords = melt_points[:, :2]
-            new_coord_entry = torch.cat((point_coords_item.reshape(-1, 2), melt_point_coords), dim=0)
+            if self.apply_positional_encoding:
+                melt_point_coords = positional_encoding(melt_point_coords, L=self.positional_encoding_L).reshape(*melt_point_coords.shape[:-1], -1)
+            new_coord_entry = torch.cat((point_coords_item.reshape(-1, point_coords_item.shape[-1]), melt_point_coords), dim=0)
             new_coord_entry = new_coord_entry.to(self.device)
 
             new_coord_entry = new_coord_entry
@@ -286,7 +291,6 @@ class InterpolationMLP(BaseModel):
             x_grid = x_grid.unsqueeze(0)
             y_hat = self.forward_mlp(x_grid, points)
             y_hat_list.append(y_hat.flatten())
-
             melt_point_temps = melt_points[:, 3]
             new_temp_entry = torch.cat((y_points.flatten(), melt_point_temps))
             new_temp_entry = new_temp_entry.to(self.device)
