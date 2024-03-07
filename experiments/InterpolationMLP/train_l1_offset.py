@@ -46,7 +46,8 @@ def train():
         'input_shape': [24, 24],
         'target_shape': [24*4, 24*4],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 10
+        'positional_encoding_L': 10,
+        'hidden_layers': [1024],
     }
 
     # start a new wandb run to track this script
@@ -54,7 +55,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'interpolation_mlp_2d_l1_loss_b{hparams["batch_size"]}_offset',
+        'name': f'interpolation_mlp_2d_l1_loss_small_b{hparams["batch_size"]}_offset',
         # track hyperparameters and run metadata
         'config': hparams
     }
