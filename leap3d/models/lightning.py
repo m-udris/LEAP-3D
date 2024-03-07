@@ -155,7 +155,12 @@ class InterpolationUNet3D(InterpolationUNet):
 
 
 class InterpolationMLP(BaseModel):
-    def __init__(self, input_shape=[32,32], extra_params_number=3, input_dimension=1, output_dimension=1, n_conv=16, depth=4, hidden_layers=[1024, 2048, 2048], apply_positional_encoding=False, positional_encoding_L=3, activation=nn.LeakyReLU, bias=False, *args, **kwargs):
+    def __init__(self, input_shape=[32,32], extra_params_number=3,
+                 input_dimension=1, output_dimension=1,
+                 n_conv=16, depth=4,
+                 hidden_layers=[1024, 2048, 2048],
+                 apply_positional_encoding=False, positional_encoding_L=3,
+                 activation=nn.LeakyReLU, bias=False, *args, **kwargs):
         super(InterpolationMLP, self).__init__(*args, **kwargs)
         self.cnn = CNN(input_dimension=input_dimension, output_dimension=output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 

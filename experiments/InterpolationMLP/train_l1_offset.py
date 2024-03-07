@@ -45,7 +45,8 @@ def train():
         'loss_function': 'l1',
         'input_shape': [24, 24],
         'target_shape': [24*4, 24*4],
-        'apply_positional_encoding': True
+        'apply_positional_encoding': True,
+        'positional_encoding_L': 10
     }
 
     # start a new wandb run to track this script
