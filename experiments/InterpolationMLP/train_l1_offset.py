@@ -26,7 +26,7 @@ def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_offset_no_distances_no_coordinates'
 
     hparams = {
-        'batch_size': 128,
+        'batch_size': 64,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
