@@ -26,7 +26,7 @@ def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_offset_no_distances_no_coordinates'
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 32,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
@@ -55,7 +55,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'interpolation_mlp_2d_l1_loss_small_b{hparams["batch_size"]}_offset',
+        'name': f'interpolation_mlp_2d_l1_loss_small_with_highres_b{hparams["batch_size"]}_offset',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -101,7 +101,7 @@ def train():
                     input_shape=hparams['input_shape'], target_shape=hparams['target_shape'],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
-                    include_melting_pool=False,
+                    include_melting_pool=True,
                     include_distances_to_melting_pool=False,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
