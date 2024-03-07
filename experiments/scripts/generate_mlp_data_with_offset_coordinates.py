@@ -67,6 +67,6 @@ if __name__ == '__main__':
     train_cases = list(range(18))
     test_cases = [18, 19]
 
-    generate_cases(DATASET_DIR / 'mlp_interpolation_offset_no_distances', train_cases + test_cases, force_prepare=False)
+    generate_cases(DATASET_DIR / 'mlp_interpolation_offset_no_distances', train_cases + test_cases, force_prepare=True)
     aggregate_datasets(DATASET_DIR / 'mlp_interpolation_offset_no_distances', train_cases, is_test=False)
     aggregate_datasets(DATASET_DIR / 'mlp_interpolation_offset_no_distances', test_cases, is_test=True)
