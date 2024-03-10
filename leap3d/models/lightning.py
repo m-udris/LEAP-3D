@@ -315,11 +315,69 @@ class InterpolationMLP(BaseModel):
         return loss, y_hat
 
 
+class InterpolationMLPChunks(BaseModel):
+    def __init__(self, input_shape=[32,32], extra_params_number=3,
+                 input_dimension=1, output_dimension=1,
+                 n_conv=16, depth=4,
+                 hidden_layers=[1024],
+                 apply_positional_encoding=False, positional_encoding_L=3,
+                 activation=nn.LeakyReLU, bias=False, *args, **kwargs):
+        super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
+        self.cnn = CNN(input_dimension=input_dimension, output_dimension=output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 
+        self.apply_positional_encoding = apply_positional_encoding
+        self.positional_encoding_L = positional_encoding_L
 
+        mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
+        mlp_input_size += 2 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
 
+        self.mlp = MLP(input_dimension=mlp_input_size, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
+        self.input_shape = input_shape
 
+    def forward(self, x_grid, points):
+        x = self.forward_cnn(x_grid)
+        x = self.forward_mlp(x, points)
+        return x
 
+    def forward_cnn(self, x_grid):
+        x_grid = self.cnn(x_grid)
+        x = x_grid.reshape(x_grid.shape[0], -1)
+        return x
 
+    def forward_mlp(self, x_conv, points):
+        x_conv = x_conv.unsqueeze(1)
+        x = x_conv.expand(-1, points.shape[1], *x_conv.shape[2:])
 
+        x = torch.cat((x, points), dim=-1)
+        return self.mlp(x)
 
+    def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
+        x, extra_params, target = batch
+
+        point_coordinates = target[:, :, :-1]
+        y = target[:, :, -1]
+
+        if self.apply_positional_encoding:
+            point_coordinates = positional_encoding(point_coordinates, L=self.positional_encoding_L).reshape(*point_coordinates.shape[:2], -1)
+
+        extra_params = extra_params.unsqueeze(1)
+        extra_params_expanded = extra_params.expand((-1, point_coordinates.shape[1], *extra_params.shape[2:]))
+
+        points = torch.cat((point_coordinates, extra_params_expanded), dim=2)
+
+        y_hat = self.forward(x, points)
+        y_hat = y_hat.reshape(y_hat.shape[0], -1)
+        y = y.reshape(y_hat.shape)
+
+        loss = self.loss_function(y_hat, y)
+
+        metrics_dict = {
+            "loss": loss,
+            "r2": self.r2_metric(y_hat.reshape(-1), y.reshape(-1)),
+            "mae": self.mae_metric(y_hat, y),
+            "heat_loss": heat_loss(y_hat, y),
+            "mse": nn.functional.mse_loss(y_hat, y),
+        }
+        self.log_metrics_dict(metrics_dict, train)
+
+        return loss, y_hat

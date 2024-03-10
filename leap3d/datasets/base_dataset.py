@@ -228,7 +228,7 @@ class LEAPDataModule(pl.LightningDataModule):
                 buffers[data_name].append(values)
             items_in_buffer += 1
 
-            if items_in_buffer == buffer_size:
+            if items_in_buffer >= buffer_size:
                 for dset_name, dset in datasets.items():
                     self.write_to_h5_dataset(dset, buffers[dset_name], offset)
                 offset += buffer_size

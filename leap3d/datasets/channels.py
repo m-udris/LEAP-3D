@@ -1,4 +1,4 @@
-from enum import Enum
+import numpy as np
 
 from leap3d.laser import convert_laser_position_to_grid
 
@@ -170,6 +170,74 @@ class OffsetTemperatureAroundLaser(Channel):
             scan_parameters, True, self.is_3d, offset_ratio=self.offset_ratio)[1]]
 
 
+class MeltPoolPointChunk(Channel):
+    def __init__(self, is_3d=False, chunk_size=1024, input_shape=[32, 32], offset_ratio=None):
+        channel_count = chunk_size
+        super().__init__('melt_pool_point_chunk', channel_count, True)
+        self.is_3d = is_3d
+        self.chunk_size = chunk_size
+        self.input_size = input_shape[0]
+        self.offset_ratio = offset_ratio
+
+    def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
+        high_res_coordinates, high_res_temperatures = scan_results.get_melt_pool_coordinates_and_temperature(timestep, is_3d=self.is_3d)
+
+        if len(high_res_coordinates) == 0:
+            low_res_points = self.get_padding(scan_parameters, scan_results, timestep, self.chunk_size)
+            chunks = self.subtract_laser_coordinates(scan_results, scan_parameters, timestep, [low_res_points])
+            return chunks
+
+        chunk_count = (len(high_res_coordinates) // self.chunk_size) + 1
+        padding_length = self.chunk_size - (len(high_res_coordinates) % self.chunk_size)
+
+        chunk_sizes = [self.chunk_size] * (chunk_count - 1) + [self.chunk_size - padding_length]
+
+        high_res_points = np.concatenate([high_res_coordinates, high_res_temperatures.reshape(-1, 1)], axis=1)
+        np.random.shuffle(high_res_points)
+
+        chunks = []
+        for size in chunk_sizes:
+            chunks.append(high_res_points[:size])
+            high_res_points = high_res_points[size:]
+
+        padding = self.get_padding(scan_parameters, scan_results, timestep, padding_length)
+        chunks[-1] = np.concatenate([chunks[-1], padding])
+
+        chunks = self.subtract_laser_coordinates(scan_results, scan_parameters, timestep, chunks)
+
+        return chunks
+
+    def get_padding(self, scan_parameters, scan_results, timestep, padding_length):
+        (x_coords, y_coords, z_coords), interpolated_values = scan_results.get_interpolated_grid_around_laser(
+            timestep, size=self.input_size, step_scale=1,
+            scan_parameters=scan_parameters, include_high_resolution_points=False, is_3d=self.is_3d, offset_ratio=self.offset_ratio)
+
+        if self.is_3d:
+            points = np.array(list(zip(x_coords.flatten(), y_coords.flatten(), z_coords.flatten(), interpolated_values.flatten())))
+        else:
+            points = np.array(list(zip(x_coords.flatten(), y_coords.flatten(), interpolated_values.flatten())))
+        point_coordinates = points[:, :2]
+
+        if point_coordinates.shape[0] == padding_length:
+            return points
+
+        laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
+        weights = np.array([np.linalg.norm([laser_x - x, laser_y - y]) for x, y in point_coordinates])
+        weights = 1 / weights
+        probabilities = weights / np.sum(weights)
+
+        indices = points.shape[0]
+        indices = np.random.choice(indices, size=padding_length, replace=False, p=probabilities)
+        padding = points[indices]
+
+        return padding
+
+    def subtract_laser_coordinates(self, scan_results, scan_parameters, timestep, chunks):
+        laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
+        for chunk in chunks:
+            chunk[:, 0] = chunk[:, 0] - laser_x
+            chunk[:, 1] = chunk[:, 1] - laser_y
+        return chunks
 
 class ScanningAngle(Channel):
     def __init__(self, **kwargs):
