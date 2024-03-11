@@ -39,7 +39,7 @@ def train():
         'target_channels': [TemperatureAroundLaser],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['UNET', '2D', 'interpolation', 'l1_loss'],
+        'tags': ['UNET', '2D', 'interpolation', 'l1_loss', 'max_temp+300'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -64,11 +64,11 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'extra_params': transforms.Compose([
             torch.tensor,
@@ -81,11 +81,11 @@ def train():
     inverse_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
         ])
     }
 
