@@ -102,9 +102,8 @@ class LEAP3D_UNet3D(LEAP3D_UNet):
         super(LEAP3D_UNet3D, self).__init__(net, lr=lr, transform=transform, *args, **kwargs)
         self.is_teacher_forcing = False
 
-
 class InterpolationUNet(BaseModel):
-    def __init__(self, net, lr=1e-3, loss_function: str | Callable ='mse', *args, **kwargs):
+    def __init__(self, net, lr=1e-3, loss_function: str | Callable ='mse', apply_positional_encoding=False, positional_encoding_L=8, *args, **kwargs):
         if loss_function == 'wl1':
             loss_function = weighted_l1_loss
         if loss_function == 'hwl1':
@@ -118,6 +117,12 @@ class InterpolationUNet(BaseModel):
 
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
         x, extra_params, y = batch[:3]
+
+        if self.apply_positional_encoding:
+            if x.shape[1] > 1:
+                new_x_coords = positional_encoding(x[:,:-1], L=self.positional_encoding_L).reshape((x.shape[0], 2 * self.positional_encoding_L * (x.shape[1] - 1), *x.shape[2:]))
+                x = torch.cat((new_x_coords, x[:,-1].unsqueeze(1)), dim=1)
+
         y_hat = self.net(x, extra_params)
         y = y.reshape(y_hat.shape)
         if self.loss_function == distance_l1_loss_2d:
@@ -322,7 +327,11 @@ class InterpolationMLPChunks(BaseModel):
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
                  activation=nn.LeakyReLU, bias=False, *args, **kwargs):
+
+        print(kwargs.get('in_channels'))
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
+
+
         self.cnn = CNN(input_dimension=in_channels, output_dimension=out_channels, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 
         self.apply_positional_encoding = apply_positional_encoding
