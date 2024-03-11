@@ -12,7 +12,7 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.datasets.channels import OffsetLowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
 from leap3d.datasets import MLPInterpolationChunkDataModule
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE, X_MIN, X_MAX
 from leap3d.models.lightning import InterpolationMLPChunks
@@ -23,12 +23,13 @@ from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, n
 
 def train():
     step_size = (X_MAX - X_MIN) / 64
-    coords_radius = step_size * 20
-
+    coords_radius = step_size * 16
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=0, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=1, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
@@ -51,11 +52,11 @@ def train():
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=-1, min_value=BASE_TEMPERATURE, max_value=MELTING_POINT, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
         ])
     }
 
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_offset'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates'
 
     hparams = {
         'batch_size': 128,
@@ -63,19 +64,19 @@ def train():
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
         'transforms': train_transforms,
-        'in_channels': 1,
+        'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
         'extra_params_number': 3,
-        'input_channels': [OffsetLowResRoughTemperatureAroundLaser],
-        'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24,24], offset_ratio=2/3)],
+        'input_channels': [LowResRoughTemperatureAroundLaser],
+        'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'offset'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
         'loss_function': 'l1',
-        'input_shape': [24, 24],
+        'input_shape': [32, 32],
         'target_shape': [3],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
@@ -87,7 +88,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_chunks_offset_norm_coords_b{hparams["batch_size"]}',
+        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -130,11 +131,10 @@ def train():
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    input_shape=[24, 24], target_shape=[3],
+                    input_shape=[32, 32], target_shape=[3],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
-                    force_prepare=False, num_workers=NUM_WORKERS,
-                    offset_ratio=2/3)
+                    force_prepare=False, num_workers=NUM_WORKERS)
 
     model = InterpolationMLPChunks(**hparams)
     checkpoint_filename = wandb_config['name']

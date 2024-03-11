@@ -240,6 +240,36 @@ class MeltPoolPointChunk(Channel):
             chunk[:, 1] = chunk[:, 1] - laser_y
         return chunks
 
+
+class LaserPositionInBox(Channel):
+    def __init__(self, is_3d=False, box_size=32, box_step_scale=1, offset_ratio=None):
+        super().__init__('laser_position_in_box', 1, True)
+        self.is_3d = is_3d
+        self.box_size = box_size
+        self.box_step_scale = box_step_scale
+        self.offset_ratio = offset_ratio
+
+    def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
+        laser_data = scan_results.get_laser_data_at_timestep(timestep)
+
+        step_size = scan_parameters.rough_coordinates_step_size / self.box_step_scale
+
+        if self.offset_ratio is not None:
+            points = scan_parameters.get_offset_coordinates_around_position(
+                laser_data, size=self.box_size, scale=self.box_step_scale, offset_ratio=self.offset_ratio, is_3d=self.is_3d)
+        else:
+            points = scan_parameters.get_coordinates_around_position(
+                laser_data[0], laser_data[1], size=self.box_size, scale=self.box_step_scale, is_3d=self.is_3d)
+
+        points = np.array(points).reshape((self.box_size, self.box_size, 16 // self.box_step_scale, 3))
+
+        laser_grid = np.zeros((self.box_size, self.box_size, 16 // self.box_step_scale))
+
+        laser_grid[:, :, -1] = np.min((1 - np.abs(points[:, :, -1, 0] - laser_data[0]) / step_size, 0)) * np.min((1 - np.abs(points[:, :, -1, 1] - laser_data[1]) / step_size, 0))
+
+        return [laser_grid]
+
+
 class ScanningAngle(Channel):
     def __init__(self, **kwargs):
         super().__init__('scanning_angle', 1, False)
@@ -262,4 +292,3 @@ class LaserRadius(Channel):
 
     def get(self, scan_results=None, timestep=None, *args, **kwargs):
         return [scan_results.get_laser_radius_at_timestep(timestep)]
-

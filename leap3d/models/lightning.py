@@ -317,13 +317,13 @@ class InterpolationMLP(BaseModel):
 
 class InterpolationMLPChunks(BaseModel):
     def __init__(self, input_shape=[32,32], extra_params_number=3,
-                 input_dimension=1, output_dimension=1,
+                 in_channels=1, out_channels=1,
                  n_conv=16, depth=4,
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
                  activation=nn.LeakyReLU, bias=False, *args, **kwargs):
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
-        self.cnn = CNN(input_dimension=input_dimension, output_dimension=output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
+        self.cnn = CNN(input_dimension=in_channels, output_dimension=out_channels, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 
         self.apply_positional_encoding = apply_positional_encoding
         self.positional_encoding_L = positional_encoding_L
@@ -331,7 +331,7 @@ class InterpolationMLPChunks(BaseModel):
         mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
         mlp_input_size += 2 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
 
-        self.mlp = MLP(input_dimension=mlp_input_size, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
+        self.mlp = MLP(input_dimension=mlp_input_size, output_dimension=out_channels, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
         self.input_shape = input_shape
 
     def forward(self, x_grid, points):
@@ -359,6 +359,10 @@ class InterpolationMLPChunks(BaseModel):
 
         if self.apply_positional_encoding:
             point_coordinates = positional_encoding(point_coordinates, L=self.positional_encoding_L).reshape(*point_coordinates.shape[:2], -1)
+            # If x contains coordinates of each point, add positional encoding to it
+            if x.shape[1] > 1:
+                new_x_coords = positional_encoding(x[:,:-1], L=self.positional_encoding_L).reshape((x.shape[0], 2 * self.positional_encoding_L * (x.shape[1] - 1), *x.shape[2:]))
+                x = torch.cat((new_x_coords, x[:,-1].unsqueeze(1)), dim=1)
 
         extra_params = extra_params.unsqueeze(1)
         extra_params_expanded = extra_params.expand((-1, point_coordinates.shape[1], *extra_params.shape[2:]))
