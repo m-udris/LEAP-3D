@@ -109,7 +109,8 @@ class InterpolationUNet(BaseModel):
         if loss_function == 'hwl1':
             loss_function = heavy_weighted_l1_loss
         super(InterpolationUNet, self).__init__(net, loss_function=loss_function, *args, **kwargs)
-
+        self.apply_positional_encoding = apply_positional_encoding
+        self.positional_encoding_L = positional_encoding_L
         self.lr = lr
 
     def forward(self, x, extra_params):
