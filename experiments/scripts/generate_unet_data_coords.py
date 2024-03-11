@@ -62,8 +62,6 @@ def aggregate_datasets(path, cases, is_test=False):
 if __name__ == '__main__':
     train_cases = list(range(18))
     test_cases = [18, 19]
-    train_cases = [0]
-    test_cases = [1]
 
     generate_cases(DATASET_DIR / 'unet_interpolation_coordinates', train_cases + test_cases, force_prepare=True)
     aggregate_datasets(DATASET_DIR / 'unet_interpolation_coordinates', train_cases, is_test=False)
