@@ -24,37 +24,6 @@ from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, n
 def train():
     step_size = (X_MAX - X_MIN) / 64
     coords_radius = step_size * 16
-    train_transforms = {
-        'input': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True)),
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=0, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=1, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True))
-        ]),
-        'target': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=-1, min_value=BASE_TEMPERATURE, max_value=MELTING_POINT, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True))
-        ]),
-        'extra_params': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, MAX_LASER_RADIUS, inplace=True))
-        ])
-    }
-
-    inverse_transforms = {
-        'input': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
-        ]),
-        'target': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
-        ])
-    }
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates'
 
@@ -63,7 +32,7 @@ def train():
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
-        'transforms': train_transforms,
+        'transforms': 'default',
         'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
         'extra_params_number': 3,
@@ -99,21 +68,21 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=0, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=1, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=-1, min_value=BASE_TEMPERATURE, max_value=MELTING_POINT, inplace=True))
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=-1, min_value=BASE_TEMPERATURE, max_value=MELTING_POINT, inplace=True)),
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True))
         ]),
         'extra_params': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, MAX_LASER_RADIUS, inplace=True))
-        ]),
-        'melting_pool': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, 3, max_value=MELTING_POINT, min_value=BASE_TEMPERATURE, inplace=True))
         ])
     }
 
