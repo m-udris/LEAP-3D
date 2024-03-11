@@ -221,6 +221,7 @@ class MeltPoolPointChunk(Channel):
         if point_coordinates.shape[0] == padding_length:
             return points
 
+        # Prefer points closer to the laser
         laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
         weights = np.array([np.linalg.norm([laser_x - x, laser_y - y]) for x, y in point_coordinates])
         weights = 1 / weights
