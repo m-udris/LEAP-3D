@@ -117,3 +117,21 @@ def scanning_angle_cos_transform(x, index, inplace=False, inverse=False):
         return x
 
     raise TransformIncorrectShapeError(x.shape)
+
+
+def normalize_positional_grad(x, index, max_temp, step_size, inplace=False, inverse=False):
+    if not inplace:
+        x = x.clone()
+
+    if len(x.shape) == 1:
+        x[index] = (x[index] / max_temp) * step_size
+        return x
+    # If window
+    if len(x.shape) == 2:
+        x[:, index] = (x[:, index] / max_temp) * step_size
+        return x
+    if len(x.shape) == 3:
+        x[:, :, index] = (x[:, :, index] / max_temp) * step_size
+        return x
+
+    raise TransformIncorrectShapeError(x.shape)

@@ -327,7 +327,7 @@ class InterpolationMLPChunks(BaseModel):
                  n_conv=16, depth=4,
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
-                 activation=nn.LeakyReLU, bias=False, return_gradients=False, *args, **kwargs):
+                 activation=nn.LeakyReLU, bias=False, return_gradients=False, learn_gradients=False, *args, **kwargs):
 
         print(kwargs.get('in_channels'))
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
@@ -346,10 +346,16 @@ class InterpolationMLPChunks(BaseModel):
         self.input_shape = input_shape
 
         self.return_gradients = return_gradients
+        self.learn_gradients = learn_gradients
 
+    @torch.enable_grad()
+    @torch.inference_mode(False)
     def forward(self, x_grid, points):
-        point_coordinates = points
-        point_coordinates.requires_grad = self.return_gradients
+        input_points = points
+        input_x_grid = x_grid
+        if self.return_gradients:
+            input_points = input_points.requires_grad_()
+            input_x_grid = input_x_grid.requires_grad_()
 
         if self.apply_positional_encoding:
             x_grid, points = self.positional_encoding(x_grid, points)
@@ -358,7 +364,8 @@ class InterpolationMLPChunks(BaseModel):
         x = self.forward_mlp(x, points)
 
         if self.return_gradients:
-            grads = self.compute_gradients(x, point_coordinates)
+            x_sum = torch.sum(x)
+            grads = torch.autograd.grad(x_sum, points, create_graph=True)[0]
             return x, grads
 
         return x
@@ -376,7 +383,7 @@ class InterpolationMLPChunks(BaseModel):
         x_sum = torch.sum(x)
         grads = torch.autograd.grad(x_sum, points, create_graph=True)
 
-        return grads
+        return grads[0]
 
     def forward_cnn(self, x_grid):
         x_grid = self.cnn(x_grid)
@@ -393,8 +400,11 @@ class InterpolationMLPChunks(BaseModel):
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
         x, extra_params, target = batch
 
-        point_coordinates = target[:, :, :-1]
-        y = target[:, :, -1]
+        point_coordinates = target[:, :, :2]
+        y = target[:, :, 2]
+
+        true_grads_x = target[:, :, 3]
+        true_grads_y = target[:, :, 4]
 
         extra_params = extra_params.unsqueeze(1)
         extra_params_expanded = extra_params.expand((-1, point_coordinates.shape[1], *extra_params.shape[2:]))
@@ -408,7 +418,17 @@ class InterpolationMLPChunks(BaseModel):
         y_hat = y_hat.reshape(y_hat.shape[0], -1)
         y = y.reshape(y_hat.shape)
 
-        loss = self.loss_function(y_hat, y)
+        main_loss = self.loss_function(y_hat, y)
+
+        loss = main_loss
+
+        if self.learn_gradients:
+            mask = torch.isnan(true_grads_x)
+            grad_x_loss = torch.nn.functional.mse_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
+            grad_y_loss = torch.nn.functional.mse_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
+            grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
+            grad_y_r2 = self.r2_metric(grads[:, :, 1][~mask], true_grads_y[~mask])
+            loss += grad_x_loss + grad_y_loss
 
         metrics_dict = {
             "loss": loss,
@@ -417,9 +437,15 @@ class InterpolationMLPChunks(BaseModel):
             "heat_loss": heat_loss(y_hat, y),
             "mse": nn.functional.mse_loss(y_hat, y),
         }
+        if self.learn_gradients:
+            metrics_dict["main_loss"] = main_loss
+            metrics_dict["grad_x_loss"] = grad_x_loss
+            metrics_dict["grad_y_loss"] = grad_y_loss
+            metrics_dict["grad_x_r2"] = grad_x_r2
+            metrics_dict["grad_y_r2"] = grad_y_r2
         self.log_metrics_dict(metrics_dict, train)
 
         if self.return_gradients:
-            return loss, y_hat, grads
+            return loss, y_hat, grads, true_grads_x, true_grads_y
 
         return loss, y_hat
