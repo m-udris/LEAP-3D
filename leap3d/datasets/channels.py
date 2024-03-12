@@ -171,28 +171,39 @@ class OffsetTemperatureAroundLaser(Channel):
 
 
 class MeltPoolPointChunk(Channel):
-    def __init__(self, is_3d=False, chunk_size=1024, input_shape=[32, 32], offset_ratio=None):
+    def __init__(self, is_3d=False, chunk_size=1024, input_shape=[32, 32], offset_ratio=None, include_gradients=False):
         channel_count = chunk_size
         super().__init__('melt_pool_point_chunk', channel_count, True)
         self.is_3d = is_3d
         self.chunk_size = chunk_size
         self.input_size = input_shape[0]
         self.offset_ratio = offset_ratio
+        self.include_gradients = include_gradients
+        self.point_len = 3
+        if self.is_3d:
+            self.point_len += 1
+        if self.include_gradients:
+            self.point_len += 3
+        if self.is_3d and self.include_gradients:
+            self.point_len += 1
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        high_res_coordinates, high_res_temperatures = scan_results.get_melt_pool_coordinates_and_temperature(timestep, is_3d=self.is_3d)
-
-        if len(high_res_coordinates) == 0:
+        if scan_results.is_melt_pool_empty(timestep):
             low_res_points = self.get_padding(scan_parameters, scan_results, timestep, self.chunk_size)
             chunks = self.subtract_laser_coordinates(scan_results, scan_parameters, timestep, [low_res_points])
             return chunks
 
-        chunk_count = (len(high_res_coordinates) // self.chunk_size) + 1
-        padding_length = self.chunk_size - (len(high_res_coordinates) % self.chunk_size)
+        if self.include_gradients:
+            high_res_points = scan_results.get_melt_pool_data_at_timestep(timestep, is_3d=self.is_3d)
+        else:
+            high_res_coordinates, high_res_temperatures = scan_results.get_melt_pool_coordinates_and_temperature(timestep, is_3d=self.is_3d)
+            high_res_points = np.concatenate([high_res_coordinates, high_res_temperatures.reshape(-1, 1)], axis=1)
+
+        chunk_count = (len(high_res_points) // self.chunk_size) + 1
+        padding_length = self.chunk_size - (len(high_res_points) % self.chunk_size)
 
         chunk_sizes = [self.chunk_size] * (chunk_count - 1) + [self.chunk_size - padding_length]
 
-        high_res_points = np.concatenate([high_res_coordinates, high_res_temperatures.reshape(-1, 1)], axis=1)
         np.random.shuffle(high_res_points)
 
         chunks = []
@@ -230,6 +241,9 @@ class MeltPoolPointChunk(Channel):
         indices = points.shape[0]
         indices = np.random.choice(indices, size=padding_length, replace=False, p=probabilities)
         padding = points[indices]
+
+        if self.include_gradients:
+            padding = np.pad(padding[:], constant_values=np.nan, mode='constant', pad_width=(0, self.point_len - padding.shape[-1]))
 
         return padding
 

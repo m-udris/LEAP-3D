@@ -76,6 +76,18 @@ class ScanResults():
     def get_laser_radius_at_timestep(self, timestep: int):
         return self.laser_data[timestep][3]
 
+    def get_melt_pool_data_at_timestep(self, timestep: int, is_3d: bool=True):
+        if self.is_melt_pool_empty(timestep):
+            return []
+        melt_pool_at_timestep = np.array(self.melt_pool[timestep])
+        if is_3d:
+            return melt_pool_at_timestep
+
+        melt_pool_at_timestep = melt_pool_at_timestep[:,[0,1,2,3,4,5,8]]
+        max_z = np.max(melt_pool_at_timestep[:, 2])
+        melt_pool_at_timestep = melt_pool_at_timestep[melt_pool_at_timestep[:, 2] == max_z]
+        return melt_pool_at_timestep[:,[0,1,3,4,5,6,7]]
+
     def get_melt_pool_coordinates_and_temperature(self, timestep: int, is_3d: bool=True):
         if self.is_melt_pool_empty(timestep):
             return [], []

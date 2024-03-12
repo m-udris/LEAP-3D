@@ -327,16 +327,17 @@ class InterpolationMLPChunks(BaseModel):
                  n_conv=16, depth=4,
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
-                 activation=nn.LeakyReLU, bias=False, *args, **kwargs):
+                 activation=nn.LeakyReLU, bias=False, return_gradients=False, *args, **kwargs):
 
         print(kwargs.get('in_channels'))
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
-
 
         self.cnn = CNN(input_dimension=in_channels, output_dimension=out_channels, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 
         self.apply_positional_encoding = apply_positional_encoding
         self.positional_encoding_L = positional_encoding_L
+
+        self.extra_params_number = extra_params_number
 
         mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
         mlp_input_size += 2 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
@@ -344,10 +345,38 @@ class InterpolationMLPChunks(BaseModel):
         self.mlp = MLP(input_dimension=mlp_input_size, output_dimension=out_channels, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
         self.input_shape = input_shape
 
+        self.return_gradients = return_gradients
+
     def forward(self, x_grid, points):
+        point_coordinates = points
+        point_coordinates.requires_grad = self.return_gradients
+
+        if self.apply_positional_encoding:
+            x_grid, points = self.positional_encoding(x_grid, points)
+
         x = self.forward_cnn(x_grid)
         x = self.forward_mlp(x, points)
+
+        if self.return_gradients:
+            grads = self.compute_gradients(x, point_coordinates)
+            return x, grads
+
         return x
+
+    def positional_encoding(self, x_grid, points):
+        if x_grid.shape[1] > 1:
+            new_x_coords = positional_encoding(x_grid[:,:-1], L=self.positional_encoding_L).reshape((x_grid.shape[0], 2 * self.positional_encoding_L * (x_grid.shape[1] - 1), *x_grid.shape[2:]))
+            x_grid = torch.cat((new_x_coords, x_grid[:,-1].unsqueeze(1)), dim=1)
+        encoded_coordinates = positional_encoding(points[:, :, :-self.extra_params_number], L=self.positional_encoding_L).reshape(*points[:, :, :self.extra_params_number].shape[:2], -1)
+        points = torch.cat((encoded_coordinates, points[:, :, -self.extra_params_number:]), dim=2)
+
+        return x_grid, points
+
+    def compute_gradients(self, x, points):
+        x_sum = torch.sum(x)
+        grads = torch.autograd.grad(x_sum, points, create_graph=True)
+
+        return grads
 
     def forward_cnn(self, x_grid):
         x_grid = self.cnn(x_grid)
@@ -367,19 +396,15 @@ class InterpolationMLPChunks(BaseModel):
         point_coordinates = target[:, :, :-1]
         y = target[:, :, -1]
 
-        if self.apply_positional_encoding:
-            point_coordinates = positional_encoding(point_coordinates, L=self.positional_encoding_L).reshape(*point_coordinates.shape[:2], -1)
-            # If x contains coordinates of each point, add positional encoding to it
-            if x.shape[1] > 1:
-                new_x_coords = positional_encoding(x[:,:-1], L=self.positional_encoding_L).reshape((x.shape[0], 2 * self.positional_encoding_L * (x.shape[1] - 1), *x.shape[2:]))
-                x = torch.cat((new_x_coords, x[:,-1].unsqueeze(1)), dim=1)
-
         extra_params = extra_params.unsqueeze(1)
         extra_params_expanded = extra_params.expand((-1, point_coordinates.shape[1], *extra_params.shape[2:]))
 
         points = torch.cat((point_coordinates, extra_params_expanded), dim=2)
 
-        y_hat = self.forward(x, points)
+        if self.return_gradients:
+            y_hat, grads = self.forward(x, points)
+        else:
+            y_hat = self.forward(x, points)
         y_hat = y_hat.reshape(y_hat.shape[0], -1)
         y = y.reshape(y_hat.shape)
 
@@ -393,5 +418,8 @@ class InterpolationMLPChunks(BaseModel):
             "mse": nn.functional.mse_loss(y_hat, y),
         }
         self.log_metrics_dict(metrics_dict, train)
+
+        if self.return_gradients:
+            return loss, y_hat, grads
 
         return loss, y_hat
