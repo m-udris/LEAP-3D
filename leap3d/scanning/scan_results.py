@@ -86,7 +86,7 @@ class ScanResults():
         melt_pool_at_timestep = melt_pool_at_timestep[:,[0,1,2,3,4,5,8]]
         max_z = np.max(melt_pool_at_timestep[:, 2])
         melt_pool_at_timestep = melt_pool_at_timestep[melt_pool_at_timestep[:, 2] == max_z]
-        return melt_pool_at_timestep[:,[0,1,3,4,5,6,7]]
+        return melt_pool_at_timestep[:,[0,1,3,4,5,6]]
 
     def get_melt_pool_coordinates_and_temperature(self, timestep: int, is_3d: bool=True):
         if self.is_melt_pool_empty(timestep):
