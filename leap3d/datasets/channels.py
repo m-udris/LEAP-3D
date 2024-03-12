@@ -230,6 +230,8 @@ class MeltPoolPointChunk(Channel):
         point_coordinates = points[:, :2]
 
         if point_coordinates.shape[0] == padding_length:
+            if self.include_gradients:
+                points = np.pad(points, constant_values=np.nan, mode='constant', pad_width=(0, self.point_len - padding.shape[-1]))
             return points
 
         # Prefer points closer to the laser
@@ -243,7 +245,7 @@ class MeltPoolPointChunk(Channel):
         padding = points[indices]
 
         if self.include_gradients:
-            padding = np.pad(padding[:], constant_values=np.nan, mode='constant', pad_width=(0, self.point_len - padding.shape[-1]))
+            padding = np.pad(padding, constant_values=np.nan, mode='constant', pad_width=(0, self.point_len - padding.shape[-1]))
 
         return padding
 
