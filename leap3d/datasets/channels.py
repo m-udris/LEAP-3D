@@ -231,7 +231,8 @@ class MeltPoolPointChunk(Channel):
 
         if point_coordinates.shape[0] == padding_length:
             if self.include_gradients:
-                points = np.pad(points, constant_values=np.nan, mode='constant', pad_width=(0, self.point_len - points.shape[-1]))
+                gradients = np.full(shape=(*points.shape[:-1], self.point_len - points.shape[-1]), fill_value=np.nan)
+                points = np.concatenate([points, gradients], axis=-1)
             return points
 
         # Prefer points closer to the laser
@@ -245,8 +246,8 @@ class MeltPoolPointChunk(Channel):
         padding = points[indices]
 
         if self.include_gradients:
-            padding = np.pad(padding, constant_values=np.nan, mode='constant', pad_width=(0, self.point_len - padding.shape[-1]))
-
+            gradients = np.full(shape=(*padding.shape[:-1], self.point_len - padding.shape[-1]), fill_value=np.nan)
+            padding = np.concatenate([padding, gradients], axis=-1)
         return padding
 
     def subtract_laser_coordinates(self, scan_results, scan_parameters, timestep, chunks):
