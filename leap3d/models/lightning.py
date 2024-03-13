@@ -403,8 +403,9 @@ class InterpolationMLPChunks(BaseModel):
         point_coordinates = target[:, :, :2]
         y = target[:, :, 2]
 
-        true_grads_x = target[:, :, 3]
-        true_grads_y = target[:, :, 4]
+        if self.learn_gradients:
+            true_grads_x = target[:, :, 3]
+            true_grads_y = target[:, :, 4]
 
         extra_params = extra_params.unsqueeze(1)
         extra_params_expanded = extra_params.expand((-1, point_coordinates.shape[1], *extra_params.shape[2:]))
