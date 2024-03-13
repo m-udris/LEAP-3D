@@ -123,17 +123,17 @@ def normalize_positional_grad(x, index, max_temp, min_temp, coord_radius, inplac
     if not inplace:
         x = x.clone()
 
-    divide_by = (2 * coord_radius) * (max_temp - min_temp)
+    factor = (2 * coord_radius) * (max_temp - min_temp)
 
     if len(x.shape) == 1:
-        x[index] = x[index] / divide_by
+        x[index] = x[index] * factor
         return x
     # If window
     if len(x.shape) == 2:
-        x[:, index] = x[:, index] / divide_by
+        x[:, index] = x[:, index] * factor
         return x
     if len(x.shape) == 3:
-        x[:, :, index] = x[:, :, index] / divide_by
+        x[:, :, index] = x[:, :, index] * factor
         return x
 
     raise TransformIncorrectShapeError(x.shape)
