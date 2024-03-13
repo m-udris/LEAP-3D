@@ -144,30 +144,48 @@ class OffsetLowResRoughTemperatureAroundLaser(Channel):
 
 
 class TemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25):
+    def __init__(self, is_3d=False, box_size=32, box_step_scale=0.25, return_coordinates=False):
         super().__init__('temperature_around_laser', 1, True)
         self.is_3d = is_3d
         self.box_size = box_size
         self.box_step_scale = box_step_scale
+        self.return_coordinates = return_coordinates
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        return [scan_results.get_interpolated_grid_around_laser(
+        (x,y,z), t = scan_results.get_interpolated_grid_around_laser(
             timestep, self.box_size, self.box_step_scale,
-            scan_parameters, True, self.is_3d)[1]]
+            scan_parameters, True, self.is_3d)
+        if self.return_coordinates:
+            laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
+            x = x - laser_x
+            y = y - laser_y
+            if self.is_3d:
+                return [x, y, z, t]
+            return [x, y, t]
+        return [t]
 
 
 class OffsetTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False, box_size=24, box_step_scale=0.25, offset_ratio=2/3):
+    def __init__(self, is_3d=False, box_size=24, box_step_scale=0.25, offset_ratio=2/3, return_coordinates=False):
         super().__init__('offset_temperature_around_laser', 1, True)
         self.is_3d = is_3d
         self.box_size = box_size
         self.box_step_scale = box_step_scale
         self.offset_ratio = offset_ratio
+        self.return_coordinates = return_coordinates
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        return [scan_results.get_interpolated_grid_around_laser(
+        (x,y,z), t = scan_results.get_interpolated_grid_around_laser(
             timestep, self.box_size, self.box_step_scale,
-            scan_parameters, True, self.is_3d, offset_ratio=self.offset_ratio)[1]]
+            scan_parameters, True, self.is_3d, offset_ratio=self.offset_ratio)
+        if self.return_coordinates:
+            laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
+            x = x - laser_x
+            y = y - laser_y
+            if self.is_3d:
+                return [x, y, z, t]
+            return [x, y, t]
+        return [t]
 
 
 class MeltPoolPointChunk(Channel):

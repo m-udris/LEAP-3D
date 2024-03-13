@@ -79,8 +79,8 @@ def train():
             transforms.Lambda(lambda x: normalize_extra_param(x, index=2, min_value=BASE_TEMPERATURE, max_value=MELTING_POINT, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, step_size=step_size / 4, inplace=True)),
-            transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, step_size=step_size / 4, inplace=True)),
+            transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
         ]),
         'extra_params': transforms.Compose([
             torch.tensor,
