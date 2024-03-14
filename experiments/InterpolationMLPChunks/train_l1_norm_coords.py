@@ -31,7 +31,7 @@ def train():
         'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 100,
+        'max_epochs': 30,
         'transforms': 'default',
         'in_channels': 1,
         'out_channels': 1,
@@ -49,8 +49,8 @@ def train():
         'target_shape': [3],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
-        'hidden_layers': [128, 128, 128],
-        'depth': 2
+        'hidden_layers': [64,64,64],
+        'depth': 3
     }
 
     # start a new wandb run to track this script
@@ -58,7 +58,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}_{hparams["hidden_layers"]}',
+        'name': f'mlp_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }

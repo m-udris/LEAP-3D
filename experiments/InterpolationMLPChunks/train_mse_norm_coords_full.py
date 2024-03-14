@@ -25,7 +25,7 @@ def train():
     step_size = (X_MAX - X_MIN) / 64
     coords_radius = step_size * 16
 
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates'
 
     hparams = {
         'batch_size': 128,
@@ -33,14 +33,14 @@ def train():
         'num_workers': NUM_WORKERS,
         'max_epochs': 30,
         'transforms': 'default',
-        'in_channels': 1,
+        'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
         'extra_params_number': 3,
         'input_channels': [LowResRoughTemperatureAroundLaser],
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'mse_loss', 'norm_coords'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -58,7 +58,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_chunks_mse_norm_coords_b{hparams["batch_size"]}_{hparams["hidden_layers"]}',
+        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -69,7 +69,9 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=0, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=1, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
@@ -82,10 +84,6 @@ def train():
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, MAX_LASER_RADIUS, inplace=True))
-        ]),
-        'melting_pool': transforms.Compose([
-            torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, 3, max_value=MELTING_POINT, min_value=BASE_TEMPERATURE, inplace=True))
         ])
     }
 
