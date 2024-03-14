@@ -52,7 +52,7 @@ def train():
         'hidden_layers': [1024],
         'return_gradients': True,
         'learn_gradients': True,
-        'multiply_gradients_by': (MELTING_POINT - BASE_TEMPERATURE) / (64 * coords_radius)
+        'multiply_gradients_by': 32 * (MELTING_POINT - BASE_TEMPERATURE) / (2 * coords_radius)
     }
 
     # start a new wandb run to track this script
