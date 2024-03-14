@@ -327,7 +327,8 @@ class InterpolationMLPChunks(BaseModel):
                  n_conv=16, depth=4,
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
-                 activation=nn.LeakyReLU, bias=False, return_gradients=False, learn_gradients=False, *args, **kwargs):
+                 activation=nn.LeakyReLU, bias=False,
+                 return_gradients=False, learn_gradients=False, multiply_gradients_by=1, *args, **kwargs):
 
         print(kwargs.get('in_channels'))
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
@@ -347,6 +348,7 @@ class InterpolationMLPChunks(BaseModel):
 
         self.return_gradients = return_gradients
         self.learn_gradients = learn_gradients
+        self.multiply_gradients_by = multiply_gradients_by
 
     @torch.enable_grad()
     @torch.inference_mode(False)
@@ -366,6 +368,7 @@ class InterpolationMLPChunks(BaseModel):
         if self.return_gradients:
             x_sum = torch.sum(x)
             grads = torch.autograd.grad(x_sum, points, create_graph=True)[0]
+            grads = grads * self.multiply_gradients_by
             return x, grads
 
         return x
@@ -425,6 +428,10 @@ class InterpolationMLPChunks(BaseModel):
 
         if self.learn_gradients:
             mask = torch.isnan(true_grads_x)
+            grads[:,:,0] /= self.multiply_gradients_by
+            grads[:,:,1] /= self.multiply_gradients_by
+            true_grads_x /= self.multiply_gradients_by
+            true_grads_y /= self.multiply_gradients_by
             grad_x_loss = torch.nn.functional.mse_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
             grad_y_loss = torch.nn.functional.mse_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
             grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
