@@ -49,7 +49,7 @@ def train():
         'target_shape': [3],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
-        'hidden_layers': [1024, 2048],
+        'hidden_layers': [128, 128, 128],
     }
 
     # start a new wandb run to track this script
