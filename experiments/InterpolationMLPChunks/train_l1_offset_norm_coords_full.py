@@ -31,7 +31,7 @@ def train():
         'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 100,
+        'max_epochs': 30,
         'transforms': 'default',
         'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
@@ -50,7 +50,7 @@ def train():
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
         'hidden_layers': [64,64,64],
-        'depth': 2
+        'depth': 3
     }
 
     # start a new wandb run to track this script
