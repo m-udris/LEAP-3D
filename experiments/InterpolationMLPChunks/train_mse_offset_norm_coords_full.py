@@ -44,7 +44,7 @@ def train():
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'l1',
+        'loss_function': 'mse',
         'input_shape': [24, 24],
         'target_shape': [3],
         'apply_positional_encoding': True,
