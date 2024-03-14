@@ -50,7 +50,7 @@ def train():
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
         'hidden_layers': [64,64,64],
-        'depth': 3
+        'depth': 4
     }
 
     # start a new wandb run to track this script
