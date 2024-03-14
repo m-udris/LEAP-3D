@@ -57,7 +57,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}_{hparams['hidden_layers']}',
+        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}_{hparams["hidden_layers"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
