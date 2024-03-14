@@ -60,9 +60,9 @@ def aggregate_datasets(path, cases, is_test=False):
 
 
 if __name__ == '__main__':
-    train_cases = list(range(18))
-    test_cases = [18, 19]
+    train_cases = list(range(90)) + list(range(100, 190))
+    test_cases = list(range(90, 100)) + list(range(190, 200))
 
-    generate_cases(DATASET_DIR / 'mlp_interpolation_chunks_coordinates', train_cases + test_cases, force_prepare=True)
+    generate_cases(DATASET_DIR / 'mlp_interpolation_chunks_coordinates', train_cases + test_cases, force_prepare=False)
     aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_coordinates', train_cases, is_test=False)
     aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_coordinates', test_cases, is_test=True)
