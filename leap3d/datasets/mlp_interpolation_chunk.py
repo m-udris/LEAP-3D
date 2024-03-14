@@ -15,7 +15,8 @@ class MLPInterpolationChunkDataset(LEAPDataset):
     def __init__(self, data_filepath: str="path/to/dir",
                  transforms: Dict={}, inverse_transforms: Dict={},
                  include_melting_pool: bool=False,
-                 include_distances_to_melting_pool: bool=False):
+                 include_distances_to_melting_pool: bool=False,
+                 include_input_coordinates: bool=False):
         super().__init__(
             data_filepath=data_filepath,
             transforms=transforms,
@@ -23,9 +24,12 @@ class MLPInterpolationChunkDataset(LEAPDataset):
         )
         self.include_melting_pool = include_melting_pool
         self.include_distances_to_melting_pool = include_distances_to_melting_pool
+        self.include_input_coordinates = include_input_coordinates
 
     def __getitem__(self, idx):
         input = self.inputs[idx]
+        if not self.include_input_coordinates:
+            input = input[..., -1:, :, :]
         extra_input = self.extra_inputs[idx]
         target = self.targets[idx]
 
@@ -81,7 +85,8 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
                 full_dataset_path,
                 transforms=self.transforms,
                 inverse_transforms=self.inverse_transforms,
-                include_distances_to_melting_pool=self.include_distances_to_melting_pool)
+                include_distances_to_melting_pool=self.include_distances_to_melting_pool,
+                include_input_coordinates=self.input_channels[0].return_coordinates)
 
             train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
             val_points_count = len(full_dataset) - train_points_count
@@ -94,7 +99,8 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
             self.test_dataset = self.dataset_class(test_dataset_path,
                                                    transforms=self.transforms,
                                                    inverse_transforms=self.inverse_transforms,
-                                                   include_distances_to_melting_pool=self.include_distances_to_melting_pool)
+                                                   include_distances_to_melting_pool=self.include_distances_to_melting_pool,
+                                                   include_input_coordinates=self.input_channels[0].return_coordinates)
 
     def write_data_to_h5(self, data_generator, datasets, offset):
         buffers = {name: [] for name in datasets.keys()}
