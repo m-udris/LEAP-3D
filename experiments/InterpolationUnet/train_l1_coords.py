@@ -29,10 +29,10 @@ def train():
     coords_radius = step_size * 16
 
     hparams = {
-        'batch_size': 128,
+        'batch_size': 256,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 100,
+        'max_epochs': 50,
         'transforms': 'default',
         'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
@@ -50,7 +50,7 @@ def train():
         'input_shape': [128,128],
         'target_shape': [128,128],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
+        'positional_encoding_L': 3,
     }
 
     # start a new wandb run to track this script
@@ -58,7 +58,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'interpolation_unet_2d_l1_loss_b{hparams["batch_size"]}_coords',
+        'name': f'unet_{hparams["loss_function"]}_coords_L{hparams["positional_encoding_L"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -77,7 +77,7 @@ def train():
             torch.tensor,
             transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
-        'extra_params': transforms.Compose([
+        'extra_input': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),

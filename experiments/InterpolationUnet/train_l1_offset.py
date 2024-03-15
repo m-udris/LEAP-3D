@@ -26,10 +26,10 @@ def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation_offset_no_distances'
 
     hparams = {
-        'batch_size': 128,
+        'batch_size': 256,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 100,
+        'max_epochs': 50,
         'transforms': 'default',
         'in_channels': 1,
         'out_channels': 1,
@@ -53,7 +53,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'interpolation_unet_2d_l1_loss_b{hparams["batch_size"]}_offset',
+        'name': f'unet_offset_{hparams["loss_function"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -70,7 +70,7 @@ def train():
             torch.tensor,
             transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
-        'extra_params': transforms.Compose([
+        'extra_input': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
