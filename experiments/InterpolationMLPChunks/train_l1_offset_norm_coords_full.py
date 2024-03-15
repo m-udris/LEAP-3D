@@ -36,7 +36,7 @@ def train():
         'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
         'extra_params_number': 3,
-        'input_channels': [OffsetLowResRoughTemperatureAroundLaser],
+        'input_channels': [OffsetLowResRoughTemperatureAroundLaser(return_coordinates=True)],
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24,24], offset_ratio=2/3)],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
