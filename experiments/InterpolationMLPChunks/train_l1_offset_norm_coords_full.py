@@ -79,7 +79,7 @@ def train():
             transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True))
         ]),
-        'extra_params': transforms.Compose([
+        'extra_input': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),

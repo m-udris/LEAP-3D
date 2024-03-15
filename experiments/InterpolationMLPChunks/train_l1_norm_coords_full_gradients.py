@@ -83,7 +83,7 @@ def train():
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
         ]),
-        'extra_params': transforms.Compose([
+        'extra_input': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
