@@ -14,7 +14,8 @@ from leap3d.datasets.channels import RoughTemperatureAroundLaser, TemperatureAro
 class UNetInterpolationDataset(LEAPDataset):
     def __init__(self, data_filepath: str="path/to/dir",
                  transforms: Dict={}, inverse_transforms: Dict={},
-                 include_distances_to_melting_pool: bool=False):
+                 include_distances_to_melting_pool: bool=False,
+                 include_coordinates: bool=False):
         super().__init__(
             data_filepath=data_filepath,
             transforms=transforms,
@@ -23,9 +24,12 @@ class UNetInterpolationDataset(LEAPDataset):
         self.include_distances_to_melting_pool = include_distances_to_melting_pool
         if self.include_distances_to_melting_pool:
             self.distances_to_melting_pool = self.data_file['distances_to_melting_pool']
+        self.include_coordinates = include_coordinates
 
     def __getitem__(self, idx):
         input = self.inputs[idx]
+        if not self.include_coordinates:
+            input = input[..., -1:]
         extra_input = self.extra_inputs[idx]
         target = self.targets[idx]
 
@@ -141,7 +145,8 @@ class UNetInterpolationDataModule(LEAPDataModule):
                 full_dataset_path,
                 transforms=self.transforms,
                 inverse_transforms=self.inverse_transforms,
-                include_distances_to_melting_pool=self.include_distances_to_melting_pool)
+                include_distances_to_melting_pool=self.include_distances_to_melting_pool,
+                include_coordinates=self.input_channels[0].return_coordinates)
 
             train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
             val_points_count = len(full_dataset) - train_points_count
@@ -154,4 +159,5 @@ class UNetInterpolationDataModule(LEAPDataModule):
             self.test_dataset = self.dataset_class(test_dataset_path,
                                                    transforms=self.transforms,
                                                    inverse_transforms=self.inverse_transforms,
-                                                   include_distances_to_melting_pool=self.include_distances_to_melting_pool)
+                                                   include_distances_to_melting_pool=self.include_distances_to_melting_pool,
+                                                   include_coordinates=self.input_channels[0].return_coordinates)
