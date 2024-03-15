@@ -34,7 +34,7 @@ def train():
         'num_workers': NUM_WORKERS,
         'max_epochs': 50,
         'transforms': 'default',
-        'in_channels': 1 + 8 * 2 * 2,
+        'in_channels': 1 + 3 * 2 * 2,
         'out_channels': 1,
         'fcn_core_layers': 1,
         'extra_params_number': 3,
