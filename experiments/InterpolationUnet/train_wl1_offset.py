@@ -26,7 +26,7 @@ def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'unet_interpolation_offset_no_distances'
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 256,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 50,
@@ -39,7 +39,7 @@ def train():
         'target_channels': [OffsetTemperatureAroundLaser],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['UNET', '2D', 'interpolation', 'wl1_loss', 'offset', 'max_temp+300'],
+        'tags': ['UNET', '2D', 'interpolation', 'wl1_loss', 'offset'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -64,11 +64,11 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inplace=True))
         ]),
         'extra_input': transforms.Compose([
             torch.tensor,
@@ -81,11 +81,11 @@ def train():
     inverse_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT + 300, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=MELTING_POINT, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
         ])
     }
 
