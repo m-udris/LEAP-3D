@@ -29,7 +29,7 @@ def train():
     coords_radius = step_size * 20
 
     hparams = {
-        'batch_size': 256,
+        'batch_size': 64,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 50,
