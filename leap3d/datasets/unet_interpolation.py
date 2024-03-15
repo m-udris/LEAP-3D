@@ -29,7 +29,7 @@ class UNetInterpolationDataset(LEAPDataset):
     def __getitem__(self, idx):
         input = self.inputs[idx]
         if not self.include_coordinates:
-            input = input[..., -1:]
+            input = input[..., -1:, :, :]
         extra_input = self.extra_inputs[idx]
         target = self.targets[idx]
 
