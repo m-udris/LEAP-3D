@@ -60,9 +60,9 @@ def aggregate_datasets(path, cases, is_test=False):
 
 
 if __name__ == '__main__':
-    train_cases = list(range(18))
-    test_cases = [18, 19]
+    train_cases = list(range(20)) + list(range(100, 120))
+    test_cases = list(range(20, 24)) + list(range(120, 124))
 
-    generate_cases(DATASET_DIR / 'unet_interpolation_no_distances', train_cases + test_cases, force_prepare=False)
-    aggregate_datasets(DATASET_DIR / 'unet_interpolation_no_distances', train_cases, is_test=False)
-    aggregate_datasets(DATASET_DIR / 'unet_interpolation_no_distances', test_cases, is_test=True)
+    generate_cases(DATASET_DIR / 'unet_interpolation', train_cases + test_cases, force_prepare=False)
+    aggregate_datasets(DATASET_DIR / 'unet_interpolation', train_cases, is_test=False)
+    aggregate_datasets(DATASET_DIR / 'unet_interpolation', test_cases, is_test=True)
