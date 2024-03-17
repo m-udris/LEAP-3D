@@ -50,7 +50,7 @@ def train():
         'target_shape': [3],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
-        'hidden_layers': [64,64,64],
+        'hidden_layers': [128,128,128],
         'depth': 3
     }
 

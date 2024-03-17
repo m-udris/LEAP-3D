@@ -18,32 +18,32 @@ from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_F
 from leap3d.models.lightning import InterpolationMLPChunks
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
-from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
+from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
 
 TEMPERATURE_MAX = 2950
-
+# TEMPERATURE_MAX = MELTING_POINT
 
 def train():
     step_size = (X_MAX - X_MIN) / 64
-    coords_radius = step_size * 20
+    coords_radius = step_size * 16
 
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_offset'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
     hparams = {
         'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 30,
+        'max_epochs': 100,
         'transforms': 'default',
-        'in_channels': 1,
+        'in_channels': 1 + 8 * 2 * 2,
         'out_channels': 1,
         'extra_params_number': 3,
-        'input_channels': [OffsetLowResRoughTemperatureAroundLaser],
-        'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24,24], offset_ratio=2/3)],
+        'input_channels': [OffsetLowResRoughTemperatureAroundLaser(return_coordinates=True)],
+        'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24*24])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'offset'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'pos_gradients'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -52,8 +52,10 @@ def train():
         'target_shape': [3],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
-        'hidden_layers': [128,128,128],
-        'depth': 3
+        'hidden_layers': [1024],
+        'return_gradients': True,
+        'learn_gradients': True,
+        'multiply_gradients_by': 24 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius)
     }
 
     # start a new wandb run to track this script
@@ -61,7 +63,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_offset_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}',
+        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -72,13 +74,17 @@ def train():
     train_transforms = {
         'input': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=TEMPERATURE_MAX, base_temperature=BASE_TEMPERATURE, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=TEMPERATURE_MAX, base_temperature=BASE_TEMPERATURE, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=0, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, temperature_channel_index=1, melting_point=coords_radius, base_temperature=-coords_radius, inplace=True))
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=-1, min_value=BASE_TEMPERATURE, max_value=TEMPERATURE_MAX, inplace=True)),
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=2, min_value=BASE_TEMPERATURE, max_value=TEMPERATURE_MAX, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True))
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
+            # transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
+            # transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
         ]),
         'extra_input': transforms.Compose([
             torch.tensor,
@@ -95,18 +101,17 @@ def train():
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=-1, min_value=BASE_TEMPERATURE, max_value=TEMPERATURE_MAX, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=TEMPERATURE_MAX, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
         ])
     }
 
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    input_shape=[24, 24], target_shape=[3],
+                    input_shape=[32, 32], target_shape=[3],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
-                    force_prepare=False, num_workers=NUM_WORKERS,
-                    offset_ratio=2/3)
+                    force_prepare=False, num_workers=NUM_WORKERS)
 
     model = InterpolationMLPChunks(**hparams)
     checkpoint_filename = wandb_config['name']
