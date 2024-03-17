@@ -21,8 +21,8 @@ from leap3d.train import train_model
 from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
 
-# TEMPERATURE_MAX = 2950
-TEMPERATURE_MAX = MELTING_POINT
+TEMPERATURE_MAX = 2950
+# TEMPERATURE_MAX = MELTING_POINT
 
 def train():
     step_size = (X_MAX - X_MIN) / 64
@@ -90,7 +90,7 @@ def train():
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, MAX_LASER_RADIUS, inplace=True))
+            transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, coords_radius, inplace=True))
         ])
     }
 
