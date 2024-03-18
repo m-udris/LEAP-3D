@@ -27,7 +27,7 @@ def train():
 
     TEMPERATURE_MAX = MELTING_POINT
     LASER_RADIUS_MAX = coords_radius
-    GRAD_T_MAX = 100_000 * 0.75
+    GRAD_T_MAX = 100_000
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
@@ -56,7 +56,7 @@ def train():
         'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
-        'multiply_gradients_by': (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius),
+        'multiply_gradients_by': 32 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius),
         'predict_cooldown_rate': True,
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
