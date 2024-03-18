@@ -76,6 +76,9 @@ class ScanResults():
     def get_laser_radius_at_timestep(self, timestep: int):
         return self.laser_data[timestep][3]
 
+    def get_laser_velocity_at_timestep(self, timestep: int):
+        return self.laser_data[timestep][4], self.laser_data[timestep][5]
+
     def get_melt_pool_data_at_timestep(self, timestep: int, is_3d: bool=True):
         if self.is_melt_pool_empty(timestep):
             return []

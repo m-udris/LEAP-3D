@@ -327,3 +327,10 @@ class LaserRadius(Channel):
 
     def get(self, scan_results=None, timestep=None, *args, **kwargs):
         return [scan_results.get_laser_radius_at_timestep(timestep)]
+
+class LaserVelocity(Channel):
+    def __init__(self, **kwargs):
+        super().__init__('laser_velocity', 2, False)
+
+    def get(self, scan_results=None, timestep=None, *args, **kwargs):
+        return [*scan_results.get_laser_velocity_at_timestep(timestep)]
