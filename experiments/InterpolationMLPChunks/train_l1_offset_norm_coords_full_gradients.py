@@ -63,7 +63,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_offset_CNNcoords_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}_pgrads',
+        'name': f'mlp_offset_CNNcoords_{hparams["loss_function"]}_{hparams["hidden_layers"]}_pgrads',
         # track hyperparameters and run metadata
         'config': hparams
     }
