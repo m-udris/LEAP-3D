@@ -51,6 +51,8 @@ def train():
         'input_shape': [24, 24],
         'target_shape': [3],
         'hidden_layers': [128,128,128],
+        'apply_positional_encoding': True,
+        'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': 24 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius)
