@@ -52,7 +52,7 @@ def train():
         'target_shape': [3],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
-        'hidden_layers': [1024],
+        'hidden_layers': [128,128,128],
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': 24 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius)
@@ -63,7 +63,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_chunks_norm_coords_b{hparams["batch_size"]}',
+        'name': f'mlp_offset_CNNcoords_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}_pgrads',
         # track hyperparameters and run metadata
         'config': hparams
     }

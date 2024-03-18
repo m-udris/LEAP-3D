@@ -12,7 +12,7 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
+from leap3d.datasets.channels import OffsetLowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
 from leap3d.datasets import MLPInterpolationChunkDataModule
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE, X_MIN, X_MAX
 from leap3d.models.lightning import InterpolationMLPChunks
@@ -36,11 +36,11 @@ def train():
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
         'transforms': 'default',
-        'in_channels': 1 + 8 * 2 * 2,
+        'in_channels': 1,
         'out_channels': 1,
         'extra_params_number': 3,
-        'input_channels': [LowResRoughTemperatureAroundLaser(return_coordinates=True)],
-        'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
+        'input_channels': [OffsetLowResRoughTemperatureAroundLaser(return_coordinates=False)],
+        'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24*24])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
         'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'pos_gradients'],
@@ -48,14 +48,12 @@ def train():
         'is_3d': False,
         'padding_mode': 'replicate',
         'loss_function': 'l1',
-        'input_shape': [32, 32],
+        'input_shape': [24, 24],
         'target_shape': [3],
-        'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
         'hidden_layers': [128,128,128],
         'return_gradients': True,
         'learn_gradients': True,
-        'multiply_gradients_by': 32 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius)
+        'multiply_gradients_by': 24 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius)
     }
 
     # start a new wandb run to track this script
@@ -63,7 +61,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_CNNcoords_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}_pgrads',
+        'name': f'mlp_offset_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}_pgrads',
         # track hyperparameters and run metadata
         'config': hparams
     }

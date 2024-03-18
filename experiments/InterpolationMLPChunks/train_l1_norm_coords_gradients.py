@@ -36,10 +36,10 @@ def train():
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
         'transforms': 'default',
-        'in_channels': 1 + 8 * 2 * 2,
+        'in_channels': 1,
         'out_channels': 1,
         'extra_params_number': 3,
-        'input_channels': [LowResRoughTemperatureAroundLaser(return_coordinates=True)],
+        'input_channels': [LowResRoughTemperatureAroundLaser(return_coordinates=False)],
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
@@ -50,8 +50,6 @@ def train():
         'loss_function': 'l1',
         'input_shape': [32, 32],
         'target_shape': [3],
-        'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
         'hidden_layers': [128,128,128],
         'return_gradients': True,
         'learn_gradients': True,
@@ -63,7 +61,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_CNNcoords_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}_pgrads',
+        'name': f'mlp_{hparams["loss_function"]}_D{hparams["depth"]}_{hparams["hidden_layers"]}_pgrads',
         # track hyperparameters and run metadata
         'config': hparams
     }
