@@ -32,7 +32,7 @@ def train():
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 100_000
 
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_offset_gradients'
 
     hparams = {
         'batch_size': 128,

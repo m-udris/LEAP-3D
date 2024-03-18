@@ -469,7 +469,7 @@ class InterpolationMLPChunks(BaseModel):
             metrics_dict["grad_y_r2"] = grad_y_r2
 
         if self.predict_cooldown_rate:
-            metrics_dict["cooldown_loss"] = grad_t_loss
+            metrics_dict["grad_t_loss"] = grad_t_loss
             metrics_dict["grad_t_r2"] = grad_t_r2
 
         self.log_metrics_dict(metrics_dict, train)

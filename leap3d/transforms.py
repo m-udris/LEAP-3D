@@ -145,9 +145,9 @@ def normalize_temporal_grad(x, index, max_temp, min_temp, norm_constant, inplace
     factor = norm_constant * (max_temp - min_temp)
 
     if inverse:
-        factor = 1 / factor
-
-    x[..., index] = x[..., index] * factor
+        x[..., index] = x[..., index] * factor
+    else:
+        x[..., index] = x[..., index] / factor
 
     return x
     # if len(x.shape) == 1:
