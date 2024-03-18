@@ -18,15 +18,16 @@ from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_F
 from leap3d.models.lightning import InterpolationMLPChunks
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
-from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
+from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, normalize_temporal_grad, scanning_angle_cos_transform, get_target_to_train_transform
 
-
-TEMPERATURE_MAX = 2950
-# TEMPERATURE_MAX = MELTING_POINT
 
 def train():
     step_size = (X_MAX - X_MIN) / 64
     coords_radius = step_size * 16
+
+    TEMPERATURE_MAX = 2950
+    LASER_RADIUS_MAX = coords_radius
+    GRAD_T_MAX = 100_000
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
@@ -37,13 +38,13 @@ def train():
         'max_epochs': 100,
         'transforms': 'default',
         'in_channels': 1,
-        'out_channels': 1,
+        'out_channels': 2,
         'extra_params_number': 3,
         'input_channels': [LowResRoughTemperatureAroundLaser(return_coordinates=False)],
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'pos_gradients'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'all_gradients'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -55,7 +56,11 @@ def train():
         'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
-        'multiply_gradients_by': 32 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius)
+        'multiply_gradients_by': 32 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius),
+        'predict_cooldown_rate': True,
+        'temperature_max': TEMPERATURE_MAX,
+        'laser_radius_max': LASER_RADIUS_MAX,
+        'grad_t_max': GRAD_T_MAX
     }
 
     # start a new wandb run to track this script
@@ -63,7 +68,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_pgrads',
+        'name': f'mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
         # track hyperparameters and run metadata
         'config': hparams
     }
@@ -85,12 +90,14 @@ def train():
             transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temporal_grad(x, index=-1, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, norm_constant=GRAD_T_MAX, inplace=True)),
+
         ]),
         'extra_input': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: scanning_angle_cos_transform(x, 0, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, 1, 0, MAX_LASER_POWER, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, coords_radius, inplace=True))
+            transforms.Lambda(lambda x: normalize_extra_param(x, 2, 0, LASER_RADIUS_MAX, inplace=True))
         ])
     }
 
