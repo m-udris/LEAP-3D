@@ -137,3 +137,28 @@ def normalize_positional_grad(x, index, max_temp, min_temp, coord_radius, inplac
         return x
 
     raise TransformIncorrectShapeError(x.shape)
+
+def normalize_temporal_grad(x, index, max_temp, min_temp, norm_constant, inplace=False, inverse=False):
+    if not inplace:
+        x = x.clone()
+
+    factor = norm_constant * (max_temp - min_temp)
+
+    if inverse:
+        factor = 1 / factor
+
+    x[..., index] = x[..., index] * factor
+
+    return x
+    # if len(x.shape) == 1:
+    #     x[index] = x[index] * factor
+    #     return x
+    # # If window
+    # if len(x.shape) == 2:
+    #     x[:, index] = x[:, index] * factor
+    #     return x
+    # if len(x.shape) == 3:
+    #     x[:, :, index] = x[:, :, index] * factor
+    #     return x
+
+    raise TransformIncorrectShapeError(x.shape)
