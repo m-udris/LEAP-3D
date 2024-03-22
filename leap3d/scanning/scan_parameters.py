@@ -179,6 +179,21 @@ class ScanParameters():
 
         return x_min, x_max, y_min, y_max, z_min, z_max
 
+    def sample_coordinates_within_bounds(self, bounds: Tuple[float, float, float, float, float, float], sample_size: int, is_3d: bool=False):
+        x_min, x_max, y_min, y_max, z_min, z_max = bounds
+
+
+        x_points = np.random.random_sample(sample_size) * (x_max - x_min) + x_min
+        y_points = np.random.random_sample(sample_size) * (y_max - y_min) + y_min
+
+        if is_3d:
+            z_points = np.random.random_sample(sample_size) * (z_max - z_min) + z_min
+        else:
+            z_points = [np.max(self.rough_coordinates['z_rough'][0, 0, :])] * sample_size
+
+        points = list(zip(x_points, y_points, z_points))
+
+        return points
 
     def __repr__(self):
         return f"""Case index:\t{self.case_index}

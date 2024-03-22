@@ -237,31 +237,45 @@ class MeltPoolPointChunk(Channel):
         return chunks
 
     def get_padding(self, scan_parameters, scan_results, timestep, padding_length):
-        (x_coords, y_coords, z_coords), interpolated_values = scan_results.get_interpolated_grid_around_laser(
-            timestep, size=self.input_size, step_scale=1,
-            scan_parameters=scan_parameters, include_high_resolution_points=False, is_3d=self.is_3d, offset_ratio=self.offset_ratio)
+        if self.offset_ratio is None:
+            bounds = scan_parameters.get_bounds_around_position(*scan_results.get_laser_coordinates_at_timestep(timestep), size=self.input_size)
+        else:
+            bounds = scan_parameters.get_offset_bounds_around_laser(scan_results.get_laser_data_at_timestep(timestep), size=self.input_size, offset_ratio=self.offset_ratio)
+
+        coordinates, temperatures = scan_results.sample_interpolated_points_within_bounds(scan_parameters, timestep, bounds, padding_length, is_3d=self.is_3d)
+
+        coordinates = np.array(coordinates)
 
         if self.is_3d:
-            points = np.array(list(zip(x_coords.flatten(), y_coords.flatten(), z_coords.flatten(), interpolated_values.flatten())))
+            padding = np.concatenate([coordinates, temperatures.reshape(-1, 1)], axis=1)
         else:
-            points = np.array(list(zip(x_coords.flatten(), y_coords.flatten(), interpolated_values.flatten())))
-        point_coordinates = points[:, :2]
+            padding = np.concatenate([coordinates[:, :2], temperatures.reshape(-1, 1)], axis=1)
 
-        if point_coordinates.shape[0] == padding_length:
-            if self.include_gradients:
-                gradients = np.full(shape=(*points.shape[:-1], self.point_len - points.shape[-1]), fill_value=np.nan)
-                points = np.concatenate([points, gradients], axis=-1)
-            return points
+        # (x_coords, y_coords, z_coords), interpolated_values = scan_results.get_interpolated_grid_around_laser(
+        #     timestep, size=self.input_size, step_scale=1,
+        #     scan_parameters=scan_parameters, include_high_resolution_points=False, is_3d=self.is_3d, offset_ratio=self.offset_ratio)
 
-        # Prefer points closer to the laser
-        laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
-        weights = np.array([np.linalg.norm([laser_x - x, laser_y - y]) for x, y in point_coordinates])
-        weights = 1 / weights
-        probabilities = weights / np.sum(weights)
+        # if self.is_3d:
+        #     points = np.array(list(zip(x_coords.flatten(), y_coords.flatten(), z_coords.flatten(), interpolated_values.flatten())))
+        # else:
+        #     points = np.array(list(zip(x_coords.flatten(), y_coords.flatten(), interpolated_values.flatten())))
+        # point_coordinates = points[:, :2]
 
-        indices = points.shape[0]
-        indices = np.random.choice(indices, size=padding_length, replace=False, p=probabilities)
-        padding = points[indices]
+        # if point_coordinates.shape[0] == padding_length:
+        #     if self.include_gradients:
+        #         gradients = np.full(shape=(*points.shape[:-1], self.point_len - points.shape[-1]), fill_value=np.nan)
+        #         points = np.concatenate([points, gradients], axis=-1)
+        #     return points
+
+        # # Prefer points closer to the laser
+        # laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
+        # weights = np.array([np.linalg.norm([laser_x - x, laser_y - y]) for x, y in point_coordinates])
+        # weights = 1 / weights
+        # probabilities = weights / np.sum(weights)
+
+        # indices = points.shape[0]
+        # indices = np.random.choice(indices, size=padding_length, replace=False, p=probabilities)
+        # padding = points[indices]
 
         if self.include_gradients:
             gradients = np.full(shape=(*padding.shape[:-1], self.point_len - padding.shape[-1]), fill_value=np.nan)

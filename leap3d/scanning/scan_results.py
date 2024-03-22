@@ -302,3 +302,15 @@ class ScanResults():
         interpolated_values = interpolated_values.reshape(shape)
 
         return (x_coords, y_coords, z_coords), interpolated_values
+
+    def sample_interpolated_points_within_bounds(self, scan_parameters, timestep, bounds, size: int, is_3d: bool=False):
+        sampled_coordinates = scan_parameters.sample_coordinates_within_bounds(bounds, size, is_3d)
+
+        coordinates, temperatures = self.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
+
+        desired_points = np.array(sampled_coordinates)
+        desired_values = interpolate.griddata(coordinates, temperatures, desired_points, method='linear', fill_value=np.nan)
+        nan_idxs = np.isnan(desired_values)
+        desired_values[nan_idxs] = interpolate.griddata(coordinates, temperatures, desired_points[nan_idxs], method='nearest', fill_value=None)
+
+        return sampled_coordinates, desired_values
