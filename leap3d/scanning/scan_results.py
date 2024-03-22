@@ -304,13 +304,71 @@ class ScanResults():
         return (x_coords, y_coords, z_coords), interpolated_values
 
     def sample_interpolated_points_within_bounds(self, scan_parameters, timestep, bounds, size: int, is_3d: bool=False):
-        sampled_coordinates = scan_parameters.sample_coordinates_within_bounds(bounds, size, is_3d)
+        points_to_interpolate = scan_parameters.sample_coordinates_within_bounds(bounds, size, is_3d)
+        points_to_interpolate = np.array(points_to_interpolate)
 
-        coordinates, temperatures = self.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
+        # coordinates, temperatures = self.get_coordinate_points_and_temperature_at_timestep(scan_parameters, timestep)
+        rough_coordinates = scan_parameters.rough_coordinates
+        x_rough = rough_coordinates['x_rough']
+        y_rough = rough_coordinates['y_rough']
+        z_rough = rough_coordinates['z_rough']
+        grid_points = ([x[0][0] for x in x_rough], [y[0] for y in y_rough[0]], [z for z in z_rough[0][0]])
 
-        desired_points = np.array(sampled_coordinates)
-        desired_values = interpolate.griddata(coordinates, temperatures, desired_points, method='linear', fill_value=np.nan)
-        nan_idxs = np.isnan(desired_values)
-        desired_values[nan_idxs] = interpolate.griddata(coordinates, temperatures, desired_points[nan_idxs], method='nearest', fill_value=None)
+        rough_temperature = self.get_rough_temperatures_at_timestep(timestep)
 
-        return sampled_coordinates, desired_values
+
+        high_res_points, high_res_temps = self.get_melt_pool_coordinates_and_temperature(timestep)
+        if len(high_res_points) == 0:
+            interpolated_values = custom_interpolate(grid_points, rough_temperature, points_to_interpolate)
+        else:
+            step_size = scan_parameters.rough_coordinates_step_size * 0.25
+
+            # get ranges of x and y and align them to the new grid
+            half_step = step_size / 2
+            x_min = np.min(x_rough) - half_step
+            x_max = np.max(x_rough) - half_step
+            y_min = np.min(y_rough) + half_step
+            y_max = np.max(y_rough) - half_step
+            # We don't need to align z
+            z_min = np.min(z_rough)
+            z_max = np.max(z_rough)
+
+            upscaled_x_range = np.arange(x_min, x_max, step_size)
+            desired_x_min = np.min(points_to_interpolate[:, 0])
+            desired_x_max = np.max(points_to_interpolate[:, 0])
+            upscaled_x_range = upscaled_x_range[(upscaled_x_range >= desired_x_min - step_size) & (upscaled_x_range <= desired_x_max + step_size)]
+
+            upscaled_y_range = np.arange(y_min, y_max, step_size)
+            desired_y_min = np.min(points_to_interpolate[:, 1])
+            desired_y_max = np.max(points_to_interpolate[:, 1])
+            upscaled_y_range = upscaled_y_range[(upscaled_y_range >= desired_y_min - step_size) & (upscaled_y_range <= desired_y_max + step_size)]
+
+            z_min = z_min if is_3d else z_max - 3 * step_size
+            upscaled_z_range = np.arange(z_min, z_max + step_size, step_size)  # z coords are <= 0
+
+            upscaled_rough_coordinates = [(x, y, z) for x in upscaled_x_range for y in upscaled_y_range for z in upscaled_z_range]
+            upscaled_rough_temperatures = custom_interpolate(grid_points, rough_temperature, upscaled_rough_coordinates)
+            upscaled_rough_temperatures = upscaled_rough_temperatures.reshape(upscaled_x_range.shape[0], upscaled_y_range.shape[0], upscaled_z_range.shape[0])
+
+            high_res_temps = high_res_temps.reshape((-1,1))
+            high_res_data = np.concatenate([high_res_points, high_res_temps], axis=-1)
+
+            new_x_min = upscaled_x_range[0]
+            new_x_max = upscaled_x_range[-1]
+
+            new_y_min = upscaled_y_range[0]
+            new_y_max = upscaled_y_range[-1]
+
+            new_z_min = upscaled_z_range[0]
+
+            high_res_data = np.array(list(filter(lambda x: (new_x_min <= x[0] <= new_x_max) and (new_y_min <= x[1] <= new_y_max) and (new_z_min <= x[2]), high_res_data)))
+
+            if high_res_data.shape[0] != 0:
+                high_res_data[:, :3] = np.round((high_res_data[:, :3] - np.array([new_x_min, new_y_min, new_z_min])) / step_size)
+                high_res_data[:, 2] = np.array([-1 if z >= upscaled_rough_temperatures.shape[2] else z for z in high_res_data[:, 2]]).astype(int)
+                upscaled_rough_temperatures[high_res_data[:, 0].astype(int), high_res_data[:, 1].astype(int), high_res_data[:, 2].astype(int)] = np.max((high_res_data[:, 3], upscaled_rough_temperatures[high_res_data[:, 0].astype(int), high_res_data[:, 1].astype(int), high_res_data[:, 2].astype(int)]), axis=0)
+
+            upscaled_grid_points = [upscaled_x_range, upscaled_y_range, upscaled_z_range]
+            interpolated_values = custom_interpolate(upscaled_grid_points, upscaled_rough_temperatures, points_to_interpolate)
+
+        return points_to_interpolate, interpolated_values
