@@ -32,6 +32,8 @@ class BaseModel(pl.LightningModule):
             self.loss_function = heat_loss
         elif loss_function == 'l1':
             self.loss_function = nn.functional.l1_loss
+        elif loss_function == 'smooth_l1':
+            self.loss_function = nn.functional.smooth_l1_loss
         elif callable(loss_function):
             self.loss_function = loss_function
         else:
