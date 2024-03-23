@@ -32,7 +32,7 @@ def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
     hparams = {
-        'batch_size': 128,
+        'batch_size': 64,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 100,
@@ -51,7 +51,7 @@ def train():
         'loss_function': 'l1',
         'input_shape': [32, 32],
         'target_shape': [3],
-        'hidden_layers': [128,128,128],
+        'hidden_layers': [256,256,256,256],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
         'return_gradients': True,
