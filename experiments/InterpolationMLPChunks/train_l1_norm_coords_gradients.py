@@ -22,7 +22,9 @@ from leap3d.transforms import normalize_extra_param, normalize_positional_grad, 
 
 
 def train():
-    step_size = (X_MAX - X_MIN) / 64
+    # step_size = (X_MAX - X_MIN) / 64
+    scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 0)
+    step_size = scan_parameters.rough_coordinates_step_size
     coords_radius = step_size * 16
 
     TEMPERATURE_MAX = MELTING_POINT
@@ -56,7 +58,7 @@ def train():
         'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
-        'multiply_gradients_by': 32 * (TEMPERATURE_MAX - BASE_TEMPERATURE) / (2 * coords_radius),
+        'multiply_gradients_by': (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size,
         'predict_cooldown_rate': True,
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,

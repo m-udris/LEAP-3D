@@ -364,8 +364,8 @@ class InterpolationMLPChunks(BaseModel):
         if self.apply_positional_encoding:
             x_grid, points = self.positional_encoding(x_grid, points)
 
-        x = self.forward_cnn(x_grid)
-        x = self.forward_mlp(x, points)
+        x_cnn = self.forward_cnn(x_grid)
+        x = self.forward_mlp(x_cnn, points)
 
         if self.return_gradients:
             x_sum = torch.sum(x[..., 0])
