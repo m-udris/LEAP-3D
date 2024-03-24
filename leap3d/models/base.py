@@ -4,7 +4,7 @@ from torch import nn, optim
 from torchmetrics.regression import R2Score, MeanAbsoluteError
 import pytorch_lightning as pl
 
-from leap3d.losses import heat_loss
+from leap3d.losses import heat_loss, smooth_l1_loss
 
 class BaseModel(pl.LightningModule):
     """ Base LEAP3D model.
@@ -33,7 +33,7 @@ class BaseModel(pl.LightningModule):
         elif loss_function == 'l1':
             self.loss_function = nn.functional.l1_loss
         elif loss_function == 'smooth_l1':
-            self.loss_function = nn.functional.smooth_l1_loss
+            self.loss_function = smooth_l1_loss
         elif callable(loss_function):
             self.loss_function = loss_function
         else:
