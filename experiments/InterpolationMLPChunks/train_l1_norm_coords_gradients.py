@@ -28,7 +28,7 @@ def train():
     coords_radius = step_size * 16
 
     TEMPERATURE_MAX = MELTING_POINT
-    # TEMPERATURE_MAX = 2950
+    TEMPERATURE_MAX = 2950
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
@@ -55,7 +55,7 @@ def train():
         'loss_function': 'smooth_l1',
         'input_shape': [32, 32],
         'target_shape': [3],
-        'hidden_layers': [128, 128],
+        'hidden_layers': [128, 128, 128, 128],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
         'return_gradients': True,
