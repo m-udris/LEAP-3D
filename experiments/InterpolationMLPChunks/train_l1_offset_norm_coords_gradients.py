@@ -31,7 +31,7 @@ def train():
     coords_radius = step_size * 20
 
     TEMPERATURE_MAX = MELTING_POINT
-    # TEMPERATURE_MAX = 2950
+    TEMPERATURE_MAX = 2950
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
 
