@@ -38,7 +38,7 @@ def train():
         'batch_size': 64,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 100,
+        'max_epochs': 32,
         'transforms': 'default',
         'in_channels': 1,
         'out_channels': 2,
