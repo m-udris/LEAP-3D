@@ -436,10 +436,10 @@ class InterpolationMLPChunks(BaseModel):
 
         if self.learn_gradients:
             mask = torch.isnan(true_grads_x)
-            grads[:,:,0] /= self.multiply_gradients_by
-            grads[:,:,1] /= self.multiply_gradients_by
-            true_grads_x /= self.multiply_gradients_by
-            true_grads_y /= self.multiply_gradients_by
+            # grads[:,:,0] /= self.multiply_gradients_by
+            # grads[:,:,1] /= self.multiply_gradients_by
+            # true_grads_x /= self.multiply_gradients_by
+            # true_grads_y /= self.multiply_gradients_by
             grad_x_loss = smooth_l1_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
             grad_y_loss = smooth_l1_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
             grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
