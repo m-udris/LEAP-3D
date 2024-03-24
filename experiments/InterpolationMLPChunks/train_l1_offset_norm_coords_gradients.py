@@ -50,7 +50,7 @@ def train():
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24*24])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', 'T_max_2950'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', 'T_max_2950', 'grad_t_max_80_000_000'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -66,7 +66,7 @@ def train():
         'predict_cooldown_rate': True,
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
-        'grad_t_max': GRAD_T_MAX
+        'grad_t_max': 80_000_000
     }
 
     # start a new wandb run to track this script
@@ -96,7 +96,7 @@ def train():
             transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_temporal_grad(x, index=-1, max_temp=TEMPERATURE_MAX, min_temp=BASE_TEMPERATURE, norm_constant=GRAD_T_MAX, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temporal_grad(x, index=-1, max_temp=1, min_temp=0, norm_constant=GRAD_T_MAX, inplace=True)),
         ]),
         'extra_input': transforms.Compose([
             torch.tensor,
