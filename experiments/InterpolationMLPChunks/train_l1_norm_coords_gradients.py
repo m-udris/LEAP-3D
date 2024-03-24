@@ -4,6 +4,7 @@ import sys
 from typing import List
 
 import torch
+from torch import nn
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.loggers import WandbLogger
@@ -35,6 +36,8 @@ def train():
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
+    activation = nn.Tanh
+
     hparams = {
         'batch_size': 64,
         'lr': 1e-3,
@@ -64,7 +67,8 @@ def train():
         'predict_cooldown_rate': True,
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
-        'grad_t_max': GRAD_T_MAX
+        'grad_t_max': GRAD_T_MAX,
+        'activation': activation
     }
 
     # start a new wandb run to track this script
@@ -72,7 +76,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
+        'name': f'tanh_mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
         # track hyperparameters and run metadata
         'config': hparams
     }
