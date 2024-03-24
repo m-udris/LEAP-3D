@@ -30,7 +30,7 @@ def train():
     TEMPERATURE_MAX = MELTING_POINT
     # TEMPERATURE_MAX = 2950
     LASER_RADIUS_MAX = coords_radius
-    GRAD_T_MAX = 100_000
+    GRAD_T_MAX = 80_000_000
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
@@ -47,7 +47,7 @@ def train():
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', 'T_max_melting_point', 'grad_t_max_80_000_000'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -63,7 +63,7 @@ def train():
         'predict_cooldown_rate': True,
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
-        'grad_t_max': 80_000_000
+        'grad_t_max': GRAD_T_MAX
     }
 
     # start a new wandb run to track this script
