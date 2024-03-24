@@ -31,7 +31,7 @@ def train():
     coords_radius = step_size * 20
 
     TEMPERATURE_MAX = MELTING_POINT
-    TEMPERATURE_MAX = 2950
+    # TEMPERATURE_MAX = 2950
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 100_000
 
@@ -50,7 +50,7 @@ def train():
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=24*24, input_shape=[24*24])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', 'T_max_2950', 'grad_t_max_80_000_000'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', 'T_max_melting_point', 'grad_t_max_80_000_000'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
