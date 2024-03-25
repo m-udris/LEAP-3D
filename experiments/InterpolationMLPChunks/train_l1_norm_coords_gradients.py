@@ -36,7 +36,7 @@ def train():
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
-    activation = nn.Sigmoid
+    activation = nn.Tanh
 
     hparams = {
         'batch_size': 64,
@@ -76,7 +76,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap2d',
         # name of the run on wandb
-        'name': f'sigmoid_mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
+        'name': f'tanh_mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
         # track hyperparameters and run metadata
         'config': hparams
     }
