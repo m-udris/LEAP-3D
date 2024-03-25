@@ -19,7 +19,7 @@ class DoubleConv(torch.nn.Module):
             activation(inplace=True) if activation == nn.LeakyReLU else activation(),
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=bias),
             nn.BatchNorm2d(out_channels),
-            activation(inplace=True)
+            activation(inplace=True) if activation == nn.LeakyReLU else activation(),
         )
 
     def forward(self, x):
@@ -38,7 +38,7 @@ class DoubleConv3d(DoubleConv):
             activation(inplace=True) if activation == nn.LeakyReLU else activation(),
             nn.Conv3d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=bias),
             nn.BatchNorm3d(out_channels),
-            activation(inplace=True)
+            activation(inplace=True) if activation == nn.LeakyReLU else activation(),
         )
 
 
