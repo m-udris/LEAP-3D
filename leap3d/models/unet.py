@@ -16,7 +16,7 @@ class DoubleConv(torch.nn.Module):
         self.double_conv = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=bias),
             nn.BatchNorm2d(mid_channels),
-            activation(inplace=True),
+            activation(inplace=True) if activation == nn.LeakyReLU else activation(),
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=bias),
             nn.BatchNorm2d(out_channels),
             activation(inplace=True)
@@ -35,7 +35,7 @@ class DoubleConv3d(DoubleConv):
         self.double_conv = nn.Sequential(
             nn.Conv3d(in_channels, mid_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=bias),
             nn.BatchNorm3d(mid_channels),
-            activation(inplace=True),
+            activation(inplace=True) if activation == nn.LeakyReLU else activation(),
             nn.Conv3d(mid_channels, out_channels, kernel_size=3, padding=1, padding_mode='replicate', bias=bias),
             nn.BatchNorm3d(out_channels),
             activation(inplace=True)
