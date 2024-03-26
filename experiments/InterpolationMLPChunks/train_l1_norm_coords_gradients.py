@@ -58,7 +58,7 @@ def train():
         'loss_function': 'smooth_l1',
         'input_shape': [32, 32],
         'target_shape': [3],
-        'hidden_layers': [128, 128, 128, 128],
+        'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
         'return_gradients': True,
