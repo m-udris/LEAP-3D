@@ -6,22 +6,33 @@ logging.basicConfig(level=logging.DEBUG)
 
 logging.debug('Importing stuff')
 
+logging.debug('Importing torch')
 import torch
+logging.debug('Importing torch.nn')
 from torch import nn
-import pytorch_lightning as pl
-from pytorch_lightning.loggers.logger import Logger
+logging.debug('Importing wandblogger')
 from pytorch_lightning.loggers import WandbLogger
+logging.debug('Importing transforms')
 from torchvision.transforms import transforms
+logging.debug('Importing wandb')
 import wandb
-from leap3d.callbacks import get_checkpoint_only_last_epoch_callback
 
+logging.debug('Importing leap3d.callbacks')
+from leap3d.callbacks import get_checkpoint_only_last_epoch_callback
+logging.debug('Importing leap3d.datasets.channels')
 from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
+logging.debug('Importing MLPInterpolationChunkDataModule')
 from leap3d.datasets import MLPInterpolationChunkDataModule
+logging.debug('Importing leap3d.config')
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE, X_MIN, X_MAX
+logging.debug('Importing leap3d.models.lightning')
 from leap3d.models.lightning import InterpolationMLPChunks
+logging.debug('Importing leap3d.scanning.scan_parameters')
 from leap3d.scanning.scan_parameters import ScanParameters
+logging.debug('Importing leap3d.train')
 from leap3d.train import train_model
-from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, normalize_temporal_grad, scanning_angle_cos_transform, get_target_to_train_transform
+logging.debug('Importing leap3d.transforms')
+from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temporal_grad, scanning_angle_cos_transform
 
 logging.debug('Importing stuff done')
 
