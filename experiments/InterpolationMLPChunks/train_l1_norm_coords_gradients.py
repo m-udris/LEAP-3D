@@ -2,16 +2,18 @@ import logging
 from pathlib import Path
 import sys
 from typing import List
+logging.basicConfig(level=logging.DEBUG)
+
+logging.debug('Importing stuff')
 
 import torch
 from torch import nn
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.loggers import WandbLogger
-from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 import wandb
-from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
+from leap3d.callbacks import get_checkpoint_only_last_epoch_callback
 
 from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
 from leap3d.datasets import MLPInterpolationChunkDataModule
@@ -21,10 +23,13 @@ from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
 from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, normalize_temporal_grad, scanning_angle_cos_transform, get_target_to_train_transform
 
+logging.debug('Importing stuff done')
 
 def train():
     # step_size = (X_MAX - X_MIN) / 64
+    logging.debug('Getting scan parameters')
     scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 0)
+    logging.debug('Got scan parameters')
     step_size = scan_parameters.rough_coordinates_step_size
     coords_radius = step_size * 16
 
@@ -81,7 +86,8 @@ def train():
         'config': hparams
     }
 
-    logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
+    logging.debug('Starting wandb logger')
     wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
     train_transforms = {
@@ -120,6 +126,7 @@ def train():
         ])
     }
 
+    logging.debug('Creating datamodule')
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=False, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
@@ -128,11 +135,13 @@ def train():
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)
 
+    logging.debug('Creating model')
     model = InterpolationMLPChunks(**hparams)
     checkpoint_filename = wandb_config['name']
     callbacks = [
         get_checkpoint_only_last_epoch_callback(checkpoint_filename, monitor='val_loss', mode='min')
     ]
+    logging.debug('Training model')
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 
     trainer.test(model, datamodule=datamodule)
