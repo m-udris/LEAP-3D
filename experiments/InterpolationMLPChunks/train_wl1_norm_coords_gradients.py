@@ -20,10 +20,9 @@ from leap3d.models.lightning import InterpolationMLPChunks
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
 from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, normalize_temporal_grad, scanning_angle_cos_transform, get_target_to_train_transform
-
+from leap3d.losses import WeightedSmoothL1Loss
 
 def train():
-    # step_size = (X_MAX - X_MIN) / 64
     scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 0)
     step_size = scan_parameters.rough_coordinates_step_size
     coords_radius = step_size * 16
@@ -37,6 +36,8 @@ def train():
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
     activation = nn.Tanh
+
+    loss = WeightedSmoothL1Loss(max_weight=1, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
 
     hparams = {
         'batch_size': 64,
@@ -55,7 +56,7 @@ def train():
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'smooth_l1',
+        'loss_function': loss,
         'input_shape': [32, 32],
         'target_shape': [3],
         'hidden_layers': [256, 256, 256, 256],
@@ -68,7 +69,9 @@ def train():
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
         'grad_t_max': GRAD_T_MAX,
-        'activation': activation
+        'activation': activation,
+        'loss_max_weight': loss.max_weight,
+        'loss_distance_from_value': loss.distance_from_value
     }
 
     # start a new wandb run to track this script
