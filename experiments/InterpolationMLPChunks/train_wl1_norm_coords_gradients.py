@@ -29,6 +29,7 @@ def train():
 
     TEMPERATURE_MAX = MELTING_POINT
     TEMPERATURE_MAX = 2950
+    TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
@@ -37,7 +38,7 @@ def train():
 
     activation = nn.Tanh
 
-    loss = WeightedSmoothL1Loss(max_weight=1, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
+    loss = WeightedSmoothL1Loss(max_weight=1.0, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
 
     hparams = {
         'batch_size': 64,

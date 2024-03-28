@@ -2,50 +2,32 @@ import logging
 from pathlib import Path
 import sys
 from typing import List
-logging.basicConfig(level=logging.DEBUG)
 
-logging.debug('Importing stuff')
-
-logging.debug('Importing torch')
 import torch
-logging.debug('Importing torch.nn')
 from torch import nn
-logging.debug('Importing wandblogger')
 from pytorch_lightning.loggers import WandbLogger
-logging.debug('Importing transforms')
 from torchvision.transforms import transforms
-logging.debug('Importing wandb')
 import wandb
 
-logging.debug('Importing leap3d.callbacks')
 from leap3d.callbacks import get_checkpoint_only_last_epoch_callback
-logging.debug('Importing leap3d.datasets.channels')
 from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
-logging.debug('Importing MLPInterpolationChunkDataModule')
 from leap3d.datasets import MLPInterpolationChunkDataModule
-logging.debug('Importing leap3d.config')
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE, X_MIN, X_MAX
-logging.debug('Importing leap3d.models.lightning')
 from leap3d.models.lightning import InterpolationMLPChunks
-logging.debug('Importing leap3d.scanning.scan_parameters')
 from leap3d.scanning.scan_parameters import ScanParameters
-logging.debug('Importing leap3d.train')
 from leap3d.train import train_model
-logging.debug('Importing leap3d.transforms')
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temporal_grad, scanning_angle_cos_transform
 
-logging.debug('Importing stuff done')
 
 def train():
     # step_size = (X_MAX - X_MIN) / 64
-    logging.debug('Getting scan parameters')
     scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 0)
-    logging.debug('Got scan parameters')
     step_size = scan_parameters.rough_coordinates_step_size
     coords_radius = step_size * 16
 
     TEMPERATURE_MAX = MELTING_POINT
     TEMPERATURE_MAX = 2950
+    TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
@@ -97,7 +79,7 @@ def train():
         'config': hparams
     }
 
-    # logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO)
     logging.debug('Starting wandb logger')
     wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
