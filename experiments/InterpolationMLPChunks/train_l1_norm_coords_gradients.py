@@ -137,7 +137,7 @@ def train():
     logging.debug('Training model')
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
 
-    trainer.test(model, datamodule=datamodule)
+    # trainer.test(model, datamodule=datamodule)
 
     wandb.finish()
 
