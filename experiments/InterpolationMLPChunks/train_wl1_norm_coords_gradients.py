@@ -38,7 +38,7 @@ def train():
 
     activation = nn.Tanh
 
-    loss = WeightedL1Loss(max_weight=1.0, distance_from_value=MELTING_POINT / TEMPERATURE_MAX)
+    loss = WeightedL1Loss(max_weight=1.25, distance_from_value=MELTING_POINT / TEMPERATURE_MAX)
 
     hparams = {
         'batch_size': 64,
