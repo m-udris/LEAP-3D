@@ -20,7 +20,7 @@ from leap3d.models.lightning import InterpolationMLPChunks
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
 from leap3d.transforms import normalize_extra_param, normalize_positional_grad, normalize_temperature_2d, normalize_temperature_3d, normalize_temporal_grad, scanning_angle_cos_transform, get_target_to_train_transform
-from leap3d.losses import WeightedSmoothL1Loss
+from leap3d.losses import WeightedL1Loss
 
 def train():
     scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 0)
@@ -38,7 +38,7 @@ def train():
 
     activation = nn.Tanh
 
-    loss = WeightedSmoothL1Loss(max_weight=1.0, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
+    loss = WeightedL1Loss(max_weight=1.0, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
 
     hparams = {
         'batch_size': 64,
@@ -53,7 +53,7 @@ def train():
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'wl1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
@@ -72,7 +72,10 @@ def train():
         'grad_t_max': GRAD_T_MAX,
         'activation': activation,
         'loss_max_weight': loss.max_weight,
-        'loss_distance_from_value': loss.distance_from_value
+        'loss_distance_from_value': loss.distance_from_value,
+        'temperature_loss_weight': 1,
+        'pos_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 1,
     }
 
     # start a new wandb run to track this script

@@ -47,3 +47,16 @@ class WeightedSmoothL1Loss(nn.Module):
         loss = smooth_l1_loss(input, target, self.beta, size_average=False)
         w = self.max_weight - torch.abs(self.distance_from_value - target)
         return torch.mean(w * loss)
+
+
+class WeightedL1Loss(nn.Module):
+    def __init__(self, max_weight=1, distance_from_value=1):
+        """"""
+        super(WeightedL1Loss, self).__init__()
+        self.max_weight = max_weight
+        self.distance_from_value = distance_from_value
+
+    def forward(self, input, target):
+        w = self.max_weight - torch.abs(self.distance_from_value - target)
+        loss = w * nn.functional.l1_loss(input, target, reduction='none')
+        return torch.mean(loss)
