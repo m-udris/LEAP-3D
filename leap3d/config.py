@@ -36,3 +36,6 @@ FORCE_PREPARE = os.getenv("FORCE_PREPARE", False) == "True"
 
 # Multiprocess data generation workers
 NUM_MP_DATA_PREP_WORKERS = int(os.getenv("NUM_MP_DATA_PREP_WORKERS", 10))
+
+
+ROUGH_COORDS_STEP_SIZE = float(os.getenv("ROUGH_COORDS_STEP_SIZE", 3.7647085e-05))

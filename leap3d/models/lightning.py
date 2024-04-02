@@ -328,7 +328,9 @@ class InterpolationMLPChunks(BaseModel):
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
                  activation=nn.LeakyReLU, bias=False,
-                 return_gradients=False, learn_gradients=False, multiply_gradients_by=1, predict_cooldown_rate=False, *args, **kwargs):
+                 return_gradients=False, learn_gradients=False, multiply_gradients_by=1, predict_cooldown_rate=False,
+                 temperature_loss_weight=1, pos_grad_loss_weight=1, temporal_grad_loss_weight=1,
+                 *args, **kwargs):
 
         print(kwargs.get('in_channels'))
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
@@ -351,6 +353,10 @@ class InterpolationMLPChunks(BaseModel):
         self.multiply_gradients_by = multiply_gradients_by
 
         self.predict_cooldown_rate = predict_cooldown_rate
+
+        self.temperature_loss_weight = temperature_loss_weight
+        self.pos_grad_loss_weight = pos_grad_loss_weight
+        self.temporal_grad_loss_weight = temporal_grad_loss_weight
 
     @torch.enable_grad()
     @torch.inference_mode(False)
@@ -432,7 +438,7 @@ class InterpolationMLPChunks(BaseModel):
 
         main_loss = self.loss_function(y_hat, y)
 
-        loss = main_loss
+        loss = self.temperature_loss_weight * main_loss
 
         if self.learn_gradients:
             mask = torch.isnan(true_grads_x)
@@ -444,14 +450,14 @@ class InterpolationMLPChunks(BaseModel):
             grad_y_loss = smooth_l1_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
             grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
             grad_y_r2 = self.r2_metric(grads[:, :, 1][~mask], true_grads_y[~mask])
-            loss += grad_x_loss + grad_y_loss
+            loss += self.pos_grad_loss_weight * (grad_x_loss + grad_y_loss)
 
         if self.predict_cooldown_rate:
             mask = torch.isnan(true_grads_t)
             true_grads_t = true_grads_t[~mask]
             predicted_grads_t = model_output[..., 1][~mask]
             grad_t_loss = self.loss_function(predicted_grads_t, true_grads_t)
-            loss += grad_t_loss
+            loss += self.temporal_grad_loss_weight * grad_t_loss
             grad_t_r2 = self.r2_metric(predicted_grads_t, true_grads_t)
 
         metrics_dict = {

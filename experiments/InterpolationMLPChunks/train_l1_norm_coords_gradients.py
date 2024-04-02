@@ -37,7 +37,7 @@ def train():
     activation = nn.Tanh
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -49,11 +49,11 @@ def train():
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
-        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'smooth_l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
+        'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
         'force_prepare': False,
         'is_3d': False,
         'padding_mode': 'replicate',
-        'loss_function': 'smooth_l1',
+        'loss_function': 'l1',
         'input_shape': [32, 32],
         'target_shape': [3],
         'hidden_layers': [256, 256, 256, 256],
@@ -66,7 +66,10 @@ def train():
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
         'grad_t_max': GRAD_T_MAX,
-        'activation': activation
+        'activation': activation,
+        'temperature_loss_weight': 1,
+        'pos_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 1,
     }
 
     # start a new wandb run to track this script

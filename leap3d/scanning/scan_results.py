@@ -4,7 +4,7 @@ import numpy as np
 from scipy import interpolate
 import scipy
 
-from leap3d.config import SCALE_DISTANCE_BY, SCALE_TIME_BY
+from leap3d.config import SCALE_DISTANCE_BY, SCALE_TIME_BY, ROUGH_COORDS_STEP_SIZE
 from leap3d.scanning import scan_parameters
 
 
@@ -102,30 +102,44 @@ class ScanResults():
         top_layer_points = melt_pool_at_timestep[melt_pool_at_timestep[:, 2] == max_z]
         return top_layer_points[:, :2], top_layer_points[:, 3]
 
+    def get_melt_pool_coordinates_and_gradients(self, timestep: int, is_3d: bool=True):
+        if self.is_melt_pool_empty(timestep):
+            return [], []
+        melt_pool_at_timestep = np.array(self.melt_pool[timestep])
+        if is_3d:
+            return melt_pool_at_timestep[:, :3], melt_pool_at_timestep[:, [4,5,6,8]]
+
+        max_z = np.max(melt_pool_at_timestep[:, 2])
+        top_layer_points = melt_pool_at_timestep[melt_pool_at_timestep[:, 2] == max_z]
+        return top_layer_points[:, :2], top_layer_points[:, [4,5,6,8]]
+
     def is_melt_pool_empty(self, timestep: int):
         return len(self.melt_pool[timestep][0]) == 0
 
-    def get_melt_pool_temperature_grid(self, scan_parameters, timestep: int):
-        melt_pool_grid = np.zeros((256, 256, 64))
-        coordinates, temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
+    def _get_high_res_grid(self, coordinates, values):
+        grid = np.zeros((256, 256, 64, *values.shape[1:]))
+
         if len(coordinates) == 0:
-            return melt_pool_grid
-        coord_delta = scan_parameters.rough_coordinates_step_size * 0.25
-        # new_coords = (coordinates / coord_delta + np.array([128, 128, 63])).astype(int)
+            return grid
+
+        coord_delta = ROUGH_COORDS_STEP_SIZE * 0.25
         new_x_coords = [int((coord[0]) / coord_delta) + 128  for coord in coordinates]
         new_y_coords = [int((coord[1]) / coord_delta) + 128 for coord in coordinates]
         new_z_coords = [int((coord[2]) / coord_delta) + 63  for coord in coordinates]
 
-        # # melt_pool_grid2 = melt_pool_grid.copy()
-        # np.put(melt_pool_grid, new_coords, temperature, mode='raise')
-        # melt_pool_grid[new_coords[:, 0], new_coords[:, 1], new_coords[:, 2]] = temperature
         for i in range(len(coordinates)):
-            melt_pool_grid[new_x_coords[i]][new_y_coords[i]][new_z_coords[i]] = temperature[i]
-        # if not np.all(melt_pool_grid == melt_pool_grid2):
-        #     print("\t".join([f"{x}" for x in melt_pool_grid.flatten()]))
-        #     print("\t".join([f"{x}" for x in melt_pool_grid2.flatten()]))
-        # assert np.all(melt_pool_grid == melt_pool_grid2)
-        return melt_pool_grid
+            grid[new_x_coords[i]][new_y_coords[i]][new_z_coords[i]] = values[i]
+
+        return grid
+
+    def get_melt_pool_temperature_grid(self, timestep: int):
+        coordinates, temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
+        grid = self._get_high_res_grid(coordinates, temperature)
+        grid.reshape(grid.shape[:-1])
+
+    def get_gradients_grid(self, timestep: int):
+        coordinates, gradients = self.get_melt_pool_coordinates_and_gradients(timestep)
+        return self._get_high_res_grid(coordinates, gradients)
 
     def get_coordinate_points_and_temperature_at_timestep(self, scan_parameters, timestep: int, resolution: str=None):
         if resolution not in [None, 'low', 'high']:
