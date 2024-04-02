@@ -73,9 +73,9 @@ def train():
         'activation': activation,
         'loss_max_weight': loss.max_weight,
         'loss_distance_from_value': loss.distance_from_value,
-        'temperature_loss_weight': 1,
+        'temperature_loss_weight': 2,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 2,
     }
 
     # start a new wandb run to track this script
