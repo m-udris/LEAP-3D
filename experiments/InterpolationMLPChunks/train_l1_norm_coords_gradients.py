@@ -67,9 +67,9 @@ def train():
         'laser_radius_max': LASER_RADIUS_MAX,
         'grad_t_max': GRAD_T_MAX,
         'activation': activation,
-        'temperature_loss_weight': 1,
+        'temperature_loss_weight': 2,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 2,
     }
 
     # start a new wandb run to track this script
