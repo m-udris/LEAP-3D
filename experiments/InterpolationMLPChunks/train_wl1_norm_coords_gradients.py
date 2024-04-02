@@ -38,7 +38,7 @@ def train():
 
     activation = nn.Tanh
 
-    loss = WeightedL1Loss(max_weight=1.0, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
+    loss = WeightedL1Loss(max_weight=1.25, distance_from_value=MELTING_POINT / TEMPERATURE_MAX, beta=1)
 
     hparams = {
         'batch_size': 64,
@@ -73,9 +73,9 @@ def train():
         'activation': activation,
         'loss_max_weight': loss.max_weight,
         'loss_distance_from_value': loss.distance_from_value,
-        'temperature_loss_weight': 2,
+        'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 2,
+        'temporal_grad_loss_weight': 1,
     }
 
     # start a new wandb run to track this script
