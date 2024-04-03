@@ -24,14 +24,14 @@ class ScanResults():
         self.scale_time_by = scale_time_by or SCALE_TIME_BY
 
 
-        self.results = np.load(results_filename, allow_pickle=True)
-        self.rough_temperature_field = self.results['Rough_T_field']
+        results = np.load(results_filename, allow_pickle=True)
+        self.rough_temperature_field = results['Rough_T_field']
         self.total_timesteps = self.rough_temperature_field.shape[0]
 
-        self.melt_pool = self.results['Melt_pool']
+        self.melt_pool = results['Melt_pool']
         self.scale_melt_pool()
 
-        self.laser_data = self.results['Laser_information']
+        self.laser_data = results['Laser_information']
         self.laser_data[:,0] *= self.scale_distance_by
         self.laser_data[:,1] *= self.scale_distance_by
         self.laser_data[:,3] *= self.scale_distance_by
@@ -84,7 +84,7 @@ class ScanResults():
             return []
         melt_pool_at_timestep = np.array(self.melt_pool[timestep])
         if is_3d:
-            return melt_pool_at_timestep
+            return melt_pool_at_timestep[:, [0,1,2,3,4,5,6,8]]
 
         melt_pool_at_timestep = melt_pool_at_timestep[:,[0,1,2,3,4,5,8]]
         max_z = np.max(melt_pool_at_timestep[:, 2])
@@ -222,7 +222,8 @@ class ScanResults():
                                                 scan_parameters: scan_parameters,
                                                 include_high_resolution_points: bool=False,
                                                 is_3d: bool=False,
-                                                offset_ratio: float=None):
+                                                offset_ratio: float=None,
+                                                laser_data=None):
         """Get interpolated grid around laser at timestep.
 
         Args:
@@ -232,7 +233,10 @@ class ScanResults():
             scan_parameters (scan_parameters): Scan parameters
             include_high_res (bool, optional): Whether to include high res points. Defaults to False.
             is_3d (bool, optional): Whether to get 3D grid. Defaults to False."""
-        laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
+        if laser_data is None:
+            laser_data = self.get_laser_data_at_timestep(timestep)
+        laser_x, laser_y = laser_data[:2]
+        # laser_x, laser_y = self.get_laser_coordinates_at_timestep(timestep)
         rough_coordinates = scan_parameters.rough_coordinates
         x_rough = rough_coordinates['x_rough']
         y_rough = rough_coordinates['y_rough']
@@ -245,7 +249,7 @@ class ScanResults():
             points_to_interpolate = scan_parameters.get_coordinates_around_position(laser_x, laser_y, size,
                                                                                 scale=step_scale, is_3d=is_3d)
         else:
-            points_to_interpolate = scan_parameters.get_offset_coordinates_around_position(self.get_laser_data_at_timestep(timestep), size, step_scale, offset_ratio, is_3d)
+            points_to_interpolate = scan_parameters.get_offset_coordinates_around_position(laser_data, size, step_scale, offset_ratio, is_3d)
 
         points_to_interpolate = np.array(points_to_interpolate)
 
@@ -309,7 +313,7 @@ class ScanResults():
 
         points_to_interpolate = np.array(points_to_interpolate)
         edge_length = int(size // step_scale)
-        shape = (edge_length, edge_length, 64) if is_3d else (edge_length, edge_length)
+        shape = (edge_length, edge_length, 16 // step_scale) if is_3d else (edge_length, edge_length)
         x_coords = points_to_interpolate[:, 0].reshape(shape)
         y_coords = points_to_interpolate[:, 1].reshape(shape)
         z_coords = points_to_interpolate[:, 2].reshape(shape)

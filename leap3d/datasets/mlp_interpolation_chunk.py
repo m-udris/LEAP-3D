@@ -105,7 +105,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
     def write_data_to_h5(self, data_generator, datasets, offset):
         buffers = {name: [] for name in datasets.keys()}
         points_written = 0
-        buffer_size = 2000
+        buffer_size = 200
 
         items_in_buffer = 0
         for points in data_generator:
