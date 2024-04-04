@@ -7,6 +7,7 @@ from torch import nn
 
 from leap3d.models import BaseModel, CNN, MLP, UNet, UNet3d, ConditionalUNet, ConditionalUNet3d
 from leap3d.losses import distance_l1_loss_2d, heat_loss, smooth_l1_loss, weighted_l1_loss, heavy_weighted_l1_loss
+from leap3d.models.cnn import CNN3D
 from leap3d.positional_encoding import positional_encoding
 
 
@@ -328,35 +329,45 @@ class InterpolationMLPChunks(BaseModel):
                  hidden_layers=[1024],
                  apply_positional_encoding=False, positional_encoding_L=3,
                  activation=nn.LeakyReLU, bias=False,
-                 return_gradients=False, learn_gradients=False, multiply_gradients_by=1, predict_cooldown_rate=False,
+                 return_gradients=False, learn_gradients=False, predict_cooldown_rate=False,
                  temperature_loss_weight=1, pos_grad_loss_weight=1, temporal_grad_loss_weight=1,
                  *args, **kwargs):
 
         print(kwargs.get('in_channels'))
         super(InterpolationMLPChunks, self).__init__(*args, **kwargs)
 
-        self.cnn = CNN(input_dimension=in_channels, output_dimension=out_channels, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
+        self.cnn = self.get_cnn(in_channels, out_channels, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 
         self.apply_positional_encoding = apply_positional_encoding
         self.positional_encoding_L = positional_encoding_L
 
         self.extra_params_number = extra_params_number
 
-        mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
-        mlp_input_size += 2 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
+        mlp_input_size = self.get_mlp_input_size(input_shape, extra_params_number)
 
-        self.mlp = MLP(input_dimension=mlp_input_size, output_dimension=out_channels, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
+        self.mlp = self.get_mlp(input_dimension=mlp_input_size, output_dimension=out_channels, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
         self.input_shape = input_shape
 
         self.return_gradients = return_gradients
         self.learn_gradients = learn_gradients
-        self.multiply_gradients_by = multiply_gradients_by
 
         self.predict_cooldown_rate = predict_cooldown_rate
 
         self.temperature_loss_weight = temperature_loss_weight
         self.pos_grad_loss_weight = pos_grad_loss_weight
         self.temporal_grad_loss_weight = temporal_grad_loss_weight
+
+    def get_cnn(self, input_dimension, output_dimension, n_conv, depth, activation, bias, **kwargs):
+        return CNN(input_dimension, output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
+
+    def get_mlp_input_size(self, input_shape, extra_params_number):
+        mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
+        mlp_input_size += 2 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
+
+        return mlp_input_size
+
+    def get_mlp(self, input_dimension, output_dimension, hidden_layers, activation, bias, **kwargs):
+        return MLP(input_dimension=input_dimension, output_dimension=output_dimension, hidden_layers=hidden_layers, activation=activation, bias=bias, **kwargs)
 
     @torch.enable_grad()
     @torch.inference_mode(False)
@@ -376,7 +387,6 @@ class InterpolationMLPChunks(BaseModel):
         if self.return_gradients:
             x_sum = torch.sum(x[..., 0])
             grads = torch.autograd.grad(x_sum, points, create_graph=True)[0]
-            grads = grads * self.multiply_gradients_by
             return x, grads
 
         return x
@@ -442,10 +452,6 @@ class InterpolationMLPChunks(BaseModel):
 
         if self.learn_gradients:
             mask = torch.isnan(true_grads_x)
-            grads[:,:,0] /= self.multiply_gradients_by
-            grads[:,:,1] /= self.multiply_gradients_by
-            true_grads_x /= self.multiply_gradients_by
-            true_grads_y /= self.multiply_gradients_by
             grad_x_loss = smooth_l1_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
             grad_y_loss = smooth_l1_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
             grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
@@ -482,5 +488,115 @@ class InterpolationMLPChunks(BaseModel):
 
         if self.return_gradients:
             return loss, y_hat, grads, true_grads_x, true_grads_y
+
+        return loss, y_hat
+
+
+class InterpolationMLPChunks3D(InterpolationMLPChunks):
+    def __init__(self, input_shape=[32,32,16], extra_params_number=3,
+                 in_channels=1, out_channels=1,
+                 n_conv=16, depth=4,
+                 hidden_layers=[1024],
+                 apply_positional_encoding=False, positional_encoding_L=3,
+                 activation=nn.LeakyReLU, bias=False,
+                 return_gradients=False, learn_gradients=False, predict_cooldown_rate=False,
+                 temperature_loss_weight=1, pos_grad_loss_weight=1, temporal_grad_loss_weight=1,
+                 *args, **kwargs):
+
+        print(kwargs.get('in_channels'))
+        super(InterpolationMLPChunks, self).__init__(input_shape=[32,32,16], extra_params_number=3,
+                 in_channels=1, out_channels=1,
+                 n_conv=16, depth=4,
+                 hidden_layers=[1024],
+                 apply_positional_encoding=False, positional_encoding_L=3,
+                 activation=nn.LeakyReLU, bias=False,
+                 return_gradients=False, learn_gradients=False, predict_cooldown_rate=False,
+                 temperature_loss_weight=1, pos_grad_loss_weight=1, temporal_grad_loss_weight=1, *args, **kwargs)
+
+    def get_cnn(self, input_dimension, output_dimension, n_conv, depth, activation, bias):
+        return CNN3D(input_dimension, output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias)
+
+    def get_mlp_input_size(self, input_shape, extra_params_number):
+        mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
+        mlp_input_size += 3 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
+
+        return mlp_input_size
+
+
+    def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
+        x, extra_params, target = batch
+
+        point_coordinates = target[:, :, :3]
+        y = target[:, :, 3]
+
+        if self.learn_gradients:
+            true_grads_x = target[:, :, 4]
+            true_grads_y = target[:, :, 5]
+            true_grads_z = target[:, :, 6]
+
+        if self.predict_cooldown_rate:
+            true_grads_t = target[:, :, -1]
+
+        extra_params = extra_params.unsqueeze(1)
+        extra_params_expanded = extra_params.expand((-1, point_coordinates.shape[1], *extra_params.shape[2:]))
+
+        points = torch.cat((point_coordinates, extra_params_expanded), dim=2)
+
+        if self.return_gradients:
+            model_output, grads = self.forward(x, points)
+        else:
+            model_output = self.forward(x, points)
+
+        y_hat = model_output[..., 0]
+
+        y_hat = y_hat.reshape(y_hat.shape[0], -1)
+        y = y.reshape(y_hat.shape)
+
+        main_loss = self.loss_function(y_hat, y)
+
+        loss = self.temperature_loss_weight * main_loss
+
+        if self.learn_gradients:
+            mask = torch.isnan(true_grads_x)
+            grad_x_loss = smooth_l1_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
+            grad_y_loss = smooth_l1_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
+            grad_z_loss = smooth_l1_loss(grads[:, :, 2][~mask], true_grads_z[~mask])
+            grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
+            grad_y_r2 = self.r2_metric(grads[:, :, 1][~mask], true_grads_y[~mask])
+            grad_z_r2 = self.r2_metric(grads[:, :, 2][~mask], true_grads_z[~mask])
+            loss += self.pos_grad_loss_weight * (grad_x_loss + grad_y_loss + grad_z_loss)
+
+        if self.predict_cooldown_rate:
+            mask = torch.isnan(true_grads_t)
+            true_grads_t = true_grads_t[~mask]
+            predicted_grads_t = model_output[..., 1][~mask]
+            grad_t_loss = self.loss_function(predicted_grads_t, true_grads_t)
+            loss += self.temporal_grad_loss_weight * grad_t_loss
+            grad_t_r2 = self.r2_metric(predicted_grads_t, true_grads_t)
+
+        metrics_dict = {
+            "loss": loss,
+            "r2": self.r2_metric(y_hat.reshape(-1), y.reshape(-1)),
+            "mae": self.mae_metric(y_hat, y),
+            "heat_loss": heat_loss(y_hat, y),
+            "mse": nn.functional.mse_loss(y_hat, y),
+        }
+        if self.learn_gradients:
+            metrics_dict["main_loss"] = main_loss
+            metrics_dict["grad_x_loss"] = grad_x_loss
+            metrics_dict["grad_y_loss"] = grad_y_loss
+            metrics_dict["grad_z_loss"] = grad_z_loss
+            metrics_dict["grad_x_r2"] = grad_x_r2
+            metrics_dict["grad_y_r2"] = grad_y_r2
+            metrics_dict["grad_z_r2"] = grad_z_r2
+
+        if self.predict_cooldown_rate:
+            metrics_dict["grad_t_loss"] = grad_t_loss
+            metrics_dict["grad_t_r2"] = grad_t_r2
+
+        self.log_metrics_dict(metrics_dict, train)
+
+        if self.return_gradients:
+            return loss, y_hat, grads, true_grads_x, true_grads_y, true_grads_z
 
         return loss, y_hat

@@ -16,7 +16,7 @@ from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_F
 from leap3d.models.lightning import InterpolationMLPChunks
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.train import train_model
-from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temporal_grad, scanning_angle_cos_transform
+from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temporal_grad, scanning_angle_cos_transform, normalize_positional_grad
 
 
 def train():
@@ -31,6 +31,8 @@ def train():
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
+
+    MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
 
     dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_coordinates_gradients'
 
@@ -61,7 +63,7 @@ def train():
         'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
-        'multiply_gradients_by': (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size,
+        'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
         'predict_cooldown_rate': True,
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
@@ -98,6 +100,10 @@ def train():
             transforms.Lambda(lambda x: normalize_extra_param(x, index=2, min_value=BASE_TEMPERATURE, max_value=TEMPERATURE_MAX, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
+            transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
+
+
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
             transforms.Lambda(lambda x: normalize_temporal_grad(x, index=-1, max_temp=1, min_temp=0, norm_constant=GRAD_T_MAX, inplace=True)),
@@ -118,7 +124,7 @@ def train():
         ]),
         'target': transforms.Compose([
             torch.tensor,
-            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=TEMPERATURE_MAX, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True))
+            transforms.Lambda(lambda x: normalize_temperature_2d(x, melting_point=TEMPERATURE_MAX, base_temperature=BASE_TEMPERATURE, inverse=True, inplace=True)),
         ])
     }
 
