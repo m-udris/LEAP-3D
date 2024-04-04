@@ -72,7 +72,8 @@ def train():
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
         'temporal_grad_loss_weight': 1,
-        'depth': 4
+        'depth': 4,
+        'n_conv': 4
     }
 
     # start a new wandb run to track this script
