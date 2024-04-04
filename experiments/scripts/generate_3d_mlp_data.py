@@ -64,6 +64,6 @@ if __name__ == '__main__':
     num_test_cases = 10
     train_cases = list(range(num_train_cases)) + list(range(100, 100 + num_train_cases))
     test_cases = list(range(num_train_cases, num_train_cases + num_test_cases)) + list(range(100 + num_train_cases, 100 + num_train_cases + num_test_cases))
-    generate_cases(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', train_cases + test_cases, force_prepare=True)
+    generate_cases(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', train_cases + test_cases, force_prepare=False)
     aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', train_cases, is_test=False)
     aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', test_cases, is_test=True)
