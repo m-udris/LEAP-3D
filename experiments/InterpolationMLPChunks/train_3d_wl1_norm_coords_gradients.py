@@ -43,7 +43,7 @@ def train():
 
 
     hparams = {
-        'batch_size': 32,
+        'batch_size': 64,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -62,9 +62,9 @@ def train():
         'loss_function': loss,
         'input_shape': [32, 32],
         'target_shape': [3],
-        'hidden_layers': [256, 256, 256, 256],
+        'hidden_layers': [128, 128, 128, 128],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
+        'positional_encoding_L': 4,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,

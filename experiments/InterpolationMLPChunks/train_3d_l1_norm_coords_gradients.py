@@ -60,7 +60,7 @@ def train():
         'target_shape': [3],
         'hidden_layers': [128, 128, 128, 128],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
+        'positional_encoding_L': 4,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
