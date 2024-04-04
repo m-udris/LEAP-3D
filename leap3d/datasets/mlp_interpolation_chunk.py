@@ -14,6 +14,7 @@ import shapely.geometry as sg
 class MLPInterpolationChunkDataset(LEAPDataset):
     def __init__(self, data_filepath: str="path/to/dir",
                  transforms: Dict={}, inverse_transforms: Dict={},
+                 is_3d: bool=False,
                  include_melting_pool: bool=False,
                  include_distances_to_melting_pool: bool=False,
                  include_input_coordinates: bool=False):
@@ -25,11 +26,12 @@ class MLPInterpolationChunkDataset(LEAPDataset):
         self.include_melting_pool = include_melting_pool
         self.include_distances_to_melting_pool = include_distances_to_melting_pool
         self.include_input_coordinates = include_input_coordinates
+        self.is_3d = is_3d
 
     def __getitem__(self, idx):
         input = self.inputs[idx]
         if not self.include_input_coordinates:
-            input = input[..., -1:, :, :]
+            input = input[..., -1:, :, :, :] if self.is_3d else input[..., -1:, :, :]
         extra_input = self.extra_inputs[idx]
         target = self.targets[idx]
 
@@ -83,6 +85,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
             full_dataset_path = self.prepared_data_path / "dataset.hdf5"
             full_dataset = self.dataset_class(
                 full_dataset_path,
+                is_3d=self.is_3d,
                 transforms=self.transforms,
                 inverse_transforms=self.inverse_transforms,
                 include_distances_to_melting_pool=self.include_distances_to_melting_pool,
@@ -97,6 +100,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
         if stage == 'test' or stage is None:
             test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
             self.test_dataset = self.dataset_class(test_dataset_path,
+                                                   is_3d=self.is_3d,
                                                    transforms=self.transforms,
                                                    inverse_transforms=self.inverse_transforms,
                                                    include_distances_to_melting_pool=self.include_distances_to_melting_pool,

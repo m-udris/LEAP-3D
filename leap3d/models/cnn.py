@@ -64,25 +64,11 @@ class CNN(nn.Module):
 class CNN3D(CNN):
     """The downsampling part of a U-Net model."""
     def __init__(self, input_dimension, output_dimension, n_conv=16, depth=4, bilinear=False, activation=nn.LeakyReLU, bias=False, **kwargs):
-        super(CNN3D, self).__init__()
-        self.input_dimension = input_dimension
-        self.output_dimension = output_dimension
-        self.n_conv = n_conv
-        self.bilinear = bilinear
-        self.depth = depth
-
+        super(CNN3D, self).__init__(input_dimension, output_dimension, n_conv=n_conv, depth=depth, bilinear=bilinear, activation=activation, bias=bias, **kwargs)
         self.inc = DoubleConv3d(input_dimension, n_conv, activation=activation, bias=bias)
-        self.down = self.get_down_layers(n_conv, depth, activation=activation, bias=bias, bilinear=bilinear)
 
     def get_down_layer(self, in_channels, out_channels, activation, bias=False):
         return Down3d(in_channels, out_channels, activation=activation, bias=bias)
-
-    # def get_output_features_count(self, input_shape):
-    #     x_elements_number = 1
-    #     for size in input_shape:
-    #         x_elements_number *= size // (2**self.depth)
-    #     output_features = self.n_conv*(2**self.depth) * x_elements_number
-    #     return output_features
 
     def adapt_input_shape(self, x):
         in_shape = x.shape

@@ -503,25 +503,24 @@ class InterpolationMLPChunks3D(InterpolationMLPChunks):
                  temperature_loss_weight=1, pos_grad_loss_weight=1, temporal_grad_loss_weight=1,
                  *args, **kwargs):
 
-        print(kwargs.get('in_channels'))
-        super(InterpolationMLPChunks, self).__init__(input_shape=[32,32,16], extra_params_number=3,
-                 in_channels=1, out_channels=1,
-                 n_conv=16, depth=4,
-                 hidden_layers=[1024],
-                 apply_positional_encoding=False, positional_encoding_L=3,
-                 activation=nn.LeakyReLU, bias=False,
-                 return_gradients=False, learn_gradients=False, predict_cooldown_rate=False,
-                 temperature_loss_weight=1, pos_grad_loss_weight=1, temporal_grad_loss_weight=1, *args, **kwargs)
+        print(kwargs.get('in_channels'), depth)
+        super(InterpolationMLPChunks3D, self).__init__(input_shape=input_shape, extra_params_number=extra_params_number,
+                 in_channels=in_channels, out_channels=out_channels,
+                 n_conv=n_conv, depth=depth,
+                 hidden_layers=hidden_layers,
+                 apply_positional_encoding=apply_positional_encoding, positional_encoding_L=positional_encoding_L,
+                 activation=activation, bias=bias,
+                 return_gradients=return_gradients, learn_gradients=learn_gradients, predict_cooldown_rate=predict_cooldown_rate,
+                 temperature_loss_weight=temperature_loss_weight, pos_grad_loss_weight=pos_grad_loss_weight, temporal_grad_loss_weight=temporal_grad_loss_weight, *args, **kwargs)
 
-    def get_cnn(self, input_dimension, output_dimension, n_conv, depth, activation, bias):
-        return CNN3D(input_dimension, output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias)
+    def get_cnn(self, input_dimension, output_dimension, n_conv, depth, activation, bias, **kwargs):
+        return CNN3D(input_dimension, output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
 
     def get_mlp_input_size(self, input_shape, extra_params_number):
         mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number
         mlp_input_size += 3 * (2 * self.positional_encoding_L if self.apply_positional_encoding else 1)
 
         return mlp_input_size
-
 
     def f_step(self, batch, batch_idx, train=False, *args, **kwargs):
         x, extra_params, target = batch
