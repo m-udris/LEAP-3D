@@ -35,7 +35,7 @@ def train():
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
 
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d_small'
 
     activation = nn.Tanh
 
@@ -60,11 +60,11 @@ def train():
         'is_3d': True,
         'padding_mode': 'replicate',
         'loss_function': loss,
-        'input_shape': [32, 32],
+        'input_shape': [32, 32, 4],
         'target_shape': [3],
-        'hidden_layers': [128, 128, 128, 128],
+        'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 4,
+        'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
@@ -76,8 +76,8 @@ def train():
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
         'temporal_grad_loss_weight': 1,
-        'depth': 4,
-        'n_conv': 4
+        'depth': 2,
+        'n_conv': 8
     }
 
     # start a new wandb run to track this script
@@ -139,7 +139,7 @@ def train():
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=True, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    input_shape=[32, 32, 16], target_shape=[3],
+                    input_shape=[32, 32, 4], target_shape=[3],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)
