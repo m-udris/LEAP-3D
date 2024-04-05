@@ -28,7 +28,7 @@ def generate_case_dataset(path, case_id, force_prepare=False):
         target_shape=[8],
         input_channels=[LowResRoughTemperatureAroundLaser(is_3d=True, box_size=32, return_coordinates=False)],
         extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
-        target_channels=[MeltPoolPointChunk(is_3d=True, chunk_size=32*32*16, input_shape=[32,32,16], include_gradients=True)],
+        target_channels=[MeltPoolPointChunk(is_3d=True, chunk_size=32*32*8, input_shape=[32,32,16], include_gradients=True)],
         transforms={},
         inverse_transforms={},
         force_prepare=force_prepare
@@ -60,10 +60,10 @@ def aggregate_datasets(path, cases, is_test=False):
 
 
 if __name__ == '__main__':
-    num_train_cases = 40
-    num_test_cases = 10
+    num_train_cases = 30
+    num_test_cases = 8
     train_cases = list(range(num_train_cases)) + list(range(100, 100 + num_train_cases))
     test_cases = list(range(num_train_cases, num_train_cases + num_test_cases)) + list(range(100 + num_train_cases, 100 + num_train_cases + num_test_cases))
-    generate_cases(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', train_cases + test_cases, force_prepare=False)
-    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', train_cases, is_test=False)
-    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d', test_cases, is_test=True)
+    generate_cases(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d_small', train_cases + test_cases, force_prepare=False)
+    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d_small', train_cases, is_test=False)
+    aggregate_datasets(DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d_small', test_cases, is_test=True)
