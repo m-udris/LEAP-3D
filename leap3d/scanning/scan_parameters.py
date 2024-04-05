@@ -107,32 +107,36 @@ class ScanParameters():
                     points.append((x, y, z))
         return points
 
-    def get_bounds_around_position(self, x: float, y: float, size: int):
+    def get_bounds_around_position(self, x: float, y: float, size: int, depth=None):
         step_size = self.rough_coordinates_step_size
         x_start = x - (step_size * 0.5 * (size))
         x_end = x + (step_size * 0.5 * (size))
         y_start = y - (step_size * 0.5 * (size))
         y_end = y + (step_size * 0.5 * (size))
 
-        z_start = self.rough_coordinates['z_rough'][0, 0, 0]
+        if depth is not None:
+            z_start = self.rough_coordinates['z_rough'][0, 0, -depth]
+        else:
+            z_start = self.rough_coordinates['z_rough'][0, 0, 0]
         z_end = self.rough_coordinates['z_rough'][0, 0, -1]
 
         return x_start, x_end, y_start, y_end, z_start, z_end
 
-    def get_coordinates_around_position(self, x: float, y: float, size: int, scale: float=0.25, is_3d: bool=False):
-        bounds = self.get_bounds_around_position(x, y, size)
+    def get_coordinates_around_position(self, x: float, y: float, size: int, scale: float=0.25, is_3d: bool=False, depth=None):
+        bounds = self.get_bounds_around_position(x, y, size, depth=depth)
 
-        return self.get_coordinates_within_bounds(bounds, size, scale, is_3d)
+        return self.get_coordinates_within_bounds(bounds, size, scale, is_3d, depth=depth)
 
     def get_coordinates_within_bounds(self,
                                       bounds: Tuple[float, float, float, float, float, float],
-                                      size: int, scale: float=0.25, is_3d: bool=False):
+                                      size: int, scale: float=0.25, is_3d: bool=False, depth=None):
         x_min, x_max, y_min, y_max, z_min, z_max = bounds
         x_points = np.linspace(x_min, x_max, int(size // scale))
         y_points = np.linspace(y_min, y_max, int(size // scale))
 
         if is_3d:
-            z_points = np.linspace(z_min, z_max, int(len(self.rough_coordinates['z_rough'][0, 0, :]) // scale))
+            z_depth = depth or len(self.rough_coordinates['z_rough'][0, 0, :])
+            z_points = np.linspace(z_min, z_max, int(z_depth // scale))
         else:
             z_points = [np.max(self.rough_coordinates['z_rough'][0, 0, :])]
 
@@ -140,12 +144,12 @@ class ScanParameters():
 
         return points
 
-    def get_offset_coordinates_around_position(self, laser_data, size: int=16, scale: float=0.25, offset_ratio: float=0.5, is_3d: bool=False):
-        bounds = self.get_offset_bounds_around_laser(laser_data, size, offset_ratio)
+    def get_offset_coordinates_around_position(self, laser_data, size: int=16, scale: float=0.25, offset_ratio: float=0.5, is_3d: bool=False, depth=None):
+        bounds = self.get_offset_bounds_around_laser(laser_data, size, offset_ratio, depth=depth)
 
-        return self.get_coordinates_within_bounds(bounds, size, scale, is_3d)
+        return self.get_coordinates_within_bounds(bounds, size, scale, is_3d, depth=depth)
 
-    def get_offset_bounds_around_laser(self, laser_data, size: int=16, offset_ratio: float=0.5):
+    def get_offset_bounds_around_laser(self, laser_data, size: int=16, offset_ratio: float=0.5, depth=None):
         laser_x, laser_y = laser_data[:2]
         angle = self.scanning_angle
         step_size = self.rough_coordinates_step_size
@@ -156,7 +160,7 @@ class ScanParameters():
         center_x = laser_x + offset_ratio * direction * radius * np.cos(angle)
         center_y = laser_y + offset_ratio * direction * radius * np.sin(angle)
 
-        x_min, x_max, y_min, y_max, z_min, z_max = self.get_bounds_around_position(center_x, center_y, size)
+        x_min, x_max, y_min, y_max, z_min, z_max = self.get_bounds_around_position(center_x, center_y, size, depth)
 
         scan_x_min = self.laser_x_min
         scan_x_max = self.laser_x_max
@@ -181,7 +185,6 @@ class ScanParameters():
 
     def sample_coordinates_within_bounds(self, bounds: Tuple[float, float, float, float, float, float], sample_size: int, is_3d: bool=False):
         x_min, x_max, y_min, y_max, z_min, z_max = bounds
-
 
         x_points = np.random.random_sample(sample_size) * (x_max - x_min) + x_min
         y_points = np.random.random_sample(sample_size) * (y_max - y_min) + y_min

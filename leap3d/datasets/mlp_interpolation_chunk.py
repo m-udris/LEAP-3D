@@ -117,7 +117,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
 
             for data_name, values in points.items():
                 for target_point_chunk in target_point_chunks:
-                        buffers[data_name].append(values)
+                    buffers[data_name].append(values)
             if len(target_point_chunks) > 1:
                 print(f'Target Chunks: {len(target_point_chunks)}')
             for target_point_chunk in target_point_chunks:

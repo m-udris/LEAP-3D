@@ -223,7 +223,8 @@ class ScanResults():
                                                 include_high_resolution_points: bool=False,
                                                 is_3d: bool=False,
                                                 offset_ratio: float=None,
-                                                laser_data=None):
+                                                laser_data=None,
+                                                depth=None):
         """Get interpolated grid around laser at timestep.
 
         Args:
@@ -247,9 +248,9 @@ class ScanResults():
 
         if offset_ratio is None:
             points_to_interpolate = scan_parameters.get_coordinates_around_position(laser_x, laser_y, size,
-                                                                                scale=step_scale, is_3d=is_3d)
+                                                                                scale=step_scale, is_3d=is_3d, depth=depth)
         else:
-            points_to_interpolate = scan_parameters.get_offset_coordinates_around_position(laser_data, size, step_scale, offset_ratio, is_3d)
+            points_to_interpolate = scan_parameters.get_offset_coordinates_around_position(laser_data, size, step_scale, offset_ratio, is_3d, depth=depth)
 
         points_to_interpolate = np.array(points_to_interpolate)
 
@@ -313,7 +314,7 @@ class ScanResults():
 
         points_to_interpolate = np.array(points_to_interpolate)
         edge_length = int(size // step_scale)
-        shape = (edge_length, edge_length, 16 // step_scale) if is_3d else (edge_length, edge_length)
+        shape = (edge_length, edge_length, (depth or 16) // step_scale) if is_3d else (edge_length, edge_length)
         x_coords = points_to_interpolate[:, 0].reshape(shape)
         y_coords = points_to_interpolate[:, 1].reshape(shape)
         z_coords = points_to_interpolate[:, 2].reshape(shape)

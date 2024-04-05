@@ -103,15 +103,16 @@ class OffsetRoughTemperatureAroundLaser(Channel):
 
 
 class LowResRoughTemperatureAroundLaser(Channel):
-    def __init__(self, is_3d=False, box_size=32, return_coordinates=False):
+    def __init__(self, is_3d=False, box_size=32, return_coordinates=False, depth=None):
         channel_count = 1 if not return_coordinates else 4 if is_3d else 3
         super().__init__('low_res_rough_temperature_around_laser', channel_count, True)
         self.is_3d = is_3d
         self.box_size = box_size
         self.return_coordinates = return_coordinates
+        self.depth = depth
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
-        (x, y, z), t = scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, 1, scan_parameters, False, self.is_3d)
+        (x, y, z), t = scan_results.get_interpolated_grid_around_laser(timestep, self.box_size, 1, scan_parameters, False, self.is_3d, depth=self.depth)
         if self.return_coordinates:
             laser_x, laser_y = scan_results.get_laser_coordinates_at_timestep(timestep)
             x = x - laser_x
@@ -205,6 +206,9 @@ class MeltPoolPointChunk(Channel):
         if self.is_3d and self.include_gradients:
             self.point_len += 1
 
+        self.depth = None if len(input_shape) < 3 else input_shape[2]
+
+
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
         if scan_results.is_melt_pool_empty(timestep):
             low_res_points = self.get_padding(scan_parameters, scan_results, timestep, self.chunk_size)
@@ -238,9 +242,9 @@ class MeltPoolPointChunk(Channel):
 
     def get_padding(self, scan_parameters, scan_results, timestep, padding_length):
         if self.offset_ratio is None:
-            bounds = scan_parameters.get_bounds_around_position(*scan_results.get_laser_coordinates_at_timestep(timestep), size=self.input_size)
+            bounds = scan_parameters.get_bounds_around_position(*scan_results.get_laser_coordinates_at_timestep(timestep), size=self.input_size, depth=self.depth)
         else:
-            bounds = scan_parameters.get_offset_bounds_around_laser(scan_results.get_laser_data_at_timestep(timestep), size=self.input_size, offset_ratio=self.offset_ratio)
+            bounds = scan_parameters.get_offset_bounds_around_laser(scan_results.get_laser_data_at_timestep(timestep), size=self.input_size, offset_ratio=self.offset_ratio, depth=self.depth)
 
         coordinates, temperatures = scan_results.sample_interpolated_points_within_bounds(scan_parameters, timestep, bounds, padding_length, is_3d=self.is_3d)
 

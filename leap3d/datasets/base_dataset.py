@@ -232,7 +232,7 @@ class LEAPDataModule(pl.LightningDataModule):
                 for dset_name, dset in datasets.items():
                     self.write_to_h5_dataset(dset, buffers[dset_name], offset)
                 offset += buffer_size
-                points_written += buffer_size
+                points_written += items_in_buffer
                 buffers = {name: [] for name in datasets.keys()}
                 items_in_buffer = 0
 
