@@ -39,7 +39,7 @@ def train():
     activation = nn.Tanh
 
     hparams = {
-        'batch_size': 128,
+        'batch_size': 64,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
