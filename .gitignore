@@ -177,3 +177,5 @@ wandb-metadata.json
 job_script.sh
 Plots/*
 data/*
+data_summary
+*.ps1
