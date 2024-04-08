@@ -31,6 +31,10 @@ class CNN(nn.Module):
 
         return nn.Sequential(*layers)
 
+    def get_down_layer(self, in_channels, out_channels, activation, bias=False):
+        """Only used for backward compatibility for older checkpoints."""
+        return Down(in_channels, out_channels, activation=activation, bias=bias)
+
     def get_output_features_count(self, input_shape):
         x_elements_number = 1
         for size in input_shape:

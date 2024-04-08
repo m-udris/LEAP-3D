@@ -32,6 +32,7 @@ def train():
     # TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
+    GRAD_T_MAX = 300_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
@@ -44,7 +45,7 @@ def train():
     loss = WeightedL1Loss(max_weight=1.0, distance_from_value=MELTING_POINT / TEMPERATURE_MAX)
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -65,7 +66,7 @@ def train():
         'target_shape': [3],
         'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
+        'positional_encoding_L': 16,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
@@ -76,9 +77,9 @@ def train():
         'activation': activation,
         'loss_max_weight': loss.max_weight,
         'loss_distance_from_value': loss.distance_from_value,
-        'temperature_loss_weight': 2,
+        'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 2,
+        'temporal_grad_loss_weight': 1,
     }
 
     # start a new wandb run to track this script

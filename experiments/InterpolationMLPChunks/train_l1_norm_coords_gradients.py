@@ -30,6 +30,7 @@ def train():
     # TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
     GRAD_T_MAX = 80_000_000
+    GRAD_T_MAX = 300_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
@@ -60,7 +61,7 @@ def train():
         'target_shape': [3],
         'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
+        'positional_encoding_L': 16,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
@@ -69,9 +70,9 @@ def train():
         'laser_radius_max': LASER_RADIUS_MAX,
         'grad_t_max': GRAD_T_MAX,
         'activation': activation,
-        'temperature_loss_weight': 2,
+        'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 2,
+        'temporal_grad_loss_weight': 1,
     }
 
     # start a new wandb run to track this script
