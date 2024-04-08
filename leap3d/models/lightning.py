@@ -504,6 +504,7 @@ class InterpolationMLPChunks3D(InterpolationMLPChunks):
                  *args, **kwargs):
 
         print(kwargs.get('in_channels'), depth)
+        self.input_height = input_shape[2]
         super(InterpolationMLPChunks3D, self).__init__(input_shape=input_shape, extra_params_number=extra_params_number,
                  in_channels=in_channels, out_channels=out_channels,
                  n_conv=n_conv, depth=depth,
@@ -514,7 +515,7 @@ class InterpolationMLPChunks3D(InterpolationMLPChunks):
                  temperature_loss_weight=temperature_loss_weight, pos_grad_loss_weight=pos_grad_loss_weight, temporal_grad_loss_weight=temporal_grad_loss_weight, *args, **kwargs)
 
     def get_cnn(self, input_dimension, output_dimension, n_conv, depth, activation, bias, **kwargs):
-        return CNN3D(input_dimension, output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, **kwargs)
+        return CNN3D(input_dimension, output_dimension, n_conv=n_conv, depth=depth, activation=activation, bias=bias, input_height=self.input_height, **kwargs)
 
     def get_mlp_input_size(self, input_shape, extra_params_number):
         mlp_input_size = self.cnn.get_output_features_count(input_shape) + extra_params_number

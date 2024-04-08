@@ -39,7 +39,7 @@ def train():
     activation = nn.Tanh
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -47,8 +47,8 @@ def train():
         'in_channels': 1,
         'out_channels': 2,
         'extra_params_number': 3,
-        'input_channels': [LowResRoughTemperatureAroundLaser(is_3d=True, box_size=32, return_coordinates=False)],
-        'target_channels': [MeltPoolPointChunk(is_3d=True, chunk_size=32*32*16, input_shape=[32,32,16], include_gradients=True)],
+        'input_channels': [LowResRoughTemperatureAroundLaser(is_3d=True, box_size=32, return_coordinates=False, depth=4)],
+        'target_channels': [MeltPoolPointChunk(is_3d=True, chunk_size=32*32*16, input_shape=[32,32,4], include_gradients=True)],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
         'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
@@ -56,11 +56,11 @@ def train():
         'is_3d': True,
         'padding_mode': 'replicate',
         'loss_function': 'l1',
-        'input_shape': [32, 32],
-        'target_shape': [3],
-        'hidden_layers': [128, 128, 128, 128],
+        'input_shape': [32, 32, 4],
+        'target_shape': [8],
+        'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 4,
+        'positional_encoding_L': 8,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
@@ -73,7 +73,7 @@ def train():
         'pos_grad_loss_weight': 1,
         'temporal_grad_loss_weight': 1,
         'depth': 4,
-        'n_conv': 4
+        'n_conv': 8
     }
 
     # start a new wandb run to track this script
@@ -135,7 +135,7 @@ def train():
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=True, batch_size=hparams['batch_size'],
                     train_cases=18, test_cases=[18, 19],
-                    input_shape=[32, 32, 16], target_shape=[3],
+                    input_shape=hparams['input_shape'], target_shape=hparams['target_shape'],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)

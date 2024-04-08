@@ -43,7 +43,7 @@ def train():
 
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -61,7 +61,7 @@ def train():
         'padding_mode': 'replicate',
         'loss_function': loss,
         'input_shape': [32, 32, 4],
-        'target_shape': [3],
+        'target_shape': [8],
         'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
         'positional_encoding_L': 8,
@@ -76,7 +76,7 @@ def train():
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
         'temporal_grad_loss_weight': 1,
-        'depth': 2,
+        'depth': 4,
         'n_conv': 8
     }
 
