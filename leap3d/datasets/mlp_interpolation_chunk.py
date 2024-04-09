@@ -147,7 +147,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0, shuffle=not self.is_preshuffled)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=not self.is_preshuffled)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self, **kwargs):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=not self.is_preshuffled, **kwargs)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, **kwargs)
