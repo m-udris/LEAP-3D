@@ -29,18 +29,18 @@ def train():
     TEMPERATURE_MAX = 2950
     # TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
-    GRAD_T_MAX = 80_000_000
+    # GRAD_T_MAX = 80_000_000
     GRAD_T_MAX = 300_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
 
-    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d'
+    dataset_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / 'mlp_interpolation_chunks_gradients_3d_small'
 
     activation = nn.Tanh
 
     hparams = {
-        'batch_size': 32,
+        'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -49,7 +49,7 @@ def train():
         'out_channels': 2,
         'extra_params_number': 3,
         'input_channels': [LowResRoughTemperatureAroundLaser(is_3d=True, box_size=32, return_coordinates=False, depth=4)],
-        'target_channels': [MeltPoolPointChunk(is_3d=True, chunk_size=32*32*16, input_shape=[32,32,4], include_gradients=True)],
+        'target_channels': [MeltPoolPointChunk(is_3d=True, chunk_size=32*32*4, input_shape=[32,32,4], include_gradients=True)],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
         'activation': torch.nn.LeakyReLU,
         'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
@@ -135,7 +135,7 @@ def train():
     logging.debug('Creating datamodule')
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=True, batch_size=hparams['batch_size'],
-                    train_cases=18, test_cases=[18, 19],
+                    train_cases=18, test_cases=0,
                     input_shape=hparams['input_shape'], target_shape=hparams['target_shape'],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,

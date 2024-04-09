@@ -30,8 +30,8 @@ def train():
     TEMPERATURE_MAX = 2950
     # TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
-    GRAD_T_MAX = 80_000_000
-    # GRAD_T_MAX = 300_000_000
+    # GRAD_T_MAX = 80_000_000
+    GRAD_T_MAX = 300_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
@@ -44,7 +44,7 @@ def train():
 
 
     hparams = {
-        'batch_size': 64,
+        'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
         'max_epochs': 32,
@@ -139,8 +139,8 @@ def train():
     logging.debug('Creating datamodule')
     datamodule = MLPInterpolationChunkDataModule(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, dataset_dir,
                     is_3d=True, batch_size=hparams['batch_size'],
-                    train_cases=18, test_cases=[18, 19],
-                    input_shape=[32, 32, 4], target_shape=[3],
+                    train_cases=18, test_cases=[0],
+                    input_shape=hparams['input_shape'], target_shape=hparams['target_shape'],
                     extra_input_channels=hparams['extra_params'], input_channels=hparams['input_channels'], target_channels=hparams['target_channels'],
                     transforms=train_transforms, inverse_transforms=inverse_transforms,
                     force_prepare=False, num_workers=NUM_WORKERS)
