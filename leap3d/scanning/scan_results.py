@@ -314,7 +314,7 @@ class ScanResults():
 
         points_to_interpolate = np.array(points_to_interpolate)
         edge_length = int(size // step_scale)
-        shape = (edge_length, edge_length, (depth or 16) // step_scale) if is_3d else (edge_length, edge_length)
+        shape = (edge_length, edge_length, int((depth or 16) // step_scale)) if is_3d else (edge_length, edge_length)
         x_coords = points_to_interpolate[:, 0].reshape(shape)
         y_coords = points_to_interpolate[:, 1].reshape(shape)
         z_coords = points_to_interpolate[:, 2].reshape(shape)

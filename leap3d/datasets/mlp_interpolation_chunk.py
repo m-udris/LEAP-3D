@@ -3,12 +3,10 @@ from typing import Callable, List, Dict
 
 import numpy as np
 import torch
-from torch.utils.data import random_split
-from leap3d.contour import get_melting_pool_contour_2d
+from torch.utils.data import random_split, DataLoader
 
 from leap3d.datasets import LEAPDataModule, LEAPDataset
 from leap3d.datasets.channels import LowResRoughTemperatureAroundLaser, MeltPoolPointChunk, ScanningAngle, LaserPower, LaserRadius
-import shapely.geometry as sg
 
 
 class MLPInterpolationChunkDataset(LEAPDataset):
@@ -56,6 +54,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
                  include_distances_to_melting_pool: bool=False,
                  offset_ratio: float=None,
                  force_prepare=False,
+                 is_preshuffled=False,
                  num_workers=0):
         super().__init__(
             scan_parameters_filepath=scan_parameters_filepath,
@@ -79,6 +78,7 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
         self.melt_pool_shape = (9,) if include_distances_to_melting_pool else (8,)
         self.interpolated_coordinates_offset_ratio = offset_ratio
         self.include_distances_to_melting_pool = include_distances_to_melting_pool
+        self.is_preshuffled = is_preshuffled
 
     def setup(self, stage: str, split_ratio: float=0.8):
         if stage == 'fit' or stage is None:
@@ -93,9 +93,13 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
 
             train_points_count = int(np.ceil(len(full_dataset) * split_ratio))
             val_points_count = len(full_dataset) - train_points_count
-            self.train_dataset, self.val_dataset = random_split(
-                full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
-            )
+            if self.is_preshuffled:
+                self.train_dataset = torch.utils.data.Subset(full_dataset, range(train_points_count))
+                self.val_dataset = torch.utils.data.Subset(full_dataset, range(train_points_count, train_points_count + val_points_count))
+            else:
+                self.train_dataset, self.val_dataset = random_split(
+                    full_dataset, [train_points_count, val_points_count], generator=torch.Generator().manual_seed(42)
+                )
 
         if stage == 'test' or stage is None:
             test_dataset_path = self.prepared_data_path / "test_dataset.hdf5"
@@ -138,3 +142,12 @@ class MLPInterpolationChunkDataModule(LEAPDataModule):
             points_written += items_in_buffer
 
         return points_written
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=self.num_workers > 0, shuffle=not self.is_preshuffled)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=not self.is_preshuffled)
+
+    def test_dataloader(self, **kwargs):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=not self.is_preshuffled, **kwargs)

@@ -47,6 +47,21 @@ def generate_cases(path, cases, force_prepare):
 def aggregate_datasets(path, cases, is_test=False):
     filename = ('test_' if is_test else '') + 'dataset.hdf5'
     main_path = Path(path) / filename
+
+    dataset_shapes = {}
+
+    for i in cases:
+        subfolder_name = f'train_case_{i}'
+        dataset_dir = Path(path) / subfolder_name
+        with h5py.File(dataset_dir / 'dataset.hdf5', 'r') as subf:
+            for k in subf.keys():
+                if k not in dataset_shapes:
+                    dataset_shapes[k] = subf[k].shape
+                else:
+                    dataset_shapes[k] = (dataset_shapes[k][0] + subf[k].shape[0], *subf[k].shape[1:])
+
+    points_written = {}
+
     with h5py.File(main_path, 'w') as f:
         for i in cases:
             subfolder_name = f'train_case_{i}'
@@ -54,11 +69,14 @@ def aggregate_datasets(path, cases, is_test=False):
             with h5py.File(dataset_dir / 'dataset.hdf5', 'r') as subf:
                 for k in subf.keys():
                     if k not in f.keys():
-                        data = subf[k]
-                        f.create_dataset(k, data=data, maxshape=(None, *data.shape[1:]), chunks=True)
-                    else:
-                        f[k].resize(f[k].shape[0] + subf[k].shape[0], axis=0)
-                        f[k][-subf[k].shape[0]:] = subf[k][:]
+                        f.create_dataset(k, shape=dataset_shapes[k])
+
+                    start = points_written.get(k, 0)
+                    end = start + subf[k].len()
+                    print(f[k].shape, start, subf[k].shape, end)
+
+                    f[k][start:end] = subf[k][:]
+                    points_written[k] = end
 
 
 if __name__ == '__main__':
