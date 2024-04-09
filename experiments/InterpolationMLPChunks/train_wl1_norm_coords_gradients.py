@@ -31,8 +31,8 @@ def train():
     TEMPERATURE_MAX = 2950
     # TEMPERATURE_MAX = 2400
     LASER_RADIUS_MAX = coords_radius
-    GRAD_T_MAX = 80_000_000
-    # GRAD_T_MAX = 300_000_000
+    # GRAD_T_MAX = 80_000_000
+    GRAD_T_MAX = 300_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
@@ -48,7 +48,7 @@ def train():
         'batch_size': 128,
         'lr': 1e-3,
         'num_workers': NUM_WORKERS,
-        'max_epochs': 32,
+        'max_epochs': 100,
         'transforms': 'default',
         'in_channels': 1,
         'out_channels': 2,
