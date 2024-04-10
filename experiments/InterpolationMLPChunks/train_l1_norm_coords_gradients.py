@@ -72,7 +72,7 @@ def train():
         'activation': activation,
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 2,
     }
 
     # start a new wandb run to track this script

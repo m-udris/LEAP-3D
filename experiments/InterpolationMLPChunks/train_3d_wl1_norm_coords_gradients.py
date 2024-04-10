@@ -65,7 +65,7 @@ def train():
         'target_shape': [8],
         'hidden_layers': [256, 256, 256, 256],
         'apply_positional_encoding': True,
-        'positional_encoding_L': 8,
+        'positional_encoding_L': 16,
         'return_gradients': True,
         'learn_gradients': True,
         'multiply_gradients_by': MULTIPLY_GRADIENTS_BY,
@@ -76,7 +76,7 @@ def train():
         'activation': activation,
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 2,
         'depth': 4,
         'n_conv': 8
     }
