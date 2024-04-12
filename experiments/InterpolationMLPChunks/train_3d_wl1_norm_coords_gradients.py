@@ -76,7 +76,7 @@ def train():
         'activation': activation,
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 2,
+        'temporal_grad_loss_weight': 3,
         'depth': 4,
         'n_conv': 8
     }
