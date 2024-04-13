@@ -86,7 +86,7 @@ def train():
         # set the wandb project where this run will be logged
         'project': 'leap3d',
         # name of the run on wandb
-        'name': f'LeakyReLU_mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
+        'name': f'tanh_mlp_{hparams["loss_function"]}_{hparams["hidden_layers"]}_all_grads',
         # track hyperparameters and run metadata
         'config': hparams
     }
