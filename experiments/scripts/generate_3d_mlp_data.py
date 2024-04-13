@@ -80,8 +80,8 @@ def aggregate_datasets(path, cases, is_test=False):
 
 
 if __name__ == '__main__':
-    num_train_cases = 75
-    num_test_cases = 15
+    num_train_cases = 20
+    num_test_cases = 5
     train_cases = list(range(num_train_cases)) + list(range(100, 100 + num_train_cases))
     test_cases = list(range(num_train_cases, num_train_cases + num_test_cases)) + list(range(100 + num_train_cases, 100 + num_train_cases + num_test_cases))
 
