@@ -39,6 +39,9 @@ def train():
 
     activation = nn.Tanh
 
+    Z_MIN = step_size * (-4)
+    Z_MAX = 0
+
     hparams = {
         'batch_size': 128,
         'lr': 1e-3,
@@ -74,7 +77,9 @@ def train():
         'pos_grad_loss_weight': 1,
         'temporal_grad_loss_weight': 1,
         'depth': 4,
-        'n_conv': 8
+        'n_conv': 8,
+        'z_min': Z_MIN,
+        'z_max': Z_MAX
     }
 
     # start a new wandb run to track this script
@@ -103,7 +108,7 @@ def train():
             transforms.Lambda(lambda x: normalize_extra_param(x, index=3, min_value=BASE_TEMPERATURE, max_value=TEMPERATURE_MAX, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=2, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=2, min_value=Z_MIN, max_value=Z_MAX, inplace=True)),
             transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
             transforms.Lambda(lambda x: normalize_positional_grad(x, index=5, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
             transforms.Lambda(lambda x: normalize_positional_grad(x, index=6, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
