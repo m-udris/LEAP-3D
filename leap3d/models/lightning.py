@@ -558,9 +558,9 @@ class InterpolationMLPChunks3D(InterpolationMLPChunks):
 
         if self.learn_gradients:
             mask = torch.isnan(true_grads_x)
-            grad_x_loss = smooth_l1_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
-            grad_y_loss = smooth_l1_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
-            grad_z_loss = smooth_l1_loss(grads[:, :, 2][~mask], true_grads_z[~mask])
+            grad_x_loss = torch.nn.functional.l1_loss(grads[:, :, 0][~mask], true_grads_x[~mask])
+            grad_y_loss = torch.nn.functional.l1_loss(grads[:, :, 1][~mask], true_grads_y[~mask])
+            grad_z_loss = torch.nn.functional.l1_loss(grads[:, :, 2][~mask], true_grads_z[~mask])
             grad_x_r2 = self.r2_metric(grads[:, :, 0][~mask], true_grads_x[~mask])
             grad_y_r2 = self.r2_metric(grads[:, :, 1][~mask], true_grads_y[~mask])
             grad_z_r2 = self.r2_metric(grads[:, :, 2][~mask], true_grads_z[~mask])
@@ -570,7 +570,7 @@ class InterpolationMLPChunks3D(InterpolationMLPChunks):
             mask = torch.isnan(true_grads_t)
             true_grads_t = true_grads_t[~mask]
             predicted_grads_t = model_output[..., 1][~mask]
-            grad_t_loss = smooth_l1_loss(predicted_grads_t, true_grads_t)
+            grad_t_loss = torch.nn.functional.l1_loss(predicted_grads_t, true_grads_t)
             loss += self.temporal_grad_loss_weight * grad_t_loss
             grad_t_r2 = self.r2_metric(predicted_grads_t, true_grads_t)
 
