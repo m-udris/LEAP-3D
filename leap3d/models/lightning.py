@@ -395,7 +395,7 @@ class InterpolationMLPChunks(BaseModel):
         if x_grid.shape[1] > 1:
             new_x_coords = positional_encoding(x_grid[:,:-1], L=self.positional_encoding_L).reshape((x_grid.shape[0], 2 * self.positional_encoding_L * (x_grid.shape[1] - 1), *x_grid.shape[2:]))
             x_grid = torch.cat((new_x_coords, x_grid[:,-1].unsqueeze(1)), dim=1)
-        encoded_coordinates = positional_encoding(points[:, :, :-self.extra_params_number], L=self.positional_encoding_L).reshape(*points[:, :, :self.extra_params_number].shape[:2], -1)
+        encoded_coordinates = positional_encoding(points[:, :, :-self.extra_params_number], L=self.positional_encoding_L).reshape(*points.shape[:2], -1)
         points = torch.cat((encoded_coordinates, points[:, :, -self.extra_params_number:]), dim=2)
 
         return x_grid, points

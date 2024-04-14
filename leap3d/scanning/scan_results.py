@@ -117,7 +117,10 @@ class ScanResults():
         return len(self.melt_pool[timestep][0]) == 0
 
     def _get_high_res_grid(self, coordinates, values):
-        grid = np.zeros((256, 256, 64, *values.shape[1:]))
+        if len(values) == 0:
+            grid = np.zeros((256, 256, 64, 1))
+        else:
+            grid = np.zeros((256, 256, 64, *values.shape[1:]))
 
         if len(coordinates) == 0:
             return grid
@@ -135,7 +138,7 @@ class ScanResults():
     def get_melt_pool_temperature_grid(self, timestep: int):
         coordinates, temperature = self.get_melt_pool_coordinates_and_temperature(timestep)
         grid = self._get_high_res_grid(coordinates, temperature)
-        grid.reshape(grid.shape[:-1])
+        return grid.reshape((256, 256, 64))
 
     def get_gradients_grid(self, timestep: int):
         coordinates, gradients = self.get_melt_pool_coordinates_and_gradients(timestep)
