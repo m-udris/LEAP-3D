@@ -24,6 +24,8 @@ def train():
     scan_parameters = ScanParameters(PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, 0)
     step_size = scan_parameters.rough_coordinates_step_size
     coords_radius = step_size * 16
+    coords_min = 0
+    coords_max = coords_radius
 
     TEMPERATURE_MAX = MELTING_POINT
     TEMPERATURE_MAX = 2950
@@ -39,7 +41,7 @@ def train():
 
     activation = nn.Tanh
 
-    Z_MIN = step_size * (-4)
+    Z_MIN = step_size * (-2)
     Z_MAX = 0
 
     hparams = {
@@ -79,7 +81,9 @@ def train():
         'depth': 4,
         'n_conv': 16,
         'z_min': Z_MIN,
-        'z_max': Z_MAX
+        'z_max': Z_MAX,
+        'coords_min': coords_min,
+        'coords_max': coords_max
     }
 
     # start a new wandb run to track this script
@@ -106,8 +110,8 @@ def train():
         'target': transforms.Compose([
             torch.tensor,
             transforms.Lambda(lambda x: normalize_extra_param(x, index=3, min_value=BASE_TEMPERATURE, max_value=TEMPERATURE_MAX, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=-coords_radius, max_value=coords_radius, inplace=True)),
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=0, min_value=coords_min, max_value=coords_max, inplace=True)),
+            transforms.Lambda(lambda x: normalize_extra_param(x, index=1, min_value=coords_min, max_value=coords_max, inplace=True)),
             transforms.Lambda(lambda x: normalize_extra_param(x, index=2, min_value=Z_MIN, max_value=Z_MAX, inplace=True)),
             transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
             transforms.Lambda(lambda x: normalize_positional_grad(x, index=5, norm_constant=MULTIPLY_GRADIENTS_BY, inplace=True)),
