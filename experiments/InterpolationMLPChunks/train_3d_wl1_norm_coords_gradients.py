@@ -34,6 +34,7 @@ def train():
     LASER_RADIUS_MAX = coords_radius
     # GRAD_T_MAX = 80_000_000
     GRAD_T_MAX = 300_000_000
+    GRAD_T_MAX = 160_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
@@ -80,7 +81,7 @@ def train():
         'activation': activation,
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 1,
+        'temporal_grad_loss_weight': 2,
         'depth': 4,
         'n_conv': 16,
         'z_min': Z_MIN,
