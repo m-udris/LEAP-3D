@@ -80,7 +80,7 @@ def train():
         'pos_grad_loss_weight': 1,
         'temporal_grad_loss_weight': 5,
         'depth': 4,
-        'n_conv': 8,
+        'n_conv': 16,
         'z_min': Z_MIN,
         'z_max': Z_MAX
     }
