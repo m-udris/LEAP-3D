@@ -35,6 +35,7 @@ def train():
     # GRAD_T_MAX = 80_000_000
     GRAD_T_MAX = 300_000_000
     GRAD_T_MAX = 160_000_000
+    GRAD_T_MIN = -160_000_000
     # GRAD_T_MAX = (2950 - 300) * 100_000
 
     MULTIPLY_GRADIENTS_BY = (TEMPERATURE_MAX - BASE_TEMPERATURE) / step_size
@@ -78,10 +79,11 @@ def train():
         'temperature_max': TEMPERATURE_MAX,
         'laser_radius_max': LASER_RADIUS_MAX,
         'grad_t_max': GRAD_T_MAX,
+        'grad_t_min': GRAD_T_MIN,
         'activation': activation,
         'temperature_loss_weight': 1,
         'pos_grad_loss_weight': 1,
-        'temporal_grad_loss_weight': 2,
+        'temporal_grad_loss_weight': 1,
         'depth': 4,
         'n_conv': 16,
         'z_min': Z_MIN,
@@ -123,7 +125,7 @@ def train():
 
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=3, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
             # transforms.Lambda(lambda x: normalize_positional_grad(x, index=4, max_temp=MELTING_POINT, min_temp=BASE_TEMPERATURE, coord_radius=coords_radius, inplace=True)),
-            transforms.Lambda(lambda x: normalize_temporal_grad(x, index=-1, max_temp=1, min_temp=0, norm_constant=GRAD_T_MAX, inplace=True)),
+            transforms.Lambda(lambda x: normalize_temporal_grad(x, index=-1, max_temp=GRAD_T_MAX, min_temp=GRAD_T_MIN, norm_constant=1, inplace=True)),
 
         ]),
         'extra_input': transforms.Compose([
