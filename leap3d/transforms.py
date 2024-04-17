@@ -130,7 +130,7 @@ def normalize_positional_grad(x, index, norm_constant, inplace=False, inverse=Fa
 
     return x
 
-def normalize_temporal_grad(x, index, max_temp, min_temp, norm_constant, inplace=False, inverse=False):
+def normalize_temporal_grad(x, index, max_temp, min_temp, norm_constant=1, inplace=False, inverse=False):
     if not inplace:
         x = x.clone()
 

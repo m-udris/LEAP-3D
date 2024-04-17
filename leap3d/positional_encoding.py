@@ -1,5 +1,8 @@
 import torch
 
+# NERF: Representing Scenes as Neural Radiance Fields for View Synthesis, eq. 4
+# https://arxiv.org/pdf/2003.08934.pdf
+
 def positional_encoding(p, L=3):
     pi_times_p = torch.pi * p
     powers_L = torch.pow(2, torch.arange(L, requires_grad=False, device=p.device, dtype=p.dtype))
