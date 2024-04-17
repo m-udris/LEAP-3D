@@ -60,6 +60,8 @@ def get_case_info(case_index, results_path="./data_summary/"):
 
     total_timesteps = scan_results.total_timesteps
 
+    melt_pool_points = []
+
     for t in range(total_timesteps):
         if t % 100 == 0:
             print(f"Processing timestep {t} of {total_timesteps}", end="\r")
@@ -111,6 +113,10 @@ def get_case_info(case_index, results_path="./data_summary/"):
 
             melt_pool_temperature_bucketized = merge_sum_dicts(bucketize_list(melt_pool_temperatures, 10), melt_pool_temperature_bucketized)
 
+            melt_pool_points.append(melt_pool_data.shape[0])
+        else:
+            melt_pool_points.append(0)
+
         temperature = scan_results.get_rough_temperatures_at_timestep(t)
         temperature = temperature.flatten()
 
@@ -127,6 +133,8 @@ def get_case_info(case_index, results_path="./data_summary/"):
             max_temperature_difference = max(max_temperature_difference, np.max(temperature_difference))
 
             temperature_difference_bucketized = merge_sum_dicts(bucketize_list(temperature_difference, 10), temperature_difference_bucketized)
+
+        melt_pool_points_bucketized = bucketize_list(np.array(melt_pool_points), 10)
 
     output = {
         "laser_power": (float(min_laser_power), float(max_laser_power)),
@@ -146,6 +154,7 @@ def get_case_info(case_index, results_path="./data_summary/"):
         "grad_y_bucketized": grad_y_bucketized,
         "grad_z_bucketized": grad_z_bucketized,
         "grad_t_bucketized": grad_t_bucketized,
+        "melt_pool_points_bucketized": melt_pool_points_bucketized,
     }
 
     results_filepath = Path(results_path) / f"case_{case_index:04}.json"
