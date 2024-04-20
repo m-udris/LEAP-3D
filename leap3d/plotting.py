@@ -127,9 +127,9 @@ def get_frames_for_temperature_cross_section_animation(case_results, case_params
     return fig, ims
 
 
-def plot_top_layer_temperature_at_timestep(ax, case_results, case_params, timestep, show_only_melt=False):
+def plot_top_layer_temperature_at_timestep(ax, case_results, case_params, timestep, show_only_melt=False, cmap=None):
     temperature = case_results.get_top_layer_temperatures(timestep)
-    return plot_top_layer_temperature(ax, temperature, case_params, show_only_melt)
+    return plot_top_layer_temperature(ax, temperature, case_params, show_only_melt, cmap=cmap)
 
 
 def plot_top_layer_temperature(ax, temperature, case_params, show_only_melt=False, vmin=None, vmax=None, cmap=None):
