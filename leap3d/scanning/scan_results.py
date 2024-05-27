@@ -125,7 +125,7 @@ class ScanResults():
         if len(coordinates) == 0:
             return grid
 
-        coord_delta = ROUGH_COORDS_STEP_SIZE * 0.25
+        coord_delta = ROUGH_COORDS_STEP_SIZE * 0.25 * self.scale_distance_by
         new_x_coords = [int((coord[0]) / coord_delta) + 128  for coord in coordinates]
         new_y_coords = [int((coord[1]) / coord_delta) + 128 for coord in coordinates]
         new_z_coords = [int((coord[2]) / coord_delta) + 63  for coord in coordinates]
