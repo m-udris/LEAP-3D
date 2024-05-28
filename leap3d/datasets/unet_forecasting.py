@@ -22,18 +22,6 @@ class UNetForecastingDataset(LEAPDataset):
             inverse_transforms=inverse_transforms
         )
 
-    def __getitem__(self, idx):
-        input = self.inputs[idx]
-
-        extra_input = self.extra_inputs[idx]
-        target = self.targets[idx]
-
-        input = self.input_transform(input)
-        extra_input = self.extra_input_transform(extra_input)
-        target = self.target_transform(target)
-
-        return input, extra_input, target
-
 
 class UNetForecastingDataModule(LEAPDataModule):
     def __init__(self,
@@ -41,7 +29,7 @@ class UNetForecastingDataModule(LEAPDataModule):
                  raw_data_directory: str="path/to/dir", prepared_data_path: str="path/to/file",
                  is_3d: bool=False,
                  batch_size: int=32,
-                 train_cases: int | List=None, test_cases: int | List=None,
+                 train_cases: int | List=None, test_cases: int | List=None, eval_cases: int | List=None,
                  input_shape: List[int]=[64, 64, 16], target_shape: List[int]=[64, 64, 16],
                  input_channels=[RoughTemperature], extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
                  target_channels=[RoughTemperatureDifference],
@@ -67,6 +55,13 @@ class UNetForecastingDataModule(LEAPDataModule):
             force_prepare=force_prepare,
             num_workers=num_workers
         )
+        self.dataset_class = UNetForecastingDataset
+
+        if isinstance(eval_cases, int):
+            self.eval_cases = list(range(eval_cases))
+        else:
+            self.eval_cases = eval_cases
+
         self.window_size = window_size
         self.window_step_size = window_step_size
 
@@ -126,3 +121,15 @@ class UNetForecastingDataModule(LEAPDataModule):
             "extra_input": extra_input_window,
             "target": target_window
         }
+
+    def setup(self, stage: str, split_ratio: float=0.8):
+        super().setup(stage, split_ratio)
+
+        # eval data
+        if stage == 'fit' or stage is None:
+            self.eval_datasets = []
+
+            for case_id in self.eval_cases:
+                eval_dataset_path = self.prepared_data_path / f"eval_case_{case_id}/dataset.hdf5"
+                eval_dataset = self.dataset_class(eval_dataset_path, transforms=self.transforms, inverse_transforms=self.inverse_transforms)
+                self.eval_datasets.append(eval_dataset)

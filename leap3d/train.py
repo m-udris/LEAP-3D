@@ -11,13 +11,16 @@ from torchvision.transforms import transforms
 import wandb
 from leap3d.callbacks import LogR2ScoreOverTimePlotCallback, PlotErrorOverTimeCallback, PlotTopLayerTemperatureCallback, Rollout2DUNetCallback, get_checkpoint_only_last_epoch_callback
 
-from leap3d.dataset import Channel, ExtraParam, LEAP3DDataModule
+# from leap3d.dataset import Channel, ExtraParam, LEAP3DDataModule
+from leap3d.datasets.channels import RoughTemperature, LaserPosition, RoughTemperatureDifference, ScanningAngle, LaserPower, LaserRadius, Channel
+from leap3d.datasets.unet_forecasting import UNetForecastingDataModule
+
 from leap3d.models import Architecture
 from leap3d.config import DATA_DIR, DATASET_DIR, PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, MAX_LASER_POWER, MAX_LASER_RADIUS, MELTING_POINT, BASE_TEMPERATURE, NUM_WORKERS, FORCE_PREPARE
 from leap3d.scanning.scan_parameters import ScanParameters
 from leap3d.transforms import normalize_extra_param, normalize_temperature_2d, normalize_temperature_3d, scanning_angle_cos_transform, get_target_to_train_transform
 
-DEFAULT_EXTRA_PARAMS = [ExtraParam.SCANNING_ANGLE, ExtraParam.LASER_POWER, ExtraParam.LASER_RADIUS]
+DEFAULT_EXTRA_PARAMS = [ScanningAngle, LaserPower, LaserRadius]
 
 IS_NAIVE_NORMALIZATION = False
 TEMPERATURE_MIN = BASE_TEMPERATURE if not IS_NAIVE_NORMALIZATION else 0
@@ -88,13 +91,14 @@ def train(
         train_transforms_inverse: transforms.Compose = 'default',
         target_transforms_inverse: transforms.Compose = 'default',
         transform_target_to_train: transforms.Compose = DEFAULT_TARGET_TO_TRAIN_TRANSFORM,
-        channels: List[Channel] = [Channel.LASER_POSITION, Channel.TEMPERATURE],
+        input_channels: List[Channel] = [LaserPosition, RoughTemperature],
+        target_channels: List[Channel] = [RoughTemperatureDifference],
         in_channels: int = 3,
         out_channels: int = 1,
         window_size: int = 1,
         window_step_size: int = 1,
         fcn_core_layers: int = 1,
-        extra_params: List[ExtraParam] = DEFAULT_EXTRA_PARAMS,
+        extra_input_channels: List[Channel] = DEFAULT_EXTRA_PARAMS,
         target_max_temperature: int = 10,
         activation: torch.nn.Module = torch.nn.LeakyReLU,
         wandb_tags: List[str] = ['test'],
@@ -133,8 +137,8 @@ def train(
         'window_size': window_size,
         'window_step_size': window_step_size,
         'fcn_core_layers': fcn_core_layers,
-        'extra_params_number': 0 if extra_params is None else len(extra_params),
-        'extra_params': extra_params,
+        'extra_params_number': 0 if extra_input_channels is None else len(extra_input_channels),
+        'extra_input_channels': extra_input_channels,
         'activation': activation,
         'target_max_temperature': target_max_temperature,
         'eval_steps': eval_steps,
@@ -159,21 +163,29 @@ def train(
     logging.basicConfig(level=logging.INFO)
     wandb_logger = WandbLogger(log_model="all", **wandb_config)
 
-    datamodule = LEAP3DDataModule(
-        PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, kwargs.get('dataset_dir', DATASET_DIR),
+    transforms = {
+        'input': train_transforms,
+        'target': target_transforms,
+        'extra_input': extra_params_transform,
+    }
+    inverse_transforms = {
+        'input': train_transforms_inverse,
+        'target': target_transforms_inverse,
+    }
+
+    datamodule = UNetForecastingDataModule(
+        PARAMS_FILEPATH, ROUGH_COORDS_FILEPATH, DATA_DIR, kwargs.get('dataset_dir', DATASET_DIR / 'unet_forecasting'),
         is_3d=is_3d,
         batch_size=hparams['batch_size'],
         train_cases=train_cases, test_cases=test_cases, eval_cases=eval_cases,
         window_size=hparams['window_size'], window_step_size=hparams['window_step_size'],
         num_workers=NUM_WORKERS,
-        extra_params=extra_params,
-        transform = train_transforms,
-        target_transform = target_transforms,
-        extra_params_transform = extra_params_transform,
-        transform_inverse = train_transforms_inverse,
-        target_transform_inverse = target_transforms_inverse,
+        extra_input_channels=extra_input_channels,
+        transforms=transforms,
+        inverse_transforms=inverse_transforms,
         force_prepare=hparams['force_prepare'],
-        channels=channels,
+        input_channels=input_channels,
+        target_channels=target_channels,
     )
 
     plot_dir = Path("./plots/")

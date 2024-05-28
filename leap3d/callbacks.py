@@ -103,17 +103,16 @@ class LogR2ScoreOverTimePlotCallback(Callback):
         self.samples = samples
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        self.log_plot_r2_score_over_time(trainer, pl_module)
+        for case_id, dataset in zip(trainer.datamodule.eval_cases, trainer.datamodule.eval_datasets):
+            self.log_plot_r2_score_over_time(pl_module, dataset, case_id)
 
-    def log_plot_r2_score_over_time(self, trainer, model):
-        evaluation_dataset = trainer.datamodule.leap_eval
-        current_epoch = trainer.current_epoch
-        r2_score_data = self.get_r2_score_over_time(model, evaluation_dataset)
+    def log_plot_r2_score_over_time(self, model, dataset, case_id):
+        r2_score_data = self.get_r2_score_over_time(model, dataset)
 
         table = wandb.Table(data=r2_score_data, columns = ["step", "R2 score"])
         wandb.log(
-            {f"R2 score over {self.steps} steps after epoch {current_epoch}" : wandb.plot.line(table, "step", "R2 score",
-                title=f"R2 score over {self.steps} steps after epoch {current_epoch}")})
+            {f"R2 score over {self.steps} steps for case {case_id}" : wandb.plot.line(table, "step", "R2 score",
+                title=f"R2 score over {self.steps} steps for case {case_id}")})
 
     def get_r2_score_over_time(self, model, dataset):
         r2_score_values = []
@@ -161,15 +160,16 @@ class PlotTopLayerTemperatureCallback(Callback):
         self.samples = samples
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        self.log_plot_top_layer_temperature(trainer, pl_module)
+        for case_id, dataset in zip(trainer.datamodule.eval_cases, trainer.datamodule.eval_datasets):
+            self.log_plot_top_layer_temperature(trainer, pl_module, dataset, case_id)
 
-    def log_plot_top_layer_temperature(self, trainer, model):
-        evaluation_dataset = trainer.datamodule.leap_eval
+    def log_plot_top_layer_temperature(self, trainer, model, dataset, case_id):
+
         current_epoch = trainer.current_epoch
-        fig, axes, ims = plot_model_top_layer_temperature_comparison(self.scan_parameters, model, evaluation_dataset, self.steps, self.samples)
+        fig, axes, ims = plot_model_top_layer_temperature_comparison(self.scan_parameters, model, dataset, self.steps, self.samples)
 
         ani = animation.ArtistAnimation(fig, ims, repeat=True, interval=500, blit=True, repeat_delay=1000)
-        animation_filepath = self.plot_dir / f"top_layer_temperature_after_epoch_{current_epoch}.gif"
+        animation_filepath = self.plot_dir / f"top_layer_temperature_for_case_{case_id}_after_epoch_{current_epoch}.gif"
         ani.save(animation_filepath, fps=2, progress_callback=lambda x, _: print(x, end="\r"))
         wandb.log({"video": wandb.Video(str(animation_filepath), fps=4, format="gif")})
 
@@ -179,23 +179,22 @@ class PlotErrorOverTimeCallback(Callback):
         super().__init__()
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        self.log_plot_error_over_time(trainer, pl_module)
+        for case_id, dataset in zip(trainer.datamodule.eval_cases, trainer.datamodule.eval_datasets):
+            self.log_plot_error_over_time(pl_module, dataset, case_id)
 
-    def log_plot_error_over_time(self, trainer, model):
-        evaluation_dataset = trainer.datamodule.leap_eval
-        current_epoch = trainer.current_epoch
-        error_data = self.get_error_over_time(model, evaluation_dataset)
+    def log_plot_error_over_time(self, model, dataset, case_id):
+        error_data = self.get_error_over_time(model, dataset)
 
         table = wandb.Table(data=error_data, columns = ["step", "abs_error", "rel_error", "r2_score"])
         wandb.log(
-            {f"Relative error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "rel_error",
-                title=f"Relative score over time after epoch {current_epoch}")})
+            {f"Relative error over time for case {case_id}" : wandb.plot.line(table, "step", "rel_error",
+                title=f"Relative score over time for case {case_id}")})
         wandb.log(
-            {f"Absolute error over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "abs_error",
-                title=f"Absolute error over time after epoch {current_epoch}")})
+            {f"Absolute error over time for case {case_id}" : wandb.plot.line(table, "step", "abs_error",
+                title=f"Absolute error over time for case {case_id}")})
         wandb.log(
-            {f"R2 over time after epoch {current_epoch}" : wandb.plot.line(table, "step", "r2_score",
-                title=f"R2 over time after epoch {current_epoch}")})
+            {f"R2 over time for case {case_id}" : wandb.plot.line(table, "step", "r2_score",
+                title=f"R2 over time for case {case_id}")})
 
     def get_error_over_time(self, model, dataset):
         error_data = []
@@ -262,9 +261,16 @@ class Rollout2DUNetCallback(Callback):
         self.samples = samples
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        evaluation_dataset = trainer.datamodule.leap_eval
         current_epoch = trainer.current_epoch
-        predictions = get_recursive_model_predictions(pl_module, evaluation_dataset)
+        if current_epoch < 10:
+            return
+        if current_epoch < 25 and current_epoch % 5 != 0:
+            return
+        for case_id, dataset in zip(trainer.datamodule.eval_cases, trainer.datamodule.eval_datasets):
+            self.rollout(pl_module, dataset, case_id)
+
+    def rollout(self, pl_module, dataset, case_id):
+        predictions = get_recursive_model_predictions(pl_module, dataset)
 
         previous_x_pred_value = None
 
@@ -297,23 +303,22 @@ class Rollout2DUNetCallback(Callback):
             absolute_error_normalizer = np.mean(np.array(absolute_error_normalizer_list))
             absolute_errors = [absolute_error / absolute_error_normalizer for absolute_error in absolute_errors]
 
-        log_plot(f"Temperature Diff R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_diff_r2_scores)
-        log_plot(f"Temperature R2 score for rollout, epoch {current_epoch}", "R2 Score", temperature_r2_scores)
-        log_plot(f"Relative error for rollout, epoch {current_epoch}", "Relative error", relative_errors)
-        log_plot(f"Absolute error for rollout, epoch {current_epoch}", "Absolute error", absolute_errors)
+        log_plot(f"Temperature Diff R2 score for rollout, case {case_id}", "R2 Score", temperature_diff_r2_scores)
+        log_plot(f"Temperature R2 score for rollout, case {case_id}", "R2 Score", temperature_r2_scores)
+        log_plot(f"Relative error for rollout, case {case_id}", "Relative error", relative_errors)
+        log_plot(f"Absolute error for rollout, case {case_id}", "Absolute error", absolute_errors)
 
-
-    def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, epoch):
+    def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, case_id):
         r2_scores = get_r2_scores(y_hat_values, y_values)
-        log_plot(f"Temperature Diff R2 score for rollout, epoch {epoch}", "R2 Score", r2_scores)
+        log_plot(f"Temperature Diff R2 score for rollout, case {case_id}", "R2 Score", r2_scores)
 
         r2_scores = get_r2_scores(x_pred_values, x_gt_values)
-        log_plot(f"Temperature R2 score for rollout, epoch {epoch}", "R2 Score", r2_scores)
+        log_plot(f"Temperature R2 score for rollout, case {case_id}", "R2 Score", r2_scores)
 
-    def calculate_and_log_relative_error(self, x_gt_values, x_pred_values, epoch):
+    def calculate_and_log_relative_error(self, x_gt_values, x_pred_values, case_id):
         relative_errors = get_relative_error(x_pred_values, x_gt_values)
-        log_plot(f"Relative error for rollout, epoch {epoch}", "Relative error", relative_errors)
+        log_plot(f"Relative error for rollout, case {case_id}", "Relative error", relative_errors)
 
-    def calculate_and_log_absolute_error(self, x_gt_values, x_pred_values, epoch):
+    def calculate_and_log_absolute_error(self, x_gt_values, x_pred_values, case_id):
         absolute_errors = get_absolute_error(x_pred_values, x_gt_values)
-        log_plot(f"Absolute error for rollout, epoch {epoch}", "Absolute error", absolute_errors)
+        log_plot(f"Absolute error for rollout, case {case_id}", "Absolute error", absolute_errors)
