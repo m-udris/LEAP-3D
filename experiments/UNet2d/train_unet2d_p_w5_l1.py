@@ -15,9 +15,9 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_p_w5_l1_loss_b3
         max_epochs=max_epochs,
         loss_function='l1',
         batch_size=32,
-        train_cases=40,
-        test_cases=list(range(40, 50)),
-        eval_cases=list(range(50, 55)),
+        train_cases=list(range(0, 40)) + list(range(100, 140)),
+        test_cases=list(range(40, 50)) + list(range(140, 150)),
+        eval_cases=list(range(50, 55)) + list(range(150, 155)),
         *args,
         **kwargs
     )
