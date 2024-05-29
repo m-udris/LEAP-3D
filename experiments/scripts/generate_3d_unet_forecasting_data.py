@@ -22,7 +22,7 @@ def generate_case_dataset(path, case_id, force_prepare=False, is_eval=False):
         rough_coordinates_filepath=ROUGH_COORDS_FILEPATH,
         raw_data_directory=DATA_DIR,
         prepared_data_path=dataset_dir,
-        is_3d=False,
+        is_3d=True,
         train_cases=[case_id],
         test_cases=None,
         input_shape=[64, 64, 16],
