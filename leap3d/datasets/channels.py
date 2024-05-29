@@ -54,7 +54,7 @@ class RoughTemperatureDifference(Channel):
         next_step_diffferences = next_step_temperature - temperature
 
         if self.is_3d:
-            return next_step_diffferences
+            return [next_step_diffferences]
 
         return [next_step_diffferences[:, :, -1]]
 
