@@ -266,10 +266,11 @@ class Rollout2DUNetCallback(Callback):
             return
         if current_epoch < 25 and current_epoch % 5 != 0:
             return
-        for case_id, dataset in zip(trainer.datamodule.eval_cases, trainer.datamodule.eval_datasets):
-            self.rollout(pl_module, dataset, case_id)
 
-    def rollout(self, pl_module, dataset, case_id):
+        for case_id, dataset in zip(trainer.datamodule.eval_cases, trainer.datamodule.eval_datasets):
+            self.rollout(pl_module, dataset, case_id, current_epoch)
+
+    def rollout(self, pl_module, dataset, case_id, current_epoch):
         predictions = get_recursive_model_predictions(pl_module, dataset)
 
         previous_x_pred_value = None
@@ -303,10 +304,10 @@ class Rollout2DUNetCallback(Callback):
             absolute_error_normalizer = np.mean(np.array(absolute_error_normalizer_list))
             absolute_errors = [absolute_error / absolute_error_normalizer for absolute_error in absolute_errors]
 
-        log_plot(f"Temperature Diff R2 score for rollout, case {case_id}", "R2 Score", temperature_diff_r2_scores)
-        log_plot(f"Temperature R2 score for rollout, case {case_id}", "R2 Score", temperature_r2_scores)
-        log_plot(f"Relative error for rollout, case {case_id}", "Relative error", relative_errors)
-        log_plot(f"Absolute error for rollout, case {case_id}", "Absolute error", absolute_errors)
+        log_plot(f"Temperature Diff R2 score for rollout, case {case_id}, epoch {current_epoch}", "R2 Score", temperature_diff_r2_scores)
+        log_plot(f"Temperature R2 score for rollout, case {case_id}, epoch {current_epoch}", "R2 Score", temperature_r2_scores)
+        log_plot(f"Relative error for rollout, case {case_id}, epoch {current_epoch}", "Relative error", relative_errors)
+        log_plot(f"Absolute error for rollout, case {case_id}, epoch {current_epoch}", "Absolute error", absolute_errors)
 
     def calculate_and_log_r2(self, x_gt_values, y_values, x_pred_values, y_hat_values, case_id):
         r2_scores = get_r2_scores(y_hat_values, y_values)

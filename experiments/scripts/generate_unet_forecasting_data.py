@@ -83,9 +83,12 @@ if __name__ == '__main__':
     num_train_cases = 40
     num_test_cases = 10
     eval_cases = 5
-    train_cases = list(range(num_train_cases)) + list(range(100, 100 + num_train_cases))
-    test_cases = list(range(num_train_cases, num_train_cases + num_test_cases)) + list(range(100 + num_train_cases, 100 + num_train_cases + num_test_cases))
-    eval_cases = list(range(num_train_cases + num_test_cases, num_train_cases + num_test_cases + eval_cases)) + list(range(100 + num_train_cases + num_test_cases, 100 + num_train_cases + num_test_cases + eval_cases))
+    # train_cases = list(range(num_train_cases)) + list(range(100, 100 + num_train_cases))
+    # test_cases = list(range(num_train_cases, num_train_cases + num_test_cases)) + list(range(100 + num_train_cases, 100 + num_train_cases + num_test_cases))
+    # eval_cases = list(range(num_train_cases + num_test_cases, num_train_cases + num_test_cases + eval_cases)) + list(range(100 + num_train_cases + num_test_cases, 100 + num_train_cases + num_test_cases + eval_cases))
+    train_cases = list(range(0, 200, 2))
+    test_cases = list(range(1, 200, 10))
+    eval_cases = [5, 35, 65, 95, 105, 135, 165, 195]
     generate_cases(DATASET_DIR / 'unet_forecasting', train_cases + test_cases + eval_cases, force_prepare=False, eval_cases=eval_cases)
     aggregate_datasets(DATASET_DIR / 'unet_forecasting', train_cases, is_test=False)
     aggregate_datasets(DATASET_DIR / 'unet_forecasting', test_cases, is_test=True)
