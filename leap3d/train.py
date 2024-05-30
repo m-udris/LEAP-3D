@@ -147,7 +147,8 @@ def train(
         'force_prepare': force_prepare,
         'is_3d': is_3d,
         'padding_mode': 'replicate',
-        'loss_function': loss_function
+        'loss_function': loss_function,
+        'input_height': kwargs.get('input_height', 16),
     }
 
     # start a new wandb run to track this script

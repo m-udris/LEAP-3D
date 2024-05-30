@@ -223,7 +223,7 @@ class UNet(torch.nn.Module):
 
 class ViewSqueeze(nn.Module):
     def __init__(self):
-        super(ViewUnsqueeze, self).__init__()
+        super(ViewSqueeze, self).__init__()
 
     def forward(self, x):
         return x.view(*x.shape[:-1])
@@ -232,7 +232,7 @@ class ViewUnsqueeze(nn.Module):
     def __init__(self):
         super(ViewUnsqueeze, self).__init__()
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return x.view(*x.shape, 1)
 
 class UNet3d(UNet):
@@ -282,7 +282,7 @@ class UNet3d(UNet):
             if self.input_height // (2**(depth - i)) == 1:
                 layers.append(ViewUnsqueeze())
 
-            if self.input_height // (2**(depth - i)) > 1:
+            if self.input_height // (2**(depth - i)) >= 1:
                 layer = Up3d(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias)
             else:
                 layer = Up(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias)
@@ -347,8 +347,6 @@ class ConditionalUNet(UNet, FCNCore):
         super(ConditionalUNet, self).__init__(input_dimension=input_dimension, output_dimension=output_dimension,
             input_shape=input_shape, fcn_core_layers=fcn_core_layers, extra_params_number=extra_params_number,
             n_conv=n_conv, depth=depth, bilinear=bilinear, activation=activation, bias=bias, **kwargs)
-        print(fcn_core_layers, extra_params_number, self.fcn_core)
-
 
     def forward(self, x, extra_params):
         in_shape, x = self.adapt_input_shape(x)
@@ -379,9 +377,6 @@ class ConditionalUNet3d(UNet3d, FCNCore):
         super(ConditionalUNet3d, self).__init__(input_dimension=input_dimension, output_dimension=output_dimension,
             input_shape=input_shape, fcn_core_layers=fcn_core_layers, extra_params_number=extra_params_number,
             n_conv=n_conv, depth=depth, bilinear=bilinear, activation=activation, bias=bias, input_height=input_height, **kwargs)
-
-        print(fcn_core_layers, extra_params_number, self.fcn_core)
-
 
     def forward(self, x, extra_params):
         in_shape, x = self.adapt_input_shape(x)
