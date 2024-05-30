@@ -238,13 +238,13 @@ class ViewUnsqueeze(nn.Module):
 class UNet3d(UNet):
     def __init__(self, input_dimension, output_dimension,
                  n_conv=16, depth=4,
-                 bilinear=False, activation=nn.LeakyReLU, bias=False, **kwargs):
+                 bilinear=False, activation=nn.LeakyReLU, bias=False, input_height=16, **kwargs):
         super(UNet3d, self).__init__(input_dimension, output_dimension,
                                      n_conv=n_conv, depth=depth,
                                      bilinear=bilinear, activation=activation, bias=bias, **kwargs)
         self.inc = DoubleConv3d(input_dimension, n_conv, activation=activation, bias=bias)
         self.outc = OutConv3d(n_conv, output_dimension, bias=bias)
-
+        self.input_height = input_height
 
     def get_down_layers(self, n_conv, depth, activation, bias=False, bilinear=False):
         layers = []
