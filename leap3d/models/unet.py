@@ -375,10 +375,10 @@ class ConditionalUNet3d(UNet3d, FCNCore):
     def __init__(self, input_dimension, output_dimension,
                  input_shape=[64, 64, 16], n_conv=16, depth=4,
                  fcn_core_layers=1, extra_params_number: int=3,
-                 bilinear=False, activation=nn.LeakyReLU, bias=False, **kwargs):
+                 bilinear=False, activation=nn.LeakyReLU, bias=False, input_height=16, **kwargs):
         super(ConditionalUNet3d, self).__init__(input_dimension=input_dimension, output_dimension=output_dimension,
             input_shape=input_shape, fcn_core_layers=fcn_core_layers, extra_params_number=extra_params_number,
-            n_conv=n_conv, depth=depth, bilinear=bilinear, activation=activation, bias=bias, **kwargs)
+            n_conv=n_conv, depth=depth, bilinear=bilinear, activation=activation, bias=bias, input_height=input_height, **kwargs)
 
         print(fcn_core_layers, extra_params_number, self.fcn_core)
 
