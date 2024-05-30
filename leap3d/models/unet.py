@@ -221,6 +221,19 @@ class UNet(torch.nn.Module):
         x = self.adapt_output_shape(in_shape, x)
         return x
 
+class ViewSqueeze(nn.Module):
+    def __init__(self):
+        super(ViewUnsqueeze, self).__init__()
+
+    def forward(self, x):
+        return x.view(*x.shape[:-1])
+
+class ViewUnsqueeze(nn.Module):
+    def __init__(self):
+        super(ViewUnsqueeze, self).__init__()
+
+    def forward(self, x):
+        return x.view(*x.shape, 1)
 
 class UNet3d(UNet):
     def __init__(self, input_dimension, output_dimension,
@@ -238,11 +251,24 @@ class UNet3d(UNet):
         for i in range(depth - 1):
             in_channels = n_conv * (2**i)
             out_channels = in_channels * 2
-            layers.append(Down3d(in_channels, out_channels, activation=activation, bias=bias))
+
+            if self.input_height // (2**(i)) == 1:
+                layers.append(ViewSqueeze())
+
+            if self.input_height // (2**(i)) > 1:
+                layer = Down3d(in_channels, out_channels, activation=activation, bias=bias)
+            else:
+                layer = Down(in_channels, out_channels, activation=activation, bias=bias)
+            layers.append(layer)
 
         in_channels = n_conv * (2**(depth - 1))
         out_channels = in_channels * 2 // (2 if bilinear else 1)
-        layers.append(Down3d(in_channels, out_channels, activation=activation, bias=bias))
+
+        if self.input_height // (2**(depth - 1)) > 1:
+            layer = Down3d(in_channels, out_channels, activation=activation, bias=bias)
+        else:
+            layer = Down(in_channels, out_channels, activation=activation, bias=bias)
+        layers.append(layer)
 
         return nn.Sequential(*layers)
 
@@ -252,11 +278,23 @@ class UNet3d(UNet):
         for i in range(depth - 1):
             in_channels = n_conv * (2**(depth - i))
             out_channels = in_channels // (2 * factor)
-            layers.append(Up3d(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias))
+
+            if self.input_height // (2**(depth - i)) == 1:
+                layers.append(ViewUnsqueeze())
+
+            if self.input_height // (2**(depth - i)) > 1:
+                layer = Up3d(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias)
+            else:
+                layer = Up(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias)
+            layers.append(layer)
 
         in_channels = n_conv * 2
         out_channels = n_conv
-        layers.append(Up3d(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias))
+        if self.input_height > 1:
+            layer = Up3d(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias)
+        else:
+            layer = Up(in_channels, out_channels, bilinear=bilinear, activation=activation, bias=bias)
+        layers.append(layer)
 
         return nn.Sequential(*layers)
 
