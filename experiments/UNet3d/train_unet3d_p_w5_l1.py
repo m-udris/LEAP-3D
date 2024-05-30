@@ -20,6 +20,7 @@ def train_unet3d_param_window_normalized(experiment_name='unet3d_p_w5_l1_loss', 
         train_cases=list(range(0, 200, 2)),
         test_cases=list(range(1, 200, 10)),
         eval_cases=[5, 35, 65, 95, 105, 135, 165, 195],
+        depth=4,
         *args,
         **kwargs
     )
