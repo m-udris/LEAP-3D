@@ -21,7 +21,7 @@ def train_unet3d_param_window_normalized(experiment_name='unet3d_p_w5_l1_loss', 
         test_cases=list(range(1, 200, 10)),
         eval_cases=[5, 35, 65, 95, 105, 135, 165, 195],
         depth=4,
-        architecture=Architecture.LEAP3D_UNET3D,
+        input_height=4,
         *args,
         **kwargs
     )
