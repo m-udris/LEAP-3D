@@ -9,6 +9,9 @@ from leap3d.datasets.channels import LaserPosition, RoughTemperature, RoughTempe
 from leap3d.config import NUM_MP_DATA_PREP_WORKERS, DATA_DIR, ROUGH_COORDS_FILEPATH, PARAMS_FILEPATH, DATASET_DIR
 
 
+DEPTH = 4
+
+
 def generate_case_dataset(path, case_id, force_prepare=False, is_eval=False):
     print(f'Generating dataset for case {case_id}...')
     subfolder_prefix = 'eval' if is_eval else 'train'
@@ -25,11 +28,11 @@ def generate_case_dataset(path, case_id, force_prepare=False, is_eval=False):
         is_3d=True,
         train_cases=[case_id],
         test_cases=None,
-        input_shape=[64, 64, 16],
-        target_shape=[64, 64, 16],
-        input_channels=[LaserPosition(is_3d=True), RoughTemperature(is_3d=True)],
+        input_shape=[64, 64, DEPTH],
+        target_shape=[64, 64, DEPTH],
+        input_channels=[LaserPosition(is_3d=True, depth=DEPTH), RoughTemperature(is_3d=True, depth=DEPTH)],
         extra_input_channels=[ScanningAngle, LaserPower, LaserRadius],
-        target_channels=[RoughTemperatureDifference(is_3d=True)],
+        target_channels=[RoughTemperatureDifference(is_3d=True, depth=DEPTH)],
         transforms={},
         inverse_transforms={},
         force_prepare=force_prepare,
@@ -86,9 +89,12 @@ if __name__ == '__main__':
     # train_cases = list(range(num_train_cases)) + list(range(100, 100 + num_train_cases))
     # test_cases = list(range(num_train_cases, num_train_cases + num_test_cases)) + list(range(100 + num_train_cases, 100 + num_train_cases + num_test_cases))
     # eval_cases = list(range(num_train_cases + num_test_cases, num_train_cases + num_test_cases + eval_cases)) + list(range(100 + num_train_cases + num_test_cases, 100 + num_train_cases + num_test_cases + eval_cases))
-    train_cases = list(range(0, 200, 2))
-    test_cases = list(range(1, 200, 10))
-    eval_cases = [5, 35, 65, 95, 105, 135, 165, 195]
+    # train_cases = list(range(0, 200, 2))
+    # test_cases = list(range(1, 200, 10))
+    # eval_cases = [5, 35, 65, 95, 105, 135, 165, 195]
+    train_cases = [0,1]
+    test_cases = [2,3]
+    eval_cases = [4,5]
     generate_cases(DATASET_DIR / '3d_unet_forecasting', train_cases + test_cases + eval_cases, force_prepare=False, eval_cases=eval_cases)
     aggregate_datasets(DATASET_DIR / '3d_unet_forecasting', train_cases, is_test=False)
     aggregate_datasets(DATASET_DIR / '3d_unet_forecasting', test_cases, is_test=True)

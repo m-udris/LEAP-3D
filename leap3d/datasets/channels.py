@@ -16,9 +16,11 @@ class Channel:
 
 
 class LaserPosition(Channel):
-    def __init__(self, is_3d=False):
+    def __init__(self, is_3d=False, depth=0):
+        """depth corresponds to the number of topmost layers. 0 means keep all layers."""
         super().__init__('laser_position', 2, True)
         self.is_3d = is_3d
+        self.depth = depth
 
     def get(self, scan_parameters=None, scan_results=None, timestep=None, *args, **kwargs):
         laser_data = scan_results.get_laser_data_at_timestep(timestep)
@@ -27,29 +29,35 @@ class LaserPosition(Channel):
         laser_position_grid = convert_laser_position_to_grid(laser_data[0], laser_data[1], scan_parameters.rough_coordinates, is_3d=self.is_3d)
         next_laser_position_grid = convert_laser_position_to_grid(next_laser_data[0], next_laser_data[1], scan_parameters.rough_coordinates, is_3d=self.is_3d)
 
+        if self.is_3d:
+            laser_position_grid = laser_position_grid[:, :, -self.depth:]
+            next_laser_position_grid = next_laser_position_grid[:, :, -self.depth:]
+
         return [laser_position_grid, next_laser_position_grid]
 
 
 class RoughTemperature(Channel):
-    def __init__(self, is_3d=False):
+    def __init__(self, is_3d=False, depth=0):
         super().__init__('rough_temperature', 1, True)
         self.is_3d = is_3d
+        self.depth = depth
 
     def get(self, scan_results=None, timestep=None, *args, **kwargs):
         if self.is_3d:
-            return [scan_results.rough_temperature_field[timestep]]
+            return [scan_results.rough_temperature_field[timestep, :, :, -self.depth:]]
 
         return [scan_results.rough_temperature_field[timestep, :, :, -1]]
 
 
 class RoughTemperatureDifference(Channel):
-    def __init__(self, is_3d=False):
+    def __init__(self, is_3d=False, depth=0):
         super().__init__('rough_temperature_difference', 1, True)
         self.is_3d = is_3d
+        self.depth = depth
 
     def get(self, scan_results=None, timestep=None, *args, **kwargs):
-        temperature = scan_results.rough_temperature_field[timestep]
-        next_step_temperature = scan_results.rough_temperature_field[timestep + 1]
+        temperature = scan_results.rough_temperature_field[timestep][:, :, -self.depth:]
+        next_step_temperature = scan_results.rough_temperature_field[timestep + 1][:, :, -self.depth:]
 
         next_step_diffferences = next_step_temperature - temperature
 
