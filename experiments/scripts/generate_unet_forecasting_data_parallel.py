@@ -34,7 +34,7 @@ def generate_case_dataset(path, case_id, force_prepare=False, is_eval=False):
         inverse_transforms={},
         force_prepare=force_prepare,
         window_size=5 if not is_eval else 1,
-        window_step_size=1 if not is_eval else 1,
+        window_step_size=5 if not is_eval else 1,
     )
     datamodule.prepare_data('fit')
 
@@ -83,6 +83,6 @@ if __name__ == '__main__':
     train_cases = list(range(0, 100, 2))
     test_cases = list(range(1, 100, 10))
     eval_cases = [5, 35, 65, 95]
-    generate_cases(DATASET_DIR / 'unet_forecasting_parallel', train_cases + test_cases + eval_cases, force_prepare=False, eval_cases=eval_cases)
-    aggregate_datasets(DATASET_DIR / 'unet_forecasting_parallel', train_cases, is_test=False)
-    aggregate_datasets(DATASET_DIR / 'unet_forecasting_parallel', test_cases, is_test=True)
+    generate_cases(DATASET_DIR / 'unet_forecasting_parallel_2', train_cases + test_cases + eval_cases, force_prepare=False, eval_cases=eval_cases)
+    aggregate_datasets(DATASET_DIR / 'unet_forecasting_parallel_2', train_cases, is_test=False)
+    aggregate_datasets(DATASET_DIR / 'unet_forecasting_parallel_2', test_cases, is_test=True)
