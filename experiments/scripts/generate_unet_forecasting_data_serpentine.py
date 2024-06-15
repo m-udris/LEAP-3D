@@ -33,8 +33,8 @@ def generate_case_dataset(path, case_id, force_prepare=False, is_eval=False):
         transforms={},
         inverse_transforms={},
         force_prepare=force_prepare,
-        window_size=5 if not is_eval else 1,
-        window_step_size=5 if not is_eval else 1,
+        window_size=20 if not is_eval else 1,
+        window_step_size=3 if not is_eval else 1,
     )
     datamodule.prepare_data('fit')
 
@@ -80,9 +80,9 @@ def aggregate_datasets(path, cases, is_test=False):
                     points_written[k] = end
 
 if __name__ == '__main__':
-    train_cases = list(range(100, 200, 2))
-    test_cases = list(range(101, 200, 10))
-    eval_cases = [105, 135, 165, 195]
+    train_cases = list(range(0, 100, 2))
+    test_cases = list(range(1, 100, 10))
+    eval_cases = [5, 35, 65, 95]
     generate_cases(DATASET_DIR / 'unet_forecasting_serpentine', train_cases + test_cases + eval_cases, force_prepare=False, eval_cases=eval_cases)
     aggregate_datasets(DATASET_DIR / 'unet_forecasting_serpentine', train_cases, is_test=False)
     aggregate_datasets(DATASET_DIR / 'unet_forecasting_serpentine', test_cases, is_test=True)
