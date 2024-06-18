@@ -7,7 +7,7 @@ from leap3d.train import train_model, train
 from leap3d.transforms import get_target_to_train_transform, normalize_extra_param, normalize_temperature_2d, scanning_angle_cos_transform
 
 
-def train_unet2d_param_window_normalized(experiment_name='unet2d_serpentine_w20-ws3', window_size=20, window_step_size=3, max_epochs=50, *args, **kwargs):
+def train_unet2d_param_window_normalized(experiment_name='unet2d_serpentine_w5-ws1', window_size=5, window_step_size=1, max_epochs=50, *args, **kwargs):
     train(
         experiment_name=experiment_name,
         window_size=window_size,
