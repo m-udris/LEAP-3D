@@ -20,7 +20,7 @@ def train_unet2d_param_window_normalized(experiment_name='unet2d_serpentine_w5-w
         train_cases=list(range(0, 100, 2)),
         test_cases=list(range(1, 100, 10)),
         eval_cases=[5, 35, 65, 95],
-        activation=torch.nn.Tanh
+        activation=torch.nn.Tanh,
         *args,
         **kwargs
     )
