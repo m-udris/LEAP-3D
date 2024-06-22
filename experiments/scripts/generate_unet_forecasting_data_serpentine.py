@@ -34,7 +34,7 @@ def generate_case_dataset(path, case_id, force_prepare=False, is_eval=False):
         inverse_transforms={},
         force_prepare=force_prepare,
         window_size=5 if not is_eval else 1,
-        window_step_size=1 if not is_eval else 1,
+        window_step_size=5 if not is_eval else 1,
     )
     datamodule.prepare_data('fit')
 
