@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import torch.nn.functional as F
 
@@ -99,6 +101,9 @@ def get_target_log_to_train_transform(train_min_value, train_max_value, target_m
 
         x = _normalize_log(x, target_min_value, target_max_value, inverse=True)
         x /= (train_max_value - train_min_value)
+        if torch.any(torch.isnan(x)):
+            logging.error(f'NaN values in target_to_train transform: {x}')
+            raise ValueError('NaN values in target_to_train transform')
         return x
 
     return transform
@@ -114,10 +119,15 @@ def _normalize_min_max(x, min_value, max_value, inverse=False):
 def _normalize_log(x, min_value, max_value, inverse=False):
     eps = 1e-7
     if inverse:
-        return torch.nan_to_num((torch.exp(x) - eps) * (max_value - min_value) + min_value, nan=3500, posinf=3500, neginf=-1500)
+        x = (torch.exp(x) - eps) * (max_value - min_value) + min_value
+        return torch.nan_to_num(x, nan=3500, posinf=3500, neginf=-1500)
 
     x = (x - min_value) / (max_value - min_value)
     x = F.relu(x) + eps
+
+    if torch.any(x <= 0):
+        logging.error(f'Negative values in log normalization: {x}')
+        raise ValueError('Negative values in log normalization')
 
     return torch.log(x)
 
