@@ -93,12 +93,12 @@ def get_target_log_to_train_transform(train_min_value, train_max_value, target_m
         if not inplace:
             x = x.clone()
         if inverse:
-            x = _normalize_min_max(x, train_min_value, train_max_value, inverse=True)
+            x *= (train_max_value - train_min_value)
             x = _normalize_log(x, target_min_value, target_max_value, inverse=False)
             return x
 
         x = _normalize_log(x, target_min_value, target_max_value, inverse=True)
-        x = _normalize_min_max(x, train_min_value, train_max_value, inverse=False)
+        x /= (train_max_value - train_min_value)
         return x
 
     return transform
