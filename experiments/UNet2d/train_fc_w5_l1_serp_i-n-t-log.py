@@ -13,7 +13,7 @@ from leap3d.transforms import get_target_log_to_train_transform, get_target_to_t
 TEMPERATURE_MIN = 300
 TEMPERATURE_MAX = 3000
 TEMPERATURE_DIFF_MIN = -750
-TEMPERATURE_DIFF_MAX = TEMPERATURE_DIFF_MIN + 1
+TEMPERATURE_DIFF_MAX = 1500
 
 input_transform = transforms.Compose([
         torch.tensor,
