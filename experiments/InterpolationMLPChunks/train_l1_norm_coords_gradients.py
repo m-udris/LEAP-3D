@@ -51,7 +51,6 @@ def train():
         'input_channels': [LowResRoughTemperatureAroundLaser(return_coordinates=False)],
         'target_channels': [MeltPoolPointChunk(is_3d=False, chunk_size=32*32, input_shape=[32,32])],
         'extra_params': [ScanningAngle, LaserPower, LaserRadius],
-        'activation': torch.nn.LeakyReLU,
         'tags': ['MLP', '2D', 'interpolation', 'chunks', 'l1_loss', 'norm_coords', 'all_gradients', f'T_max_{TEMPERATURE_MAX}', f'grad_t_max_{GRAD_T_MAX}'],
         'force_prepare': False,
         'is_3d': False,
