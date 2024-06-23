@@ -12,8 +12,8 @@ from leap3d.transforms import get_target_log_to_train_transform, get_target_to_t
 
 TEMPERATURE_MIN = 300
 TEMPERATURE_MAX = 3000
-TEMPERATURE_DIFF_MIN = -1500
-TEMPERATURE_DIFF_MAX = 1600
+TEMPERATURE_DIFF_MIN = -750
+TEMPERATURE_DIFF_MAX = TEMPERATURE_DIFF_MIN + 1
 
 input_transform = transforms.Compose([
         torch.tensor,
@@ -41,25 +41,26 @@ target_to_train = transforms.Compose([
 
 
 def train_unet2d_param_window_normalized(experiment_name='fc_w5ws5_input_target-log_norm', window_size=5, window_step_size=5, max_epochs=50, *args, **kwargs):
-    train(
-        experiment_name=experiment_name,
-        window_size=window_size,
-        window_step_size=window_step_size,
-        max_epochs=max_epochs,
-        loss_function='l1',
-        batch_size=32,
-        train_cases=list(range(0, 100, 2)),
-        test_cases=list(range(1, 100, 10)),
-        # eval_cases=[5, 35, 65, 95],
-        eval_cases=[],
-        train_transforms=input_transform,
-        target_transforms=target_transform,
-        train_transforms_inverse=input_transform_inverse,
-        target_transforms_inverse=target_transform_inverse,
-        transform_target_to_train=target_to_train,
-        *args,
-        **kwargs
-    )
+    with torch.autograd.detect_anomaly():
+        train(
+            experiment_name=experiment_name,
+            window_size=window_size,
+            window_step_size=window_step_size,
+            max_epochs=max_epochs,
+            loss_function='l1',
+            batch_size=32,
+            train_cases=list(range(0, 100, 2)),
+            test_cases=list(range(1, 100, 10)),
+            # eval_cases=[5, 35, 65, 95],
+            eval_cases=[],
+            train_transforms=input_transform,
+            target_transforms=target_transform,
+            train_transforms_inverse=input_transform_inverse,
+            target_transforms_inverse=target_transform_inverse,
+            transform_target_to_train=target_to_train,
+            *args,
+            **kwargs
+        )
 
 
 if __name__ == '__main__':
