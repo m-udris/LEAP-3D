@@ -114,7 +114,7 @@ def _normalize_min_max(x, min_value, max_value, inverse=False):
 def _normalize_log(x, min_value, max_value, inverse=False):
     eps = 1e-7
     if inverse:
-        return (torch.exp(x) - eps) * (max_value - min_value) + min_value
+        return torch.nan_to_num((torch.exp(x) - eps) * (max_value - min_value) + min_value, nan=3500, posinf=3500, neginf=-1500)
 
     x = (x - min_value) / (max_value - min_value)
     x = F.relu(x) + eps
