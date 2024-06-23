@@ -1,5 +1,5 @@
 import torch
-
+import torch.nn.functional as F
 
 class TransformIncorrectShapeError(Exception):
     def __init__(self, shape):
@@ -112,12 +112,13 @@ def _normalize_min_max(x, min_value, max_value, inverse=False):
 
 
 def _normalize_log(x, min_value, max_value, inverse=False):
+    eps = 1e-7
     if inverse:
-        return (torch.exp(x) * (max_value - min_value)) - 1 + min_value
-    x = (torch.max(torch.zeros_like(x), (x - min_value)) + 1) / (max_value - min_value)
-    if torch.any(x <= 0):
-        print('Negative value in log normalization')
-        raise ValueError
+        return (torch.exp(x) - eps) * (max_value - min_value) + min_value
+
+    x = (x - min_value) / (max_value - min_value)
+    x = F.relu(x) + eps
+
     return torch.log(x)
 
 
