@@ -23,7 +23,15 @@ class DoubleConv(torch.nn.Module):
         )
 
     def forward(self, x):
-        return self.double_conv(x)
+        if torch.isnan(x).any():
+            logging.error(f'Input contains NaN values: {x}')
+            raise ValueError('Input contains NaN values')
+
+        output = self.double_conv(x)
+        if torch.isnan(output).any():
+            logging.error(f'Output contains NaN values: {output}')
+            raise ValueError('Output contains NaN values')
+        return output
 
 
 class DoubleConv3d(DoubleConv):
