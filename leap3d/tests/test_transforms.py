@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from leap3d.config import MELTING_POINT, BASE_TEMPERATURE
-from leap3d.transforms import get_target_to_train_transform, normalize_temperature_2d
+from leap3d.transforms import get_target_log_to_train_transform, get_target_to_train_transform, normalize_temperature_2d, normalize_temperature_log_2d
 
 
 NORMALIZE_ATOL = 1e-4
@@ -85,3 +85,27 @@ def test_target_to_train_transform():
 
         assert torch.allclose(x_transformed, x, atol=NORMALIZE_ATOL)
         assert torch.allclose(x_transformed_simple, x, atol=NORMALIZE_ATOL)
+
+
+def test_log_transforms():
+    temperature_min = 300
+    temperature_max = 3000
+    temperature_difference_min = -750
+    temperature_difference_max = 1750
+
+    for _ in range(100):
+        temperature = torch.rand(3, 64, 64) * (temperature_max - temperature_min) + temperature_min
+        temperature_difference = torch.rand(1, 64, 64) * (temperature_difference_max - temperature_difference_min) + temperature_difference_min
+
+        temperature_normalized = normalize_temperature_2d(temperature, temperature_max, temperature_min, inplace=False)
+        temperature_difference_normalized = normalize_temperature_log_2d(temperature_difference, temperature_difference_min, temperature_difference_max, inplace=False)
+
+        next_temperature_gt = temperature + temperature_difference
+        next_temperature_gt_normalized = normalize_temperature_2d(next_temperature_gt, temperature_max, temperature_min, inplace=False)[-1]
+
+        target_to_train_transform = get_target_log_to_train_transform(temperature_min, temperature_max, temperature_difference_min, temperature_difference_max)
+        temperature_diff_transformed = target_to_train_transform(temperature_difference_normalized, inplace=False)
+
+        next_temperature_normalized = temperature_normalized[-1] + temperature_diff_transformed[-1]
+
+        assert torch.allclose(next_temperature_gt_normalized, next_temperature_normalized, atol=1e-7)
