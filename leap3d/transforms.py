@@ -117,17 +117,13 @@ def _normalize_min_max(x, min_value, max_value, inverse=False):
 
 
 def _normalize_log(x, min_value, max_value, inverse=False):
-    eps = 1e-7
+    eps = 1e-7 + 1
     if inverse:
         x = (torch.exp(x) - eps) * (max_value - min_value) + min_value
         return torch.nan_to_num(x, nan=3500, posinf=3500, neginf=-1500)
 
     x = (x - min_value) / (max_value - min_value)
     x = F.relu(x) + eps
-
-    if torch.any(x <= 0):
-        logging.error(f'Negative values in log normalization: {x}')
-        raise ValueError('Negative values in log normalization')
 
     return torch.log(x)
 
