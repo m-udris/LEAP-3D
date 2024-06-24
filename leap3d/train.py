@@ -199,9 +199,9 @@ def train(
     ]
     if not no_callbacks:
         callbacks += [
-            # LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
+            LogR2ScoreOverTimePlotCallback(steps=eval_steps, samples=eval_samples),
 
-            # Rollout2DUNetCallback(scan_parameters)
+            Rollout2DUNetCallback(scan_parameters)
         ]
 
     trainer = train_model(model=model, datamodule=datamodule, logger=wandb_logger, callbacks=callbacks, **hparams)
