@@ -223,6 +223,6 @@ def train_model(model: pl.LightningModule, datamodule: pl.LightningDataModule,
     Returns:
         trainer (pl.Trainer): Trainer used to train the model
     """
-    trainer = pl.Trainer(max_epochs=max_epochs, logger=logger, callbacks=callbacks, log_every_n_steps=25, detect_anomaly=True)
+    trainer = pl.Trainer(max_epochs=max_epochs, logger=logger, callbacks=callbacks, log_every_n_steps=25)
     trainer.fit(model, datamodule=datamodule)
     return trainer
