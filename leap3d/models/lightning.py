@@ -52,6 +52,10 @@ class LEAP3D_UNet(BaseModel):
         predicted_x_temperature = None
         outputs = []
 
+        if torch.isnan(y_window).any() or torch.isnan(x_window).any():
+            logging.error(f"NaNs in input data. x_window: {torch.isnan(x_window).any()}, y_window: {torch.isnan(y_window).any()}")
+            raise ValueError("NaNs in input data")
+
         for i in range(x_window.shape[1]):
             x = x_window[:, i]
             extra_params = extra_params_window[:, i]
@@ -60,6 +64,15 @@ class LEAP3D_UNet(BaseModel):
                 x = x.clone()
                 x[:, -1] = predicted_x_temperature
             loss_single, y_hat = self.f_step_single(x, extra_params, y, log_loss=False)
+
+            if torch.isnan(y_hat).any():
+                logging.error(f"NaNs in prediction. y_hat: {torch.isnan(y_hat).any()}")
+                raise ValueError("NaNs in prediction")
+
+            if torch.isnan(loss_single):
+                logging.error(f"NaNs in loss. loss: {torch.isnan(loss_single)}")
+                raise ValueError("NaNs in loss")
+
             outputs.append(y_hat)
             loss += loss_single
             predicted_x_temperature = self.get_predicted_temperature(x[:, -1], y_hat[:, 0])
